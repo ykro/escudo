@@ -1,0 +1,29 @@
+[
+  {
+    "file": "crash_1.jpg",
+    "origin": {
+      "type": "synthetic",
+      "model": "gemini-3.1-flash-lite-image",
+      "prompt": "Photorealistic smartphone photo taken by the driver right after a minor rear-end collision in Guatemala City, daytime, overcast. The car is a silver 2022 Toyota Corolla sedan with a Guatemalan licence plate 'P-512KLM'. No people, no readable brand logos, no text overlays. Wide shot of the rear of the car: the rear bumper is dented and scraped on the left side, parked at the curb on a street in zona 10.",
+      "seed": 2027
+    }
+  },
+  {
+    "file": "crash_2.jpg",
+    "origin": {
+      "type": "synthetic",
+      "model": "gemini-3.1-flash-lite-image",
+      "prompt": "Photorealistic smartphone photo taken by the driver right after a minor rear-end collision in Guatemala City, daytime, overcast. The car is a silver 2022 Toyota Corolla sedan with a Guatemalan licence plate 'P-512KLM'. No people, no readable brand logos, no text overlays. Close-up of the rear left corner: the tail light lens is cracked, the bumper paint is scraped showing black plastic, small fragments of red plastic on the asphalt.",
+      "seed": 2027
+    }
+  },
+  {
+    "file": "crash_3.jpg",
+    "origin": {
+      "type": "synthetic",
+      "model": "gemini-3.1-flash-lite-image",
+      "prompt": "Photorealistic smartphone photo taken by the driver right after a minor rear-end collision in Guatemala City, daytime, overcast. The car is a silver 2022 Toyota Corolla sedan with a Guatemalan licence plate 'P-512KLM'. No people, no readable brand logos, no text overlays. Three-quarter view from the left rear: the trunk lid is intact, the bumper is pushed in a few centimetres, the car otherwise looks drivable.",
+      "seed": 2027
+    }
+  }
+]
