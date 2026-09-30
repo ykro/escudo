@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://escudo.example/contracts/events.schema.json",
+  "title": "EscudoEvent",
+  "description": "One step in the presenter timeline. Every component (backend, agents, Android, web) writes events with this shape to Firestore db `escudo`, collection `events`.",
+  "type": "object",
+  "required": ["id", "ts", "run_id", "actor", "surface", "kind", "summary"],
+  "properties": {
+    "id": { "type": "string" },
+    "ts": { "type": "string", "format": "date-time" },
+    "run_id": { "type": "string", "description": "Groups one scenario run (usually the claim id or a session id)." },
+    "claim_id": { "type": ["string", "null"] },
+    "actor": { "type": "string", "enum": ["customer", "escudo_assistant", "escudo_agent", "tow_agent", "repair_agent", "damage_assessor", "gemini", "backend"] },
+    "surface": { "type": "string", "enum": ["android", "web", "mcp", "a2a", "rest", "voice", "appfunctions", "webmcp"] },
+    "kind": { "type": "string", "enum": ["tool_call", "tool_result", "a2a_request", "a2a_response", "approval_requested", "approval_granted", "approval_rejected", "message", "error"] },
+    "tool": { "type": ["string", "null"], "description": "Capability name from contracts/tools.md." },
+    "summary": { "type": "string", "description": "One human-readable line in Spanish for the timeline." },
+    "autonomy": { "type": ["string", "null"], "enum": ["automatic", "needs_approval", null] },
+    "approval_id": { "type": ["string", "null"] },
+    "reason": { "type": ["string", "null"], "description": "Why the agent stopped (approval pauses)." },
+    "data": { "type": "object", "description": "Small, display-safe payload (no PII beyond the fictional seed)." }
+  },
+  "additionalProperties": false
+}

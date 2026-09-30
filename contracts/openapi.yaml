@@ -1,0 +1,185 @@
+openapi: 3.1.0
+info:
+  title: Escudo API
+  version: 1.0.0
+  description: >-
+    REST adapter over Escudo capabilities (see tools.md). Auth is the customer's Firebase ID token.
+    Every operation also accepts the optional headers X-Escudo-Surface, X-Escudo-Actor and X-Escudo-Run-Id
+    (components/parameters) that label the timeline events the backend writes. Errors are
+    `{"error": <code>, "message": <Spanish>}`.
+servers:
+  - url: https://escudo-api-611681112050.us-central1.run.app
+    description: Cloud Run service escudo-api (us-central1)
+  - url: http://127.0.0.1:8080
+    description: Local (`make up` / `make up-mock`)
+security:
+  - firebase: []
+components:
+  securitySchemes:
+    firebase: { type: http, scheme: bearer, bearerFormat: Firebase ID token }
+    adminToken: { type: apiKey, in: header, name: X-Admin-Token }
+  parameters:
+    Surface: { name: X-Escudo-Surface, in: header, required: false, description: "Timeline label: a `surface` of events.schema.json (default rest). The backend writes the events; clients do not duplicate them.", schema: { type: string } }
+    Actor: { name: X-Escudo-Actor, in: header, required: false, description: "Timeline label: an `actor` of events.schema.json (default customer).", schema: { type: string } }
+    RunId: { name: X-Escudo-Run-Id, in: header, required: false, description: "Groups one scenario run in the timeline (default the claim id).", schema: { type: string } }
+  responses:
+    ApprovalInvalid:
+      description: The approval_id is unknown, not approved yet, rejected, for another tool or arguments, or already used.
+      content: { application/json: { schema: { type: object, properties: { error: { const: approval_invalid }, detail: { type: string, enum: [unknown, not_approved, rejected, wrong_tool, wrong_args, already_used] }, message: { type: string } } } } }
+  schemas:
+    Policy:
+      type: object
+      required: [policy_id, holder, vehicle, coverages, deductible_usd, rental_days, status]
+      properties:
+        policy_id: { type: string }
+        holder: { type: object, properties: { name: { type: string }, customer_id: { type: string } } }
+        vehicle: { type: object, properties: { make: { type: string }, model: { type: string }, year: { type: integer }, plate: { type: string } } }
+        coverages: { type: array, items: { type: string, enum: [own_damage, third_party, towing, rental_car, theft] } }
+        deductible_usd: { type: number }
+        rental_days: { type: integer }
+        status: { type: string, enum: [active, suspended] }
+    DamageAssessment:
+      type: object
+      properties:
+        parts: { type: array, items: { type: object, properties: { name: { type: string }, damage: { type: string } } } }
+        severity: { type: string, enum: [minor, moderate, severe] }
+        cost_range_usd: { type: array, items: { type: number }, minItems: 2, maxItems: 2 }
+        drivable: { type: boolean }
+        summary: { type: string, description: "One sentence in Spanish for the customer." }
+    Claim:
+      type: object
+      required: [claim_id, status, created_at]
+      properties:
+        claim_id: { type: string }
+        status: { type: string, enum: [open, assessed, tow_requested, repair_selected, deductible_accepted, signed] }
+        description: { type: string }
+        location: { type: object, properties: { lat: { type: number }, lng: { type: number }, label: { type: string } } }
+        occurred_at: { type: string, format: date-time }
+        created_at: { type: string, format: date-time }
+        photos: { type: array, items: { type: string } }
+        assessment: { $ref: '#/components/schemas/DamageAssessment' }
+        tow: { type: object, properties: { provider: { type: string }, eta_minutes: { type: integer }, provider_id: { type: string }, phone: { type: string } } }
+        repair: { type: object, properties: { shop_id: { type: string }, shop_name: { type: string }, slot: { type: string, format: date-time }, quote_usd: { type: number }, address: { type: string } } }
+        rental: { type: object, properties: { days: { type: integer }, pickup: { type: string }, covered: { type: boolean }, cost_usd: { type: number } } }
+        deductible_accepted: { type: boolean }
+        signed_at: { type: [string, 'null'], format: date-time }
+        policy_id: { type: string }
+        repair_options: { type: array, items: { $ref: '#/components/schemas/RepairOption' }, description: "Last options offered (select_repair_shop only books one of these)." }
+        status_label: { type: string, description: "Status in Spanish (GET /claims/{id} and /claims/latest)." }
+        timeline: { type: array, description: "Last 30 events of the claim (GET only).", items: { type: object, properties: { ts: { type: string }, actor: { type: string }, surface: { type: string }, kind: { type: string }, tool: { type: [string, 'null'] }, summary: { type: string } } } }
+    PendingApproval:
+      type: object
+      required: [status, approval_id, tool, reason]
+      properties:
+        status: { const: pending_approval }
+        approval_id: { type: string }
+        tool: { type: string }
+        reason: { type: string }
+        args_hash: { type: string }
+        summary: { type: string, description: "What the customer will be asked to approve, in Spanish." }
+        message: { type: string }
+    Approval:
+      type: object
+      properties:
+        approval_id: { type: string }
+        claim_id: { type: [string, 'null'] }
+        tool: { type: string }
+        reason: { type: string }
+        summary: { type: string, description: "What the customer is agreeing to, in Spanish." }
+        amount_usd: { type: [number, 'null'] }
+        status: { type: string, enum: [pending, approved, rejected, used] }
+        created_at: { type: string, format: date-time }
+    RepairOption:
+      type: object
+      properties:
+        shop_id: { type: string }
+        name: { type: string }
+        address: { type: string }
+        rating: { type: number }
+        slots: { type: array, items: { type: string, format: date-time } }
+        quote_usd: { type: number }
+paths:
+  /policy:
+    parameters: [{ $ref: '#/components/parameters/Surface' }, { $ref: '#/components/parameters/Actor' }, { $ref: '#/components/parameters/RunId' }]
+    get: { operationId: getPolicy, responses: { '200': { description: ok, content: { application/json: { schema: { $ref: '#/components/schemas/Policy' } } } } } }
+  /coverage/check:
+    parameters: [{ $ref: '#/components/parameters/Surface' }, { $ref: '#/components/parameters/Actor' }, { $ref: '#/components/parameters/RunId' }]
+    get:
+      operationId: checkCoverage
+      parameters: [{ name: incident_type, in: query, required: true, schema: { type: string } }]
+      responses: { '200': { description: ok, content: { application/json: { schema: { type: object, properties: { covered: { type: boolean }, notes: { type: string } } } } } } }
+  /claims:
+    parameters: [{ $ref: '#/components/parameters/Surface' }, { $ref: '#/components/parameters/Actor' }, { $ref: '#/components/parameters/RunId' }]
+    post:
+      operationId: openClaim
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [description], properties: { description: { type: string }, location: { type: object }, occurred_at: { type: string, format: date-time } } } } } }
+      responses: { '201': { description: created, content: { application/json: { schema: { $ref: '#/components/schemas/Claim' } } } } }
+  /claims/latest:
+    parameters: [{ $ref: '#/components/parameters/Surface' }, { $ref: '#/components/parameters/Actor' }, { $ref: '#/components/parameters/RunId' }]
+    get: { operationId: getLatestClaim, responses: { '200': { description: ok, content: { application/json: { schema: { $ref: '#/components/schemas/Claim' } } } }, '404': { description: no claims } } }
+  /claims/{claim_id}:
+    parameters: [{ name: claim_id, in: path, required: true, schema: { type: string } }, { $ref: '#/components/parameters/Surface' }, { $ref: '#/components/parameters/Actor' }, { $ref: '#/components/parameters/RunId' }]
+    get: { operationId: getClaimStatus, responses: { '200': { description: ok, content: { application/json: { schema: { $ref: '#/components/schemas/Claim' } } } } } }
+  /claims/{claim_id}/photos:
+    parameters: [{ name: claim_id, in: path, required: true, schema: { type: string } }, { $ref: '#/components/parameters/Surface' }, { $ref: '#/components/parameters/Actor' }, { $ref: '#/components/parameters/RunId' }]
+    post:
+      operationId: attachClaimPhotos
+      requestBody: { required: true, content: { multipart/form-data: { schema: { type: object, properties: { photos: { type: array, items: { type: string, format: binary } } } } } } }
+      responses: { '200': { description: assessed, content: { application/json: { schema: { $ref: '#/components/schemas/DamageAssessment' } } } } }
+  /claims/{claim_id}/tow:
+    parameters: [{ name: claim_id, in: path, required: true, schema: { type: string } }, { $ref: '#/components/parameters/Surface' }, { $ref: '#/components/parameters/Actor' }, { $ref: '#/components/parameters/RunId' }]
+    post: { operationId: requestTow, responses: { '200': { description: dispatched } } }
+  /claims/{claim_id}/repair-options:
+    parameters: [{ name: claim_id, in: path, required: true, schema: { type: string } }, { $ref: '#/components/parameters/Surface' }, { $ref: '#/components/parameters/Actor' }, { $ref: '#/components/parameters/RunId' }]
+    get: { operationId: listRepairOptions, responses: { '200': { description: ok, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/RepairOption' } } } } } } }
+  /claims/{claim_id}/rental:
+    parameters: [{ name: claim_id, in: path, required: true, schema: { type: string } }, { $ref: '#/components/parameters/Surface' }, { $ref: '#/components/parameters/Actor' }, { $ref: '#/components/parameters/RunId' }]
+    post: { operationId: requestRentalCar, requestBody: { content: { application/json: { schema: { type: object, properties: { approval_id: { type: string } } } } } }, responses: { '200': { description: reserved }, '403': { $ref: '#/components/responses/ApprovalInvalid' }, '202': { description: pending approval, content: { application/json: { schema: { $ref: '#/components/schemas/PendingApproval' } } } } } }
+  /claims/{claim_id}/deductible:
+    parameters: [{ name: claim_id, in: path, required: true, schema: { type: string } }, { $ref: '#/components/parameters/Surface' }, { $ref: '#/components/parameters/Actor' }, { $ref: '#/components/parameters/RunId' }]
+    post:
+      operationId: acceptDeductible
+      requestBody: { content: { application/json: { schema: { type: object, properties: { approval_id: { type: string } } } } } }
+      responses: { '200': { description: accepted }, '202': { description: pending approval, content: { application/json: { schema: { $ref: '#/components/schemas/PendingApproval' } } } }, '403': { $ref: '#/components/responses/ApprovalInvalid' } }
+  /claims/{claim_id}/repair:
+    parameters: [{ name: claim_id, in: path, required: true, schema: { type: string } }, { $ref: '#/components/parameters/Surface' }, { $ref: '#/components/parameters/Actor' }, { $ref: '#/components/parameters/RunId' }]
+    post:
+      operationId: selectRepairShop
+      requestBody: { content: { application/json: { schema: { type: object, required: [shop_id, slot], properties: { shop_id: { type: string }, slot: { type: string, format: date-time }, approval_id: { type: string } } } } } }
+      responses: { '200': { description: booked }, '202': { description: pending approval, content: { application/json: { schema: { $ref: '#/components/schemas/PendingApproval' } } } }, '403': { $ref: '#/components/responses/ApprovalInvalid' } }
+  /claims/{claim_id}/sign:
+    parameters: [{ name: claim_id, in: path, required: true, schema: { type: string } }, { $ref: '#/components/parameters/Surface' }, { $ref: '#/components/parameters/Actor' }, { $ref: '#/components/parameters/RunId' }]
+    post:
+      operationId: signClaim
+      requestBody: { content: { application/json: { schema: { type: object, properties: { approval_id: { type: string } } } } } }
+      responses: { '200': { description: signed }, '202': { description: pending approval, content: { application/json: { schema: { $ref: '#/components/schemas/PendingApproval' } } } }, '403': { $ref: '#/components/responses/ApprovalInvalid' } }
+  /approvals:
+    parameters: [{ $ref: '#/components/parameters/Surface' }, { $ref: '#/components/parameters/Actor' }, { $ref: '#/components/parameters/RunId' }]
+    get:
+      operationId: listPendingApprovals
+      description: Human-only surface. Never exposed to agents.
+      responses: { '200': { description: ok, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Approval' } } } } } }
+  /approvals/{approval_id}/approve:
+    parameters: [{ name: approval_id, in: path, required: true, schema: { type: string } }, { $ref: '#/components/parameters/Surface' }, { $ref: '#/components/parameters/Actor' }, { $ref: '#/components/parameters/RunId' }]
+    post:
+      operationId: approve
+      description: Human-only. Called by the Android app after BiometricPrompt succeeds. Never a tool, AppFunction or WebMCP function.
+      requestBody: { content: { application/json: { schema: { type: object, properties: { device_id: { type: string } } } } } }
+      responses: { '200': { description: approved }, '404': { description: unknown }, '409': { description: not pending } }
+  /approvals/{approval_id}/reject:
+    parameters: [{ name: approval_id, in: path, required: true, schema: { type: string } }, { $ref: '#/components/parameters/Surface' }, { $ref: '#/components/parameters/Actor' }, { $ref: '#/components/parameters/RunId' }]
+    post: { operationId: reject, responses: { '200': { description: rejected } } }
+  /devices:
+    parameters: [{ $ref: '#/components/parameters/Surface' }, { $ref: '#/components/parameters/Actor' }, { $ref: '#/components/parameters/RunId' }]
+    post:
+      operationId: registerDevice
+      requestBody: { content: { application/json: { schema: { type: object, required: [fcm_token], properties: { fcm_token: { type: string }, platform: { type: string }, device_id: { type: string, description: "Stable device id; used as the device key (else a hash of the token)." } } } } } }
+      responses: { '204': { description: registered } }
+  /events:
+    parameters: [{ $ref: '#/components/parameters/Surface' }, { $ref: '#/components/parameters/Actor' }, { $ref: '#/components/parameters/RunId' }]
+    post:
+      operationId: postEvent
+      description: Clients (Android, web) append timeline events. Schema in events.schema.json; `id` and `ts` are filled in when missing. Capability calls are already recorded by the backend (see the X-Escudo-* headers).
+      responses: { '204': { description: stored }, '422': { description: does not match events.schema.json } }
+  /admin/reset:
+    post: { operationId: reset, description: "Restores seed data, clears claims/approvals/events (devices are kept). Requires ADMIN_TOKEN in X-Admin-Token (or as bearer). Response header X-Reset-Seconds.", security: [{ adminToken: [] }], responses: { '204': { description: reset }, '401': { description: wrong or missing admin token } } }
