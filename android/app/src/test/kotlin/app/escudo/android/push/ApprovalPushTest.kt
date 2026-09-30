@@ -6,12 +6,18 @@ import org.junit.Test
 
 class ApprovalPushTest {
   @Test
-  fun `data-only approval push`() {
+  fun `backend approval push (notification + data)`() {
     val push = ApprovalPush.parse(
-      mapOf("type" to "approval_requested", "approval_id" to "apr_7", "summary" to "Firmar el reclamo"),
-      title = null, body = null,
+      mapOf("type" to "approval_request", "approval_id" to "apr_7", "tool" to "sign_claim", "claim_id" to "clm_1", "reason" to "Requiere aprobación"),
+      title = "Escudo necesita tu aprobación", body = "Firmar y enviar el reclamo",
     )
-    assertEquals(ApprovalPush("apr_7", null, "Firmar el reclamo"), push)
+    assertEquals(ApprovalPush("apr_7", "Escudo necesita tu aprobación", "Firmar y enviar el reclamo"), push)
+  }
+
+  @Test
+  fun `data-only push falls back to summary or reason`() {
+    val push = ApprovalPush.parse(mapOf("type" to "approval_request", "approval_id" to "apr_8", "reason" to "Requiere aprobación"), null, null)
+    assertEquals(ApprovalPush("apr_8", null, "Requiere aprobación"), push)
   }
 
   @Test

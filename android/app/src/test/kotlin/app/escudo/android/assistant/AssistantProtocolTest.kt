@@ -22,14 +22,24 @@ class AssistantProtocolTest {
   }
 
   @Test
-  fun `approval requests and tool activity are recognized`() {
+  fun `session is connected only once the server says ready`() {
     assertEquals(
-      AssistantEvent.ApprovalRequested("apr_1", "Firmar requiere aprobación"),
-      parse("""{"type":"approval_requested","approval_id":"apr_1","reason":"Firmar requiere aprobación"}"""),
+      AssistantEvent.Connected,
+      parse("""{"type":"ready","mock":false,"input_audio":{"sample_rate":16000},"session_id":"voice-1"}"""),
     )
-    assertEquals(AssistantEvent.ToolActivity("request_tow", "Grúa en camino"), parse("""{"type":"tool_result","tool":"request_tow","summary":"Grúa en camino"}"""))
+  }
+
+  @Test
+  fun `approval pauses and tool activity are recognized`() {
+    assertEquals(
+      AssistantEvent.ApprovalRequested("apr_1", "Firmar y enviar el reclamo"),
+      parse("""{"type":"approval_required","approval_id":"apr_1","tool":"sign_claim","summary":"Firmar y enviar el reclamo","reason":"x"}"""),
+    )
+    assertEquals(AssistantEvent.ToolActivity("request_tow", null), parse("""{"type":"tool_call","name":"request_tow"}"""))
+    assertNull(parse("""{"type":"tool_result","name":"request_tow"}"""))
     assertEquals(AssistantEvent.Interrupted, parse("""{"type":"interrupted"}"""))
     assertEquals(AssistantEvent.TurnComplete, parse("""{"type":"turn_complete"}"""))
+    assertEquals(AssistantEvent.Error("Inicia sesión"), parse("""{"type":"error","code":"unauthenticated","message":"Inicia sesión"}"""))
   }
 
   @Test
@@ -43,12 +53,16 @@ class AssistantProtocolTest {
   fun `unknown or malformed messages are ignored`() {
     assertNull(parse("""{"type":"something_new"}"""))
     assertNull(parse("not json"))
-    assertNull(parse("""{"type":"approval_requested"}"""))
+    assertNull(parse("""{"type":"approval_required"}"""))
   }
 
   @Test
-  fun `push-to-talk control messages`() {
+  fun `client control messages and trailing silence`() {
     assertEquals("""{"type":"activity_start"}""", AssistantProtocol.ACTIVITY_START)
     assertEquals("""{"type":"activity_end"}""", AssistantProtocol.ACTIVITY_END)
+    assertEquals("""{"type":"end"}""", AssistantProtocol.END)
+    // 800 ms of PCM16 mono at 16 kHz, all zeros.
+    assertEquals(25_600, AssistantProtocol.TRAILING_SILENCE.size)
+    assertTrue(AssistantProtocol.TRAILING_SILENCE.all { it == 0.toByte() })
   }
 }

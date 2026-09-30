@@ -24,13 +24,16 @@ sealed interface AssistantEvent {
 }
 
 /**
- * Wire protocol of `wss://…/assistant/live` (proposed in contracts/CHANGELOG.md).
+ * Wire protocol of `wss://…/assistant/live`, as implemented by backend/escudo/adapters/assistant_live.py
+ * (documented in contracts/CHANGELOG.md).
  *
+ * - Auth: `Authorization: Bearer <Firebase ID token>`.
  * - Binary frames: raw audio. Phone → server PCM16 LE mono 16 kHz; server → phone PCM16 LE mono 24 kHz.
- * - Text frames: JSON control messages with a `type` field.
- *   Phone → server: `activity_start` / `activity_end` (push-to-talk, i.e. Live API manual activity detection).
- *   Server → phone: `transcript`, `tool_call`, `tool_result`, `approval_requested`, `interrupted`,
- *   `turn_complete`, `error`, and optionally `audio` with base64 `data` for servers that cannot send binary.
+ * - Text frames, phone → server: `{"type":"text","text":…}`, `{"type":"end"}`; `activity_start` /
+ *   `activity_end` mark push-to-talk and are ignored by servers using automatic voice activity detection.
+ * - Text frames, server → phone: `ready`, `transcript` {role, text, final}, `tool_call` / `tool_result`
+ *   {name}, `approval_required` {approval_id, tool, summary, reason}, `interrupted`, `turn_complete`,
+ *   `error` {code, message}; optionally `audio` with base64 `data`.
  *
  * Unknown types are ignored so the backend can add messages without breaking the phone.
  */
@@ -40,22 +43,32 @@ object AssistantProtocol {
 
   val ACTIVITY_START = """{"type":"activity_start"}"""
   val ACTIVITY_END = """{"type":"activity_end"}"""
+  val END = """{"type":"end"}"""
+
+  /**
+   * Silence sent when the button is released. With automatic activity detection the model only
+   * answers after it hears the end of speech, and a stream that just stops has no end.
+   */
+  val TRAILING_SILENCE = ByteArray(INPUT_SAMPLE_RATE * 2 * 800 / 1000)
 
   fun parse(text: String, base64Decoder: (String) -> ByteArray = ::decodeBase64): AssistantEvent? {
     val json = runCatching { EscudoJson.parseToJsonElement(text).jsonObject }.getOrNull() ?: return null
     return when (json.string("type")) {
+      "ready" -> AssistantEvent.Connected
       "transcript" -> {
         val body = json.string("text") ?: return null
         val role = if (json.string("role") == "user") AssistantEvent.Role.USER else AssistantEvent.Role.ASSISTANT
         AssistantEvent.Transcript(role, body, json["final"]?.jsonPrimitive?.booleanOrNull ?: true)
       }
-      "tool_call", "tool_result" -> AssistantEvent.ToolActivity(json.string("tool") ?: "?", json.string("summary"))
-      "approval_requested" -> json.string("approval_id")?.let { AssistantEvent.ApprovalRequested(it, json.string("reason")) }
+      "tool_call" -> AssistantEvent.ToolActivity(json.string("name") ?: json.string("tool") ?: "?", json.string("summary"))
+      "approval_required", "approval_requested" -> json.string("approval_id")?.let {
+        AssistantEvent.ApprovalRequested(it, json.string("summary") ?: json.string("reason"))
+      }
       "interrupted" -> AssistantEvent.Interrupted
       "turn_complete" -> AssistantEvent.TurnComplete
-      "error" -> AssistantEvent.Error(json.string("message") ?: "error")
+      "error" -> AssistantEvent.Error(json.string("message") ?: json.string("code") ?: "error")
       "audio" -> json.string("data")?.let { AssistantEvent.Audio(base64Decoder(it)) }
-      else -> null
+      else -> null // tool_result and future types: nothing to show
     }
   }
 

@@ -57,19 +57,20 @@ class LiveAssistantSession(
   }
 
   override fun stopTalking() {
+    socket?.send(AssistantProtocol.TRAILING_SILENCE.toByteString())
     socket?.send(AssistantProtocol.ACTIVITY_END)
   }
 
   override fun close() {
+    socket?.send(AssistantProtocol.END)
     socket?.close(1000, "bye")
     socket = null
     scope.cancel()
   }
 
   private inner class Listener : WebSocketListener() {
-    override fun onOpen(webSocket: WebSocket, response: Response) {
-      _events.tryEmit(AssistantEvent.Connected)
-    }
+    // Connected is emitted on the server's `ready` message, not on open: the socket is accepted
+    // before the Firebase ID token is verified.
 
     override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
       _events.tryEmit(AssistantEvent.Audio(bytes.toByteArray()))
