@@ -1,0 +1,18 @@
+# Build output
+build/
+.gradle/
+.kotlin/
+*.apk
+*.aab
+
+# Local config: SDK path, customer credentials, API URL (never committed)
+local.properties
+
+# Firebase config: fetch it with `make google-services` (see README.md)
+app/google-services.json
+
+# IDE
+.idea/
+*.iml
+captures/
+.DS_Store
