@@ -5,6 +5,14 @@ Escudo por voz y reporte de accidentes. Expone `reportAccident`, `getCoverage` y
 `getClaimStatus` como AppFunctions para agentes del sistema (ver [APPFUNCTIONS.md](APPFUNCTIONS.md)).
 Versiones en [VERSIONS.md](VERSIONS.md).
 
+## Diseño
+
+Dirección visual «A · Sereno» (`design/a-sereno/`: tokens, logo, maqueta y licencia de la fuente).
+Todo el estilo vive en `ui/theme`: pino `#0F5C4D` como semilla de Material 3, contenedores arena,
+fondo niebla, tipografía Onest (variable, empaquetada en `res/font`). El ámbar se reserva para las
+pausas de aprobación. Solo tema claro. El ícono adaptable redibuja la marca (escudo + camino) en
+vectores, con versión monocromática.
+
 ## Qué enseña
 
 - **Funciones, no pantallas**: pantallas y AppFunctions llaman al mismo `EscudoRepository`.
@@ -70,6 +78,10 @@ hace la notificación. En el emulador, PIN con `adb shell locksettings set-pin 1
   JSON `ready`, `transcript`, `tool_call`, `approval_required`, `interrupted`, `turn_complete`,
   `error`. El botón es push-to-talk; al soltarlo se envían 800 ms de silencio para que la
   detección automática de actividad cierre el turno. Ver `assistant/AssistantProtocol.kt`.
+- El asistente también acepta texto (ícono de teclado junto al micrófono): útil en lugares ruidosos
+  y para ensayar sin micrófono. Usa el mismo socket (`{"type":"text"}`).
+- Emulador: el micrófono virtual solo recibe audio del host si el emulador se inicia con
+  `-allow-host-audio`.
 - Push de aprobación: notificación + datos `{"type": "approval_request", "approval_id", …}`,
   canal `approvals`; al tocarla abre `escudo://approvals/<id>`.
 

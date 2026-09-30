@@ -68,7 +68,11 @@ adb shell "cmd app_function execute-app-function --package app.escudo.android \
 Note: a `Uri` parameter is an object `{"uri": "…"}`, not a bare string.
 Default timeout is 30 s (`--timeout-duration <s>`); `reportAccident` runs the damage assessor.
 
-Verified results (live flavor against the backend in `MOCK_AI=1 MOCK_AUTH=1` mode, and fake flavor):
+Verified against the deployed `escudo-api` (Cloud Run, real Gemini assessor) on 2026-09-30:
+`getCoverage` 2.4 s, `getClaimStatus` 0.3 s, `reportAccident` with one photo URI 5.5 s
+(→ `CLM-YXCPM7`, severity moderate, 350–650 USD).
+
+Earlier results (live flavor against the backend in `MOCK_AI=1 MOCK_AUTH=1` mode, and fake flavor):
 
 - `getCoverage` → policy `POL-GT-2027-0042`, `covered: true` for `collision`, deductible 500.
 - `reportAccident` → `claimId: CLM-…`, `status: assessed`, `severity: minor`, damaged parts, cost 650–1100.

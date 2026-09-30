@@ -37,9 +37,9 @@ class FakeEscudoApi(
   val deviceTokens = mutableListOf<String>()
 
   val policy = Policy(
-    policyId = "pol_demo_001",
-    holder = Holder(name = "Ana Lucía Morales", customerId = "cus_demo_001"),
-    vehicle = Vehicle(make = "Toyota", model = "Corolla", year = 2022, plate = "P-512HGK"),
+    policyId = "POL-GT-2027-0042",
+    holder = Holder(name = "Andrea Morales", customerId = "cus_demo"),
+    vehicle = Vehicle(make = "Toyota", model = "Corolla", year = 2022, plate = "P-512KLM"),
     coverages = listOf("own_damage", "third_party", "towing", "rental_car"),
     deductibleUsd = 500.0,
     rentalDays = 7,

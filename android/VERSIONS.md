@@ -35,6 +35,13 @@ official release notes on the date above.
 | Emulator for UI smoke tests | `Pixel_9_API_36` (API 36.0) |
 | Gemini + third-party AppFunctions | Private preview / Early Access Program only (per developer.android.com/ai/appfunctions); not available to this app |
 
+## Design assets
+
+| Asset | Version / source |
+| --- | --- |
+| Onest | Variable TTF from google/fonts `ofl/onest` (SIL OFL 1.1), bundled as `res/font/onest.ttf` |
+| Direction | «A · Sereno» tokens (`design/a-sereno/tokens.json`), logo mark redrawn as vectors (`design/a-sereno/mark.svg`) |
+
 ## Audio for the Escudo Assistant
 
 `AudioRecord` (`VOICE_COMMUNICATION`, PCM16 mono 16 kHz, 40 ms chunks, AEC + NS when available)
