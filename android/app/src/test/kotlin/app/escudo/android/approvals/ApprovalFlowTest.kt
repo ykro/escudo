@@ -16,7 +16,7 @@ import org.junit.Test
 class ApprovalFlowTest {
   private val api = FakeEscudoApi(latencyMs = 0)
   private val events = TimelineEvents(api, TestScope(UnconfinedTestDispatcher()))
-  private val repository = EscudoRepository(api, events)
+  private val repository = EscudoRepository(api)
 
   private val approval = Approval(
     approvalId = "apr_sign",

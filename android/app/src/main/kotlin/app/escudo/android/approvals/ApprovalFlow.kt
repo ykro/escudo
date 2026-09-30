@@ -44,6 +44,7 @@ class ApprovalFlow(
       is VerificationResult.Unavailable -> return ApprovalOutcome.Failed(verification.message)
       VerificationResult.Verified -> Unit
     }
+    // The backend records approval_granted; this adds the phone-only fact that a person proved presence.
     events.post(
       Surface.ANDROID, TimelineEvents.Kind.MESSAGE, "Identidad verificada con biometría en el teléfono",
       tool = approval.tool, approvalId = approval.approvalId,

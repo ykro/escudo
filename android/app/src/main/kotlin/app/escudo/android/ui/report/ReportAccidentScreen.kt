@@ -36,7 +36,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.escudo.android.AppContainer
 import app.escudo.android.R
-import app.escudo.android.data.events.Surface
 import app.escudo.android.data.model.Location
 import app.escudo.android.ui.components.userMessage
 import app.escudo.android.ui.theme.Spacing
@@ -65,7 +64,6 @@ class ReportAccidentViewModel(private val container: AppContainer) : ViewModel()
           description = description,
           photos = uploads,
           location = locationLabel.trim().takeIf { it.isNotEmpty() }?.let { Location(label = it) },
-          surface = Surface.ANDROID,
         )
       }.fold({ ReportState.Done(it.claim.claimId) }, { ReportState.Failed(it.userMessage()) })
     }
@@ -89,7 +87,6 @@ fun ReportAccidentScreen(container: AppContainer, onSeeClaim: () -> Unit) {
     Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Spacing.m),
     verticalArrangement = Arrangement.spacedBy(Spacing.m),
   ) {
-    Text(stringResource(R.string.report_title), style = MaterialTheme.typography.headlineMedium)
     OutlinedTextField(
       value = description,
       onValueChange = { description = it },
@@ -118,7 +115,7 @@ fun ReportAccidentScreen(container: AppContainer, onSeeClaim: () -> Unit) {
 
     Button(
       onClick = { vm.submit(description, location, photos) },
-      enabled = description.isNotBlank() && !sending,
+      enabled = description.isNotBlank() && !sending && state !is ReportState.Done,
       modifier = Modifier.fillMaxWidth(),
     ) {
       if (sending) {

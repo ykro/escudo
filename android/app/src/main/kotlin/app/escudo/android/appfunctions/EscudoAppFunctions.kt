@@ -10,6 +10,7 @@ import androidx.appfunctions.AppFunctionService
 import androidx.appfunctions.AppFunctionServiceEntryPoint
 import app.escudo.android.container
 import app.escudo.android.data.api.ApiException
+import app.escudo.android.data.api.asCaller
 import app.escudo.android.data.events.Surface
 import app.escudo.android.data.events.TimelineEvents
 import kotlinx.coroutines.CancellationException
@@ -68,7 +69,7 @@ abstract class BaseEscudoAppFunctionService : AppFunctionService() {
       }
     }
     val photos = container.photos.load(uris)
-    val report = repository.reportAccident(input.description, photos, input.location, input.occurredAt, Surface.APP_FUNCTIONS)
+    val report = repository.reportAccident(input.description, photos, input.location, input.occurredAt)
     AppFunctionMapping.reportAccident(report, photos.size)
   }
 
@@ -107,25 +108,22 @@ abstract class BaseEscudoAppFunctionService : AppFunctionService() {
     AppFunctionMapping.claimStatus(claim)
   }
 
-  /** Timeline event + uniform error translation for every agent call. */
-  private suspend fun <T> agentCall(tool: String, block: suspend () -> T): T {
-    if (tool != "open_claim") {
-      // reportAccident posts its own finer-grained events from the repository.
-      events.post(Surface.APP_FUNCTIONS, TimelineEvents.Kind.TOOL_CALL, "Agente llamó a $tool vía AppFunctions", tool = tool, autonomy = "automatic")
-    }
-    return try {
-      block()
-    } catch (e: CancellationException) {
-      throw e
-    } catch (e: InvalidAppFunctionInput) {
-      throw AppFunctionInvalidArgumentException(e.message ?: "invalid input")
-    } catch (e: AppFunctionInvalidArgumentException) {
-      throw e
-    } catch (e: AppFunctionElementNotFoundException) {
-      throw e
-    } catch (e: Exception) {
-      events.post(Surface.APP_FUNCTIONS, TimelineEvents.Kind.ERROR, "Error en $tool: ${e.message}", tool = tool)
-      throw AppFunctionAppUnknownException("Escudo could not complete $tool: ${e.message}")
-    }
+  /**
+   * Labels every API call as coming from an agent via AppFunctions (the backend records the
+   * capability call on the presenter timeline) and translates failures into AppFunction errors.
+   */
+  private suspend fun <T> agentCall(tool: String, block: suspend () -> T): T = try {
+    asCaller(Surface.APP_FUNCTIONS) { block() }
+  } catch (e: CancellationException) {
+    throw e
+  } catch (e: InvalidAppFunctionInput) {
+    throw AppFunctionInvalidArgumentException(e.message ?: "invalid input")
+  } catch (e: AppFunctionInvalidArgumentException) {
+    throw e
+  } catch (e: AppFunctionElementNotFoundException) {
+    throw e
+  } catch (e: Exception) {
+    events.post(Surface.APP_FUNCTIONS, TimelineEvents.Kind.ERROR, "Error en $tool vía AppFunctions: ${e.message}", tool = tool)
+    throw AppFunctionAppUnknownException("Escudo could not complete $tool: ${e.message}")
   }
 }

@@ -2,6 +2,8 @@ package app.escudo.android.data
 
 import app.escudo.android.data.api.ApiException
 import app.escudo.android.data.api.HttpEscudoApi
+import app.escudo.android.data.api.asCaller
+import app.escudo.android.data.events.Surface
 import app.escudo.android.data.auth.StaticTokenProvider
 import app.escudo.android.data.model.PhotoUpload
 import kotlinx.coroutines.Dispatchers
@@ -47,6 +49,22 @@ class HttpEscudoApiTest {
     assertEquals("Bearer id-token-1", request.headers["Authorization"])
     assertEquals("/policy", request.url.encodedPath)
     assertEquals(500.0, policy.deductibleUsd, 0.0)
+  }
+
+  @Test
+  fun `calls are labeled with the caller surface for the presenter timeline`() = runTest {
+    server.enqueue(json("""{"covered":true}"""))
+    server.enqueue(json("""{"covered":true}"""))
+
+    api.checkCoverage("collision")
+    asCaller(Surface.APP_FUNCTIONS) { api.checkCoverage("collision") }
+
+    val fromScreen = server.takeRequest()
+    assertEquals("android", fromScreen.headers["X-Escudo-Surface"])
+    assertEquals("customer", fromScreen.headers["X-Escudo-Actor"])
+    val fromAgent = server.takeRequest()
+    assertEquals("appfunctions", fromAgent.headers["X-Escudo-Surface"])
+    assertEquals("gemini", fromAgent.headers["X-Escudo-Actor"])
   }
 
   @Test

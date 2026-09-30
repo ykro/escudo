@@ -1,6 +1,7 @@
 package app.escudo.android.data.api
 
 import app.escudo.android.data.auth.AuthTokenProvider
+import app.escudo.android.data.events.Surface
 import app.escudo.android.data.model.Approval
 import app.escudo.android.data.model.ApproveRequest
 import app.escudo.android.data.model.Claim
@@ -14,6 +15,7 @@ import app.escudo.android.data.model.RegisterDeviceRequest
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import okhttp3.HttpUrl
@@ -95,7 +97,12 @@ class HttpEscudoApi(
 
   private suspend fun execute(builder: Request.Builder): String {
     val token = tokens.idToken()
-    val request = builder.header("Authorization", "Bearer $token").build()
+    val caller = currentCoroutineContext()[CallerSurface] ?: CallerSurface(Surface.ANDROID)
+    val request = builder
+      .header("Authorization", "Bearer $token")
+      .header("X-Escudo-Surface", caller.surface.wire)
+      .header("X-Escudo-Actor", caller.actor)
+      .build()
     return withContext(io) {
       client.newCall(request).execute().use { response ->
         val text = response.body.string()

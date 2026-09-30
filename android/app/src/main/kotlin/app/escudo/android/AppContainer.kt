@@ -30,7 +30,7 @@ class AppContainer(private val context: Context) {
 
   /** Present only in the live flavor with google-services.json. */
   val customerAuth: FirebaseCustomerAuth? =
-    if (!config.useFakeApi && BuildConfig.HAS_FIREBASE) {
+    if (!config.useFakeApi && BuildConfig.HAS_FIREBASE && !BuildConfig.MOCK_AUTH) {
       FirebaseCustomerAuth(FirebaseAuth.getInstance(), BuildConfig.CUSTOMER_EMAIL, BuildConfig.CUSTOMER_PASSWORD)
     } else {
       null
@@ -46,7 +46,7 @@ class AppContainer(private val context: Context) {
     }
 
   val events = TimelineEvents(api, appScope)
-  val repository = EscudoRepository(api, events)
+  val repository = EscudoRepository(api)
   val photos = PhotoLoader(context)
 
   val assistant = AssistantSessionFactory {

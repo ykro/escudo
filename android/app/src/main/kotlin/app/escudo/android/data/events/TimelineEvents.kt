@@ -65,8 +65,6 @@ class TimelineEvents(
   }
 
   object Kind {
-    const val TOOL_CALL = "tool_call"
-    const val TOOL_RESULT = "tool_result"
     const val MESSAGE = "message"
     const val ERROR = "error"
   }
