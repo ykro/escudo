@@ -40,7 +40,7 @@ class LiveAssistantSession(
   override fun connect() {
     scope.launch {
       val token = runCatching { tokens.idToken() }.getOrElse {
-        _events.emit(AssistantEvent.Error("Sin sesión: ${it.message}"))
+        _events.emit(AssistantEvent.Error(message = null, sessionProblem = true))
         return@launch
       }
       val request = Request.Builder().url(url).header("Authorization", "Bearer $token").build()
@@ -59,6 +59,10 @@ class LiveAssistantSession(
   override fun stopTalking() {
     socket?.send(AssistantProtocol.TRAILING_SILENCE.toByteString())
     socket?.send(AssistantProtocol.ACTIVITY_END)
+  }
+
+  override fun sendText(text: String) {
+    socket?.send(AssistantProtocol.text(text))
   }
 
   override fun close() {
@@ -85,7 +89,8 @@ class LiveAssistantSession(
     }
 
     override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-      _events.tryEmit(AssistantEvent.Error(t.message ?: "Conexión perdida"))
+      // Transport failure: no server message to show; the UI uses its own "no connection" text.
+      _events.tryEmit(AssistantEvent.Error(message = null))
       _events.tryEmit(AssistantEvent.Disconnected(t.message))
     }
   }

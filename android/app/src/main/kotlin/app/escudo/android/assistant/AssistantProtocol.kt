@@ -4,6 +4,8 @@ import android.util.Base64
 import app.escudo.android.data.api.EscudoJson
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -18,7 +20,8 @@ sealed interface AssistantEvent {
   data class ApprovalRequested(val approvalId: String, val reason: String?) : AssistantEvent
   data object Interrupted : AssistantEvent
   data object TurnComplete : AssistantEvent
-  data class Error(val message: String) : AssistantEvent
+  /** [message] comes from the server and is already Spanish; null means a transport failure. */
+  data class Error(val message: String?, val sessionProblem: Boolean = false) : AssistantEvent
 
   enum class Role { USER, ASSISTANT }
 }
@@ -45,6 +48,11 @@ object AssistantProtocol {
   val ACTIVITY_END = """{"type":"activity_end"}"""
   val END = """{"type":"end"}"""
 
+  fun text(message: String): String = buildJsonObject {
+    put("type", "text")
+    put("text", message)
+  }.toString()
+
   /**
    * Silence sent when the button is released. With automatic activity detection the model only
    * answers after it hears the end of speech, and a stream that just stops has no end.
@@ -66,7 +74,10 @@ object AssistantProtocol {
       }
       "interrupted" -> AssistantEvent.Interrupted
       "turn_complete" -> AssistantEvent.TurnComplete
-      "error" -> AssistantEvent.Error(json.string("message") ?: json.string("code") ?: "error")
+      "error" -> AssistantEvent.Error(
+        message = json.string("message"),
+        sessionProblem = json.string("code") in setOf("unauthenticated", "invalid_token"),
+      )
       "audio" -> json.string("data")?.let { AssistantEvent.Audio(base64Decoder(it)) }
       else -> null // tool_result and future types: nothing to show
     }

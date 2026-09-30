@@ -32,18 +32,26 @@ class FakeAssistantSession : AssistantSession {
     val seconds = bytesHeard / (AssistantProtocol.INPUT_SAMPLE_RATE * 2.0)
     scope.launch {
       _events.emit(AssistantEvent.Transcript(AssistantEvent.Role.USER, "(%.1f s de audio)".format(seconds), final = true))
-      delay(400)
-      _events.emit(AssistantEvent.ToolActivity("get_policy", "Póliza consultada"))
-      delay(400)
-      _events.emit(
-        AssistantEvent.Transcript(
-          AssistantEvent.Role.ASSISTANT,
-          "Modo de prueba: tu póliza cubre daños propios y grúa. Cuando el servidor esté conectado te responderé con voz.",
-          final = true,
-        ),
-      )
-      _events.emit(AssistantEvent.TurnComplete)
+      answer()
     }
+  }
+
+  override fun sendText(text: String) {
+    scope.launch { answer() }
+  }
+
+  private suspend fun answer() {
+    delay(400)
+    _events.emit(AssistantEvent.ToolActivity("get_policy", "Póliza consultada"))
+    delay(400)
+    _events.emit(
+      AssistantEvent.Transcript(
+        AssistantEvent.Role.ASSISTANT,
+        "Modo de prueba: tu póliza cubre daños propios y grúa. Cuando el servidor esté conectado te responderé con voz.",
+        final = true,
+      ),
+    )
+    _events.emit(AssistantEvent.TurnComplete)
   }
 
   override fun close() = scope.cancel()

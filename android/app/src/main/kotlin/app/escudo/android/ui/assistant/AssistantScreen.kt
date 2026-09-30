@@ -5,6 +5,9 @@ import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -12,27 +15,43 @@ import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -54,6 +73,11 @@ import app.escudo.android.assistant.AssistantSession
 import app.escudo.android.assistant.AssistantSessionFactory
 import app.escudo.android.assistant.MicrophoneStreamer
 import app.escudo.android.assistant.SpeakerPlayer
+import app.escudo.android.ui.components.LoadingView
+import app.escudo.android.ui.components.MessageView
+import app.escudo.android.ui.components.PauseBand
+import app.escudo.android.ui.components.PrimaryButton
+import app.escudo.android.ui.components.QuietButton
 import app.escudo.android.ui.theme.Spacing
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -63,16 +87,33 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-data class ChatLine(val role: AssistantEvent.Role?, val text: String)
+/** A conversation line. [role] null = an activity note ("Pidiendo la grúa"). */
+data class ChatLine(val role: AssistantEvent.Role?, val text: String, val partial: Boolean = false, val tool: String? = null)
 
 data class AssistantUiState(
   val connection: Connection = Connection.CONNECTING,
   val talking: Boolean = false,
+  /** Microphone level 0..1 while talking, drives the ring around the button. */
+  val micLevel: Float = 0f,
   val lines: List<ChatLine> = emptyList(),
   val pendingApprovalId: String? = null,
-  val error: String? = null,
+  /** Server-provided (Spanish) error, if any. */
+  val errorText: String? = null,
+  @StringRes val errorRes: Int? = null,
 ) {
   enum class Connection { CONNECTING, CONNECTED, DISCONNECTED }
+}
+
+/** Streaming transcripts: deltas extend the open line; `final` replaces it (tools.md → Voice WebSocket). */
+fun List<ChatLine>.withTranscript(t: AssistantEvent.Transcript): List<ChatLine> {
+  val last = lastOrNull()
+  val open = last != null && last.role == t.role && last.partial
+  return when {
+    !t.final && open -> dropLast(1) + last!!.copy(text = last.text + t.text)
+    !t.final -> this + ChatLine(t.role, t.text, partial = true)
+    open -> dropLast(1) + ChatLine(t.role, t.text)
+    else -> this + ChatLine(t.role, t.text)
+  }
 }
 
 class AssistantViewModel(private val factory: AssistantSessionFactory) : ViewModel() {
@@ -97,7 +138,7 @@ class AssistantViewModel(private val factory: AssistantSessionFactory) : ViewMod
   fun connect() {
     sessionEvents?.cancel()
     session?.close()
-    _state.update { it.copy(connection = AssistantUiState.Connection.CONNECTING, error = null) }
+    _state.update { it.copy(connection = AssistantUiState.Connection.CONNECTING, errorText = null, errorRes = null) }
     val s = factory.create().also { session = it }
     sessionEvents = viewModelScope.launch { s.events.collect(::onEvent) }
     s.connect()
@@ -109,7 +150,7 @@ class AssistantViewModel(private val factory: AssistantSessionFactory) : ViewMod
     if (_state.value.connection != AssistantUiState.Connection.CONNECTED) return
     speaker?.interrupt() // barge-in: the customer talks over the assistant
     s.startTalking()
-    mic.start { s.sendAudio(it) }
+    mic.start(onLevel = { level -> _state.update { it.copy(micLevel = level) } }) { s.sendAudio(it) }
     _state.update { it.copy(talking = true) }
   }
 
@@ -117,7 +158,16 @@ class AssistantViewModel(private val factory: AssistantSessionFactory) : ViewMod
     if (!_state.value.talking) return
     mic.stop()
     session?.stopTalking()
-    _state.update { it.copy(talking = false) }
+    _state.update { it.copy(talking = false, micLevel = 0f) }
+  }
+
+  fun sendText(text: String) {
+    val message = text.trim()
+    if (message.isEmpty() || _state.value.connection != AssistantUiState.Connection.CONNECTED) return
+    speaker?.interrupt()
+    // Typed text has no audio transcription, so the phone shows it itself.
+    _state.update { it.copy(lines = it.lines + ChatLine(AssistantEvent.Role.USER, message)) }
+    session?.sendText(message)
   }
 
   fun approvalSeen() = _state.update { it.copy(pendingApprovalId = null) }
@@ -126,33 +176,32 @@ class AssistantViewModel(private val factory: AssistantSessionFactory) : ViewMod
     when (event) {
       AssistantEvent.Connected -> {
         if (speaker == null) speaker = SpeakerPlayer()
-        _state.update { it.copy(connection = AssistantUiState.Connection.CONNECTED, error = null) }
+        _state.update { it.copy(connection = AssistantUiState.Connection.CONNECTED, errorText = null, errorRes = null) }
       }
       is AssistantEvent.Disconnected -> {
         mic.stop()
         _state.update { it.copy(connection = AssistantUiState.Connection.DISCONNECTED, talking = false) }
       }
       is AssistantEvent.Audio -> playback.trySend(event.pcm24k)
-      is AssistantEvent.Transcript -> _state.update { it.copy(lines = it.lines.appendTranscript(event)) }
-      is AssistantEvent.ToolActivity -> _state.update {
-        it.copy(lines = it.lines + ChatLine(null, event.summary ?: event.tool))
+      is AssistantEvent.Transcript -> _state.update {
+        // Some servers echo typed text as a user transcript; it is already on screen.
+        val echo = event.role == AssistantEvent.Role.USER && event.final && it.lines.lastOrNull { l -> l.role == AssistantEvent.Role.USER }?.text == event.text
+        if (echo) it else it.copy(lines = it.lines.withTranscript(event))
       }
+      is AssistantEvent.ToolActivity -> _state.update { it.copy(lines = it.lines + ChatLine(null, event.summary ?: "", tool = event.tool)) }
       is AssistantEvent.ApprovalRequested -> _state.update { it.copy(pendingApprovalId = event.approvalId) }
       AssistantEvent.Interrupted -> speaker?.interrupt()
-      AssistantEvent.TurnComplete -> Unit
-      is AssistantEvent.Error -> _state.update { it.copy(error = event.message) }
-    }
-  }
-
-  /** Streaming transcripts arrive in pieces: extend the last line of the same speaker. */
-  private fun List<ChatLine>.appendTranscript(t: AssistantEvent.Transcript): List<ChatLine> {
-    val last = lastOrNull()
-    return if (last != null && last.role == t.role && !t.final) {
-      dropLast(1) + last.copy(text = last.text + t.text)
-    } else if (last != null && last.role == t.role && t.final && t.text.startsWith(last.text)) {
-      dropLast(1) + ChatLine(t.role, t.text)
-    } else {
-      this + ChatLine(t.role, t.text)
+      AssistantEvent.TurnComplete -> _state.update { s -> s.copy(lines = s.lines.map { if (it.partial) it.copy(partial = false) else it }) }
+      is AssistantEvent.Error -> _state.update {
+        it.copy(
+          errorText = event.message,
+          errorRes = when {
+            event.message != null -> null
+            event.sessionProblem -> R.string.error_session
+            else -> R.string.error_network
+          },
+        )
+      }
     }
   }
 
@@ -164,8 +213,12 @@ class AssistantViewModel(private val factory: AssistantSessionFactory) : ViewMod
   }
 }
 
+/**
+ * @param pendingApprovals server-side count of pending approvals: the pause band shows only while
+ * something is actually waiting, even if it was approved from the notification.
+ */
 @Composable
-fun AssistantScreen(factory: AssistantSessionFactory, onOpenApprovals: (String) -> Unit) {
+fun AssistantScreen(factory: AssistantSessionFactory, pendingApprovals: Int, onOpenApprovals: (String?) -> Unit) {
   val vm = viewModel { AssistantViewModel(factory) }
   val state by vm.state.collectAsStateWithLifecycle()
   val context = LocalContext.current
@@ -174,114 +227,209 @@ fun AssistantScreen(factory: AssistantSessionFactory, onOpenApprovals: (String) 
   val listState = rememberLazyListState()
 
   LaunchedEffect(Unit) { if (!hasMic()) micPermission.launch(Manifest.permission.RECORD_AUDIO) }
-  LaunchedEffect(state.lines.size) { if (state.lines.isNotEmpty()) listState.animateScrollToItem(state.lines.lastIndex) }
+  LaunchedEffect(pendingApprovals) { if (pendingApprovals == 0) vm.approvalSeen() }
+  LaunchedEffect(state.lines.size, state.lines.lastOrNull()?.text) {
+    if (state.lines.isNotEmpty()) listState.animateScrollToItem(state.lines.lastIndex)
+  }
   DisposableEffect(Unit) { onDispose { vm.stopTalking() } }
 
-  Column(Modifier.fillMaxSize().padding(Spacing.m), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
-    Text(stringResource(R.string.assistant_title), style = MaterialTheme.typography.headlineMedium)
+  val errorMessage = state.errorText ?: state.errorRes?.let { stringResource(it) }
+  var typing by rememberSaveable { mutableStateOf(false) }
+  var draft by rememberSaveable { mutableStateOf("") }
 
-    state.pendingApprovalId?.let { id ->
-      Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer), modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(Spacing.m)) {
-          Text(stringResource(R.string.assistant_approval_needed), style = MaterialTheme.typography.titleMedium)
-          TextButton(onClick = { vm.approvalSeen(); onOpenApprovals(id) }) { Text(stringResource(R.string.assistant_review)) }
+  // imePadding: the typed-message field stays above the keyboard.
+  Column(Modifier.fillMaxSize().imePadding()) {
+    Box(Modifier.weight(1f).fillMaxWidth()) {
+      when {
+        state.connection == AssistantUiState.Connection.DISCONNECTED -> MessageView(
+          icon = R.drawable.ic_cloud_off,
+          title = stringResource(R.string.assistant_unavailable_title),
+          body = errorMessage ?: stringResource(R.string.assistant_unavailable_body),
+          iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
+          action = { PrimaryButton(stringResource(R.string.assistant_reconnect), onClick = vm::connect) },
+        )
+        state.lines.isEmpty() && state.connection == AssistantUiState.Connection.CONNECTING ->
+          LoadingView(stringResource(R.string.assistant_connecting))
+        state.lines.isEmpty() -> MessageView(
+          icon = R.drawable.ic_tab_assistant,
+          title = stringResource(R.string.assistant_empty_title),
+          body = stringResource(R.string.assistant_empty_body),
+        )
+        else -> LazyColumn(
+          Modifier.fillMaxSize(),
+          state = listState,
+          contentPadding = PaddingValues(horizontal = Spacing.m, vertical = Spacing.s),
+          verticalArrangement = Arrangement.spacedBy(Spacing.s),
+        ) {
+          itemsIndexed(state.lines) { _, line -> ChatBubble(line) }
         }
       }
     }
 
-    LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = listState, verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-      if (state.lines.isEmpty()) {
-        item {
-          Text(
-            stringResource(R.string.assistant_empty),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(vertical = Spacing.l),
+    if (state.connection != AssistantUiState.Connection.DISCONNECTED) {
+      Column(
+        Modifier.fillMaxWidth().padding(horizontal = Spacing.m).padding(bottom = Spacing.m),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+      ) {
+        if (pendingApprovals > 0) {
+          PauseBand(
+            text = stringResource(R.string.assistant_approval_needed),
+            action = { QuietButton(stringResource(R.string.pause_review), onClick = { onOpenApprovals(state.pendingApprovalId) }) },
           )
         }
-      }
-      items(state.lines) { line -> ChatBubble(line) }
-    }
-
-    state.error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
-
-    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-      when (state.connection) {
-        AssistantUiState.Connection.DISCONNECTED -> {
-          Text(stringResource(R.string.assistant_disconnected), style = MaterialTheme.typography.bodyMedium)
-          Button(onClick = vm::connect) { Text(stringResource(R.string.assistant_reconnect)) }
+        errorMessage?.let {
+          Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
         }
-        else -> {
-          val connected = state.connection == AssistantUiState.Connection.CONNECTED
-          PushToTalkButton(
+        val connected = state.connection == AssistantUiState.Connection.CONNECTED
+        if (typing) {
+          MessageField(
+            value = draft,
+            onValueChange = { draft = it },
             enabled = connected,
-            talking = state.talking,
-            onPress = { if (hasMic()) vm.startTalking() else micPermission.launch(Manifest.permission.RECORD_AUDIO) },
-            onRelease = vm::stopTalking,
+            onSend = { vm.sendText(draft); draft = "" },
+            onClose = { typing = false },
           )
-          Text(
-            stringResource(
-              when {
-                !connected -> R.string.assistant_connecting
-                state.talking -> R.string.assistant_listening
-                else -> R.string.assistant_hint
-              },
-            ),
-            style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center,
-          )
+        } else {
+          Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            PushToTalkButton(
+              enabled = connected,
+              talking = state.talking,
+              level = state.micLevel,
+              onPress = { if (hasMic()) vm.startTalking() else micPermission.launch(Manifest.permission.RECORD_AUDIO) },
+              onRelease = vm::stopTalking,
+            )
+            IconButton(
+              onClick = { typing = true },
+              enabled = connected,
+              modifier = Modifier.align(Alignment.CenterStart).padding(start = Spacing.l),
+            ) {
+              Icon(painterResource(R.drawable.ic_keyboard), contentDescription = stringResource(R.string.assistant_type), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+          }
         }
+        if (!typing) Text(
+          stringResource(
+            when {
+              !connected -> R.string.assistant_connecting
+              state.talking -> R.string.assistant_listening
+              else -> R.string.assistant_hint
+            },
+          ),
+          style = MaterialTheme.typography.bodyMedium,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
       }
     }
   }
 }
 
 @Composable
-private fun PushToTalkButton(enabled: Boolean, talking: Boolean, onPress: () -> Unit, onRelease: () -> Unit) {
+private fun MessageField(value: String, onValueChange: (String) -> Unit, enabled: Boolean, onSend: () -> Unit, onClose: () -> Unit) {
+  Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+    IconButton(onClick = onClose) {
+      Icon(painterResource(R.drawable.ic_mic), contentDescription = stringResource(R.string.assistant_back_to_voice), tint = MaterialTheme.colorScheme.primary)
+    }
+    OutlinedTextField(
+      value = value,
+      onValueChange = onValueChange,
+      placeholder = { Text(stringResource(R.string.assistant_type_placeholder)) },
+      enabled = enabled,
+      singleLine = true,
+      shape = MaterialTheme.shapes.extraLarge,
+      keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Send),
+      keyboardActions = KeyboardActions(onSend = { if (value.isNotBlank()) onSend() }),
+      modifier = Modifier.weight(1f),
+    )
+    FilledIconButton(onClick = onSend, enabled = enabled && value.isNotBlank(), modifier = Modifier.size(52.dp)) {
+      Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(R.string.assistant_send))
+    }
+  }
+}
+
+@Composable
+private fun PushToTalkButton(enabled: Boolean, talking: Boolean, level: Float, onPress: () -> Unit, onRelease: () -> Unit) {
   val colors = MaterialTheme.colorScheme
   val label = stringResource(R.string.assistant_talk)
-  Box(
-    Modifier
-      .size(if (talking) 104.dp else 96.dp)
-      .background(
-        when {
-          !enabled -> colors.surfaceContainerHighest
-          talking -> colors.tertiary
-          else -> colors.primary
+  // The ring follows the voice: the customer sees the phone is hearing them.
+  val ring by animateFloatAsState(if (talking) 1.08f + (level * 4f).coerceAtMost(0.42f) else 1f, tween(90), label = "ring")
+  Box(Modifier.size(132.dp), contentAlignment = Alignment.Center) {
+    if (talking) {
+      Box(Modifier.size(88.dp).scale(ring).background(colors.primary.copy(alpha = 0.22f), CircleShape))
+    }
+    Box(
+      Modifier
+        .size(88.dp)
+        .background(if (enabled) colors.primary else colors.surfaceContainerHighest, CircleShape)
+        .semantics { role = Role.Button; contentDescription = label }
+        .pointerInput(enabled) {
+          if (!enabled) return@pointerInput
+          awaitEachGesture {
+            awaitFirstDown()
+            onPress()
+            waitForUpOrCancellation()
+            onRelease()
+          }
         },
-        CircleShape,
+      contentAlignment = Alignment.Center,
+    ) {
+      Icon(
+        painterResource(R.drawable.ic_mic),
+        contentDescription = null,
+        tint = if (enabled) colors.onPrimary else colors.onSurfaceVariant,
+        modifier = Modifier.size(36.dp),
       )
-      .semantics { role = Role.Button; contentDescription = label }
-      .pointerInput(enabled) {
-        if (!enabled) return@pointerInput
-        awaitEachGesture {
-          awaitFirstDown()
-          onPress()
-          waitForUpOrCancellation()
-          onRelease()
-        }
-      },
-    contentAlignment = Alignment.Center,
-  ) {
-    Icon(painterResource(R.drawable.ic_mic), contentDescription = null, tint = colors.onPrimary, modifier = Modifier.size(40.dp))
+    }
   }
 }
 
 @Composable
 private fun ChatBubble(line: ChatLine) {
   val colors = MaterialTheme.colorScheme
-  val (container, align) = when (line.role) {
-    AssistantEvent.Role.USER -> colors.primaryContainer to Alignment.End
-    AssistantEvent.Role.ASSISTANT -> colors.surfaceContainerHigh to Alignment.Start
-    null -> colors.surface to Alignment.CenterHorizontally
-  }
-  Column(Modifier.fillMaxWidth(), horizontalAlignment = align) {
-    if (line.role == null) {
-      Text(line.text, style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
-    } else {
-      Card(colors = CardDefaults.cardColors(containerColor = container)) {
-        Text(line.text, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(Spacing.m))
+  when (line.role) {
+    null -> Row(
+      Modifier.fillMaxWidth().padding(vertical = Spacing.xs),
+      horizontalArrangement = Arrangement.Center,
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      Box(Modifier.size(6.dp).background(colors.primary, CircleShape))
+      Text(
+        line.tool?.let { toolActivity(it) } ?: line.text,
+        style = MaterialTheme.typography.labelMedium,
+        color = colors.onSurfaceVariant,
+        modifier = Modifier.padding(start = Spacing.s),
+      )
+    }
+    else -> {
+      val user = line.role == AssistantEvent.Role.USER
+      Box(Modifier.fillMaxWidth(), contentAlignment = if (user) Alignment.CenterEnd else Alignment.CenterStart) {
+        Surface(
+          color = if (user) colors.primary else colors.surface,
+          contentColor = if (user) colors.onPrimary else colors.onSurface,
+          shape = RoundedCornerShape(20.dp, 20.dp, if (user) 4.dp else 20.dp, if (user) 20.dp else 4.dp),
+          border = if (user) null else androidx.compose.foundation.BorderStroke(1.dp, colors.outlineVariant),
+          modifier = Modifier.widthIn(max = 300.dp).alpha(if (line.partial) 0.8f else 1f),
+        ) {
+          Text(line.text, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(horizontal = Spacing.m, vertical = Spacing.sm))
+        }
       }
     }
   }
+}
+
+/** What the assistant is doing, in the customer's words. */
+@Composable
+private fun toolActivity(tool: String): String = when (tool) {
+  "get_policy" -> stringResource(R.string.activity_get_policy)
+  "check_coverage" -> stringResource(R.string.activity_check_coverage)
+  "open_claim" -> stringResource(R.string.activity_open_claim)
+  "attach_claim_photos" -> stringResource(R.string.activity_attach_claim_photos)
+  "request_tow" -> stringResource(R.string.activity_request_tow)
+  "list_repair_options" -> stringResource(R.string.activity_list_repair_options)
+  "request_rental_car" -> stringResource(R.string.activity_request_rental_car)
+  "accept_deductible" -> stringResource(R.string.activity_accept_deductible)
+  "select_repair_shop" -> stringResource(R.string.activity_select_repair_shop)
+  "sign_claim" -> stringResource(R.string.activity_sign_claim)
+  "get_claim_status" -> stringResource(R.string.activity_get_claim_status)
+  else -> tool
 }

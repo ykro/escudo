@@ -9,6 +9,9 @@ interface AssistantSession {
   fun startTalking()
   fun sendAudio(pcm16k: ByteArray)
   fun stopTalking()
+
+  /** Typed message, for noisy places or when the microphone is unavailable. */
+  fun sendText(text: String)
   fun close()
 }
 

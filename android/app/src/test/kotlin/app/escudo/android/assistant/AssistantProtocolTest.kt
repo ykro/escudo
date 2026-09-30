@@ -39,7 +39,7 @@ class AssistantProtocolTest {
     assertNull(parse("""{"type":"tool_result","name":"request_tow"}"""))
     assertEquals(AssistantEvent.Interrupted, parse("""{"type":"interrupted"}"""))
     assertEquals(AssistantEvent.TurnComplete, parse("""{"type":"turn_complete"}"""))
-    assertEquals(AssistantEvent.Error("Inicia sesión"), parse("""{"type":"error","code":"unauthenticated","message":"Inicia sesión"}"""))
+    assertEquals(AssistantEvent.Error("Inicia sesión", sessionProblem = true), parse("""{"type":"error","code":"unauthenticated","message":"Inicia sesión"}"""))
   }
 
   @Test
