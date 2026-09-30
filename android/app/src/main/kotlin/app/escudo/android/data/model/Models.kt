@@ -64,12 +64,15 @@ data class DamageAssessment(
   val severity: String? = null,
   @SerialName("cost_range_usd") val costRangeUsd: List<Double> = emptyList(),
   val drivable: Boolean? = null,
+  /** One-line Spanish summary from the assessor (additive field, contracts/CHANGELOG.md). */
+  val summary: String? = null,
 )
 
 @Serializable
 data class TowDispatch(
   val provider: String? = null,
   @SerialName("eta_minutes") val etaMinutes: Int? = null,
+  val phone: String? = null,
 )
 
 @Serializable
@@ -78,6 +81,7 @@ data class RepairBooking(
   @SerialName("shop_name") val shopName: String? = null,
   val slot: String? = null,
   @SerialName("quote_usd") val quoteUsd: Double? = null,
+  val address: String? = null,
 )
 
 @Serializable
@@ -101,6 +105,8 @@ data class Claim(
   val rental: RentalReservation? = null,
   @SerialName("deductible_accepted") val deductibleAccepted: Boolean? = null,
   @SerialName("signed_at") val signedAt: String? = null,
+  /** Spanish status label computed by the backend (additive field). */
+  @SerialName("status_label") val statusLabel: String? = null,
 )
 
 /** Claim statuses from the contract, in scenario order. */
@@ -122,6 +128,7 @@ data class Approval(
   @SerialName("amount_usd") val amountUsd: Double? = null,
   val status: String = "pending",
   @SerialName("created_at") val createdAt: String? = null,
+  @SerialName("claim_id") val claimId: String? = null,
 )
 
 @Serializable

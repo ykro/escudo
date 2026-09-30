@@ -1,5 +1,6 @@
 package app.escudo.android.approvals
 
+import android.util.Log
 import app.escudo.android.data.EscudoRepository
 import app.escudo.android.data.api.ApiException
 import app.escudo.android.data.events.Surface
@@ -22,7 +23,8 @@ sealed interface ApprovalOutcome {
   data object Rejected : ApprovalOutcome
   data object Cancelled : ApprovalOutcome
   data object AlreadyResolved : ApprovalOutcome
-  data class Failed(val message: String) : ApprovalOutcome
+  /** [message] is already user-facing (e.g. "set up a fingerprint"); null means a generic failure. */
+  data class Failed(val message: String?) : ApprovalOutcome
 }
 
 /**
@@ -55,10 +57,11 @@ class ApprovalFlow(
     } catch (e: ApiException) {
       when (e.code) {
         404, 409 -> ApprovalOutcome.AlreadyResolved
-        else -> ApprovalOutcome.Failed(e.message ?: "HTTP ${e.code}")
+        else -> ApprovalOutcome.Failed(null).also { Log.w(TAG, "approve failed", e) }
       }
     } catch (e: Exception) {
-      ApprovalOutcome.Failed(e.message ?: e.javaClass.simpleName)
+      Log.w(TAG, "approve failed", e)
+      ApprovalOutcome.Failed(null)
     }
   }
 
@@ -67,8 +70,13 @@ class ApprovalFlow(
     repository.reject(approval.approvalId)
     ApprovalOutcome.Rejected
   } catch (e: ApiException) {
-    if (e.code == 404 || e.code == 409) ApprovalOutcome.AlreadyResolved else ApprovalOutcome.Failed(e.message ?: "HTTP ${e.code}")
+    if (e.code == 404 || e.code == 409) ApprovalOutcome.AlreadyResolved else ApprovalOutcome.Failed(null)
   } catch (e: Exception) {
-    ApprovalOutcome.Failed(e.message ?: e.javaClass.simpleName)
+    Log.w(TAG, "reject failed", e)
+    ApprovalOutcome.Failed(null)
+  }
+
+  private companion object {
+    const val TAG = "ApprovalFlow"
   }
 }

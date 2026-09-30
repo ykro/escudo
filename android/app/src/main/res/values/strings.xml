@@ -11,20 +11,33 @@
     <string name="nav_claim">Reclamo</string>
     <string name="nav_approvals">Aprobaciones</string>
     <string name="nav_assistant">Asistente</string>
+    <string name="title_claim">Tu reclamo</string>
+    <string name="title_approvals">Aprobación</string>
+    <string name="title_assistant">Asistente Escudo</string>
+    <string name="back">Regresar</string>
 
     <!-- Shared states -->
     <string name="state_loading">Cargando…</string>
-    <string name="state_error_title">No pudimos conectar con Escudo</string>
+    <string name="state_error_title">No pudimos cargar esto</string>
     <string name="state_retry">Reintentar</string>
-    <string name="back">Regresar</string>
+    <string name="loading_policy">Cargando tu póliza…</string>
+    <string name="loading_claim">Buscando tu reclamo…</string>
+    <string name="loading_approvals">Buscando solicitudes…</string>
+    <string name="error_network">Sin conexión. Revisa tu internet e intenta de nuevo.</string>
+    <string name="error_session">Tu sesión en Escudo expiró. Cierra la app y vuelve a abrirla.</string>
+    <string name="error_server">Escudo no responde en este momento. Intenta de nuevo en unos segundos.</string>
+    <string name="error_not_found">No encontramos esa información.</string>
+    <string name="error_generic">Algo salió mal. Intenta de nuevo.</string>
+    <string name="amount_usd">%1$s USD</string>
+
+    <!-- Approval pause: the only amber in the app -->
+    <string name="pause_waiting">Esperando tu aprobación</string>
+    <string name="pause_review">Revisar</string>
 
     <!-- Policy -->
-    <string name="policy_title">Tu póliza</string>
-    <string name="policy_number">Póliza %1$s</string>
-    <string name="policy_active">Activa</string>
-    <string name="policy_suspended">Suspendida</string>
-    <string name="policy_vehicle">Vehículo</string>
-    <string name="policy_plate">Placa %1$s</string>
+    <string name="policy_active">Póliza activa</string>
+    <string name="policy_suspended">Póliza suspendida</string>
+    <string name="policy_plate_number">Placa %1$s · Póliza %2$s</string>
     <string name="policy_coverages">Coberturas</string>
     <string name="policy_deductible">Deducible</string>
     <string name="policy_rental_days">Auto de reemplazo</string>
@@ -37,76 +50,92 @@
     <string name="coverage_theft">Robo</string>
 
     <!-- Claim -->
-    <string name="claim_title">Estado del reclamo</string>
     <string name="claim_empty_title">No tienes reclamos abiertos</string>
-    <string name="claim_empty_body">Si tuviste un accidente, repórtalo y te acompañamos en cada paso.</string>
+    <string name="claim_empty_body">Si tuviste un accidente, repórtalo con tus fotos y te acompañamos en cada paso.</string>
     <string name="claim_number">Reclamo %1$s</string>
+    <string name="claim_progress">Avance</string>
     <string name="claim_step_open">Reporte recibido</string>
     <string name="claim_step_assessed">Daños evaluados</string>
-    <string name="claim_step_tow">Grúa solicitada</string>
+    <string name="claim_step_tow">Grúa en camino</string>
     <string name="claim_step_repair">Taller reservado</string>
     <string name="claim_step_rental">Auto de reemplazo</string>
     <string name="claim_step_deductible">Deducible aceptado</string>
     <string name="claim_step_signed">Reclamo firmado y enviado</string>
     <string name="claim_step_pending">Pendiente</string>
-    <string name="claim_assessment_detail">Severidad: %1$s · %2$s</string>
-    <string name="claim_cost_range">USD %1$s – %2$s</string>
+    <string name="claim_severity">Daño %1$s</string>
+    <string name="claim_cost_range">%1$s – %2$s USD</string>
     <string name="claim_tow_detail">%1$s · llega en %2$d min</string>
-    <string name="claim_repair_detail">%1$s · %2$s</string>
     <string name="claim_rental_detail">%1$d días</string>
     <string name="severity_minor">leve</string>
-    <string name="severity_moderate">moderada</string>
+    <string name="severity_moderate">moderado</string>
     <string name="severity_severe">grave</string>
 
     <!-- Approvals -->
-    <string name="approvals_title">Aprobaciones pendientes</string>
     <string name="approvals_empty_title">Nada por aprobar</string>
-    <string name="approvals_empty_body">Cuando el asistente necesite tu permiso para algo importante, aparecerá aquí.</string>
-    <string name="approvals_explainer">El asistente se detuvo y espera tu decisión. Solo tú puedes aprobar, con tu huella.</string>
-    <string name="approval_amount">Monto: USD %1$s</string>
+    <string name="approvals_empty_body">Cuando tu asistente necesite tu permiso para algo importante, te avisamos aquí.</string>
+    <string name="approvals_explainer">Tu asistente se detuvo y necesita tu confirmación para continuar.</string>
+    <string name="approval_requested_at">Solicitado: %1$s</string>
     <string name="approval_approve">Aprobar con huella</string>
     <string name="approval_reject">Rechazar</string>
     <string name="approval_prompt_title">Confirma que eres tú</string>
     <string name="approval_biometric_unavailable">Configura una huella o un PIN en el teléfono para aprobar.</string>
-    <string name="approval_done">Aprobado. El asistente puede continuar.</string>
-    <string name="approval_rejected">Rechazado. El asistente no hará ese paso.</string>
+    <string name="approval_done">Aprobado. Tu asistente continúa.</string>
+    <string name="approval_rejected">Rechazado. Tu asistente no hará ese paso.</string>
     <string name="approval_cancelled">Aprobación cancelada.</string>
     <string name="approval_already_resolved">Esta solicitud ya fue resuelta.</string>
-    <string name="approval_failed">No se pudo aprobar: %1$s</string>
+    <string name="approval_failed">No se pudo registrar tu decisión. Intenta de nuevo.</string>
     <string name="tool_accept_deductible">Aceptar deducible</string>
     <string name="tool_select_repair_shop">Reservar taller</string>
     <string name="tool_sign_claim">Firmar reclamo</string>
     <string name="tool_request_rental_car">Auto de reemplazo</string>
 
     <!-- Assistant -->
-    <string name="assistant_title">Asistente Escudo</string>
     <string name="assistant_hint">Mantén presionado para hablar</string>
-    <string name="assistant_listening">Te escucho…</string>
-    <string name="assistant_connecting">Conectando…</string>
-    <string name="assistant_disconnected">Desconectado</string>
-    <string name="assistant_reconnect">Conectar</string>
-    <string name="assistant_talk">Hablar</string>
-    <string name="assistant_mic_permission">Escudo necesita el micrófono para que hables con el asistente.</string>
-    <string name="assistant_empty">Cuéntale al asistente qué pasó. Él revisa tu póliza, abre el reclamo y pide la grúa.</string>
-    <string name="assistant_approval_needed">El asistente necesita tu aprobación</string>
-    <string name="assistant_review">Revisar</string>
+    <string name="assistant_listening">Te escucho… suelta para enviar</string>
+    <string name="assistant_connecting">Conectando con tu asistente…</string>
+    <string name="assistant_unavailable_title">El asistente no está disponible</string>
+    <string name="assistant_unavailable_body">Se perdió la conexión con tu asistente.</string>
+    <string name="assistant_reconnect">Reconectar</string>
+    <string name="assistant_talk">Hablar con el asistente</string>
+    <string name="assistant_empty_title">¿En qué te ayudo?</string>
+    <string name="assistant_empty_body">Cuéntame qué pasó. Reviso tu póliza, abro el reclamo y pido la grúa por ti.</string>
+    <string name="assistant_type">Escribir en vez de hablar</string>
+    <string name="assistant_type_placeholder">Escribe tu mensaje</string>
+    <string name="assistant_send">Enviar</string>
+    <string name="assistant_back_to_voice">Volver a hablar</string>
+    <string name="assistant_approval_needed">Tu asistente espera tu aprobación</string>
+    <string name="activity_get_policy">Revisando tu póliza</string>
+    <string name="activity_check_coverage">Verificando tu cobertura</string>
+    <string name="activity_open_claim">Abriendo tu reclamo</string>
+    <string name="activity_attach_claim_photos">Evaluando las fotos</string>
+    <string name="activity_request_tow">Pidiendo la grúa</string>
+    <string name="activity_list_repair_options">Buscando talleres</string>
+    <string name="activity_request_rental_car">Reservando auto de reemplazo</string>
+    <string name="activity_accept_deductible">Preparando el deducible</string>
+    <string name="activity_select_repair_shop">Reservando el taller</string>
+    <string name="activity_sign_claim">Preparando la firma</string>
+    <string name="activity_get_claim_status">Consultando tu reclamo</string>
 
     <!-- Report accident -->
     <string name="report_title">Reportar accidente</string>
+    <string name="report_intro">Cuéntanos qué pasó. Con tus fotos evaluamos los daños en segundos.</string>
     <string name="report_description_label">¿Qué pasó?</string>
     <string name="report_location_label">¿Dónde fue? (opcional)</string>
     <string name="report_photos">Fotos del daño</string>
     <string name="report_add_photos">Elegir fotos de la galería</string>
-    <string name="report_photos_count">%1$d foto(s) seleccionada(s)</string>
+    <string name="report_change_photos">Cambiar fotos</string>
+    <string name="report_photos_hint">Hasta 5 fotos. Se envían en tamaño reducido.</string>
     <string name="report_submit">Enviar reporte</string>
-    <string name="report_sending">Enviando y evaluando daños…</string>
+    <string name="report_sending">Enviando…</string>
+    <string name="report_sending_detail">Estamos evaluando los daños de tus fotos.</string>
     <string name="report_done">Reclamo %1$s abierto</string>
-    <string name="report_see_claim">Ver reclamo</string>
-    <string name="report_error">No se pudo enviar: %1$s</string>
+    <string name="report_done_next">Tu asistente puede seguir desde aquí: grúa, taller y auto de reemplazo.</string>
+    <string name="report_see_claim">Ver mi reclamo</string>
+    <string name="report_error_title">No pudimos enviar tu reporte</string>
 
     <!-- Notifications -->
     <string name="notification_channel_approvals">Aprobaciones</string>
-    <string name="notification_channel_approvals_description">Solicitudes del asistente que necesitan tu aprobación</string>
+    <string name="notification_channel_approvals_description">Solicitudes de tu asistente que necesitan tu aprobación</string>
     <string name="notification_approval_title">Escudo necesita tu aprobación</string>
     <string name="notification_approval_body">Toca para revisar y aprobar con tu huella.</string>
 </resources>

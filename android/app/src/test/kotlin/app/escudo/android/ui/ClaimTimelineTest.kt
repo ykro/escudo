@@ -28,6 +28,16 @@ class ClaimTimelineTest {
   }
 
   @Test
+  fun `a pending approval marks its step as waiting, not done`() {
+    val claim = Claim("clm_1", "assessed", "2026-09-30T14:00:00Z", assessment = DamageAssessment())
+
+    val steps = claim.timeline(pendingTools = setOf("accept_deductible", "get_policy"))
+
+    assertEquals(listOf(Kind.DEDUCTIBLE), steps.filter { it.waitingForApproval }.map { it.kind })
+    assertEquals(false, steps.single { it.kind == Kind.DEDUCTIBLE }.done)
+  }
+
+  @Test
   fun `signed claim completes the last step`() {
     val claim = Claim("clm_1", "signed", "2026-09-30T14:00:00Z", signedAt = "2026-09-30T14:03:00Z", deductibleAccepted = true)
     val steps = claim.timeline()
