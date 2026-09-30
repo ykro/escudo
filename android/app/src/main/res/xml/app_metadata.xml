@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AppFunctionAppMetadata xmlns:appfn="http://schemas.android.com/apk/androidx.appfunctions"
+    appfn:description="Escudo is the user's car insurer. Functions let an agent read the user's policy and coverage, report a car accident (opens a claim and assesses damage from photos) and check a claim's status.
+Operational patterns:
+  - For a crash, call 'reportAccident' with the user's description and photos, then 'getClaimStatus' with the returned claimId.
+  - Call 'getCoverage' with an incidentType to check whether an incident is covered before promising anything.
+Constraints:
+  - Accepting the deductible, choosing a repair shop and signing the claim are NOT available here: they always require the user's approval in the Escudo app."
+    appfn:displayDescription="@string/appfunctions_app_display_description" />
