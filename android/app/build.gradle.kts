@@ -40,6 +40,8 @@ android {
     buildConfigField("String", "CUSTOMER_EMAIL", localOrEnv("escudo.customerEmail", "ESCUDO_CUSTOMER_EMAIL").quoted())
     buildConfigField("String", "CUSTOMER_PASSWORD", localOrEnv("escudo.customerPassword", "ESCUDO_CUSTOMER_PASSWORD").quoted())
     buildConfigField("boolean", "HAS_FIREBASE", hasGoogleServices.toString())
+    // Only for a local backend started with MOCK_AUTH=1 (`make up-mock`): skip Firebase sign-in.
+    buildConfigField("boolean", "MOCK_AUTH", (localOrEnv("escudo.mockAuth", "ESCUDO_MOCK_AUTH") == "true").toString())
   }
 
   // "fake" talks to an in-memory API (no network, no Firebase needed) for development and
@@ -91,6 +93,9 @@ dependencies {
   debugImplementation(libs.androidx.compose.ui.tooling)
 
   implementation(libs.androidx.biometric)
+  // biometric 1.1.0 (latest stable) drags in fragment 1.2.x, whose FragmentActivity rejects the
+  // request codes of modern ActivityResult launchers (photo picker crash). Pin a current fragment.
+  implementation(libs.androidx.fragment.ktx)
 
   implementation(libs.androidx.appfunctions)
   ksp(libs.androidx.appfunctions.compiler)
