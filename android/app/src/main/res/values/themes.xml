@@ -2,6 +2,8 @@
 <resources>
     <!-- Window theme only; all visual styling lives in ui/theme (Compose). -->
     <style name="Theme.Escudo" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:windowBackground">@color/mist</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 </resources>

@@ -1,3 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mist (#F3F6F4), the A · Sereno background token. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="#FF1B4F9C" />
+    <solid android:color="#FFF3F6F4" />
 </shape>

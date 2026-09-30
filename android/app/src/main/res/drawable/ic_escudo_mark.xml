@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Escudo mark for in-app use (tint with colorScheme.primary). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="27dp" android:height="28.5dp"
+    android:viewportWidth="540" android:viewportHeight="570">
+    <path android:fillColor="#FF0F5C4D" android:pathData="M70,393 Q46,300 37,112 Q37,85 62,78 Q270,22 478,78 Q503,85 503,112 L503,300 Q496,470 228,560 C290,490 372,390 352,312 C338,258 282,218 263,180 C250,142 322,112 412,99 C330,101 214,128 183,186 C161,229 206,268 233,298 C258,330 222,362 70,393 Z" />
+    <path android:fillColor="#FF0F5C4D" android:pathData="M244,152 C213,186 206,226 240,264 C274,300 318,330 292,384 C270,425 205,452 112,468 L118,486 C222,472 302,442 322,382 C342,322 287,286 256,250 C228,216 229,182 244,152 Z" />
+</vector>

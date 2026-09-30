@@ -3,47 +3,71 @@ package app.escudo.android.ui.theme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
 
-// Light theme only, by design (see AGENTS.md "UI/UX bar"). No dynamic color: the brand stays
-// the same on every phone.
-private val EscudoLightColors = lightColorScheme(
-  primary = EscudoPalette.Primary,
-  onPrimary = EscudoPalette.OnPrimary,
-  primaryContainer = EscudoPalette.PrimaryContainer,
-  onPrimaryContainer = EscudoPalette.OnPrimaryContainer,
-  secondary = EscudoPalette.Secondary,
-  onSecondary = EscudoPalette.OnSecondary,
-  secondaryContainer = EscudoPalette.SecondaryContainer,
-  onSecondaryContainer = EscudoPalette.OnSecondaryContainer,
-  tertiary = EscudoPalette.Tertiary,
-  onTertiary = EscudoPalette.OnTertiary,
-  tertiaryContainer = EscudoPalette.TertiaryContainer,
-  onTertiaryContainer = EscudoPalette.OnTertiaryContainer,
-  error = EscudoPalette.Error,
-  onError = EscudoPalette.OnError,
-  errorContainer = EscudoPalette.ErrorContainer,
-  onErrorContainer = EscudoPalette.OnErrorContainer,
-  background = EscudoPalette.Background,
-  onBackground = EscudoPalette.OnBackground,
-  surface = EscudoPalette.Surface,
-  onSurface = EscudoPalette.OnSurface,
-  surfaceVariant = EscudoPalette.SurfaceVariant,
-  onSurfaceVariant = EscudoPalette.OnSurfaceVariant,
-  outline = EscudoPalette.Outline,
-  outlineVariant = EscudoPalette.OutlineVariant,
-  surfaceContainerLowest = EscudoPalette.SurfaceContainerLowest,
-  surfaceContainerLow = EscudoPalette.SurfaceContainerLow,
-  surfaceContainer = EscudoPalette.SurfaceContainer,
-  surfaceContainerHigh = EscudoPalette.SurfaceContainerHigh,
-  surfaceContainerHighest = EscudoPalette.SurfaceContainerHighest,
+// Light theme only, by design (AGENTS.md "UI/UX bar"). No dynamic color: the brand is the same
+// on every phone.
+private val SerenoColors = lightColorScheme(
+  primary = SerenoTokens.Pine,
+  onPrimary = SerenoTokens.Mist,
+  primaryContainer = SerenoTones.PineContainer,
+  onPrimaryContainer = SerenoTones.OnPineContainer,
+  inversePrimary = SerenoTones.PineContainer,
+  secondary = SerenoTokens.Muted,
+  onSecondary = SerenoTokens.Surface,
+  secondaryContainer = SerenoTones.SageContainer,
+  onSecondaryContainer = SerenoTokens.Ink,
+  tertiary = SerenoTones.SandDeep,
+  onTertiary = SerenoTokens.Surface,
+  tertiaryContainer = SerenoTokens.Sand,
+  onTertiaryContainer = SerenoTokens.Ink,
+  error = SerenoTones.Error,
+  onError = SerenoTokens.Surface,
+  errorContainer = SerenoTones.ErrorContainer,
+  onErrorContainer = SerenoTones.OnErrorContainer,
+  background = SerenoTokens.Mist,
+  onBackground = SerenoTokens.Ink,
+  surface = SerenoTokens.Surface,
+  onSurface = SerenoTokens.Ink,
+  surfaceVariant = SerenoTones.SurfaceVariant,
+  onSurfaceVariant = SerenoTokens.Muted,
+  surfaceTint = SerenoTokens.Pine,
+  outline = SerenoTones.Outline,
+  outlineVariant = SerenoTones.OutlineVariant,
+  surfaceContainerLowest = SerenoTones.ContainerLowest,
+  surfaceContainerLow = SerenoTones.ContainerLow,
+  surfaceContainer = SerenoTones.Container,
+  surfaceContainerHigh = SerenoTones.ContainerHigh,
+  surfaceContainerHighest = SerenoTones.ContainerHighest,
 )
+
+/** Roles Material 3 does not have. `pause` is the approval amber: use it for nothing else. */
+@Immutable
+data class EscudoExtraColors(
+  val pause: Color = SerenoTokens.Amber,
+  val onPauseContainer: Color = SerenoTokens.Amber,
+  val pauseContainer: Color = SerenoTokens.AmberBg,
+  val tonal: Color = SerenoTokens.Sand,
+  val onTonal: Color = SerenoTokens.Ink,
+)
+
+val LocalEscudoColors = staticCompositionLocalOf { EscudoExtraColors() }
+
+object EscudoTheme {
+  val extra: EscudoExtraColors
+    @Composable get() = LocalEscudoColors.current
+}
 
 @Composable
 fun EscudoTheme(content: @Composable () -> Unit) {
-  MaterialTheme(
-    colorScheme = EscudoLightColors,
-    typography = EscudoTypography,
-    shapes = EscudoShapes,
-    content = content,
-  )
+  androidx.compose.runtime.CompositionLocalProvider(LocalEscudoColors provides EscudoExtraColors()) {
+    MaterialTheme(
+      colorScheme = SerenoColors,
+      typography = EscudoTypography,
+      shapes = EscudoShapes,
+      content = content,
+    )
+  }
 }

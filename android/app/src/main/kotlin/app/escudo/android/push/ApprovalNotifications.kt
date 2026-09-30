@@ -39,6 +39,7 @@ object ApprovalNotifications {
     )
     val notification = NotificationCompat.Builder(context, CHANNEL_ID)
       .setSmallIcon(R.drawable.ic_notification)
+      .setColor(0xFF0F5C4D.toInt()) // pine
       .setContentTitle(push.title ?: context.getString(R.string.notification_approval_title))
       .setContentText(push.body ?: context.getString(R.string.notification_approval_body))
       .setStyle(NotificationCompat.BigTextStyle().bigText(push.body ?: context.getString(R.string.notification_approval_body)))
