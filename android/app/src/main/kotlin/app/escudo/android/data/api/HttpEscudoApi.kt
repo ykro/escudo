@@ -73,8 +73,8 @@ class HttpEscudoApi(
     send("approvals/$approvalId/reject", "{}".asJson())
   }
 
-  override suspend fun registerDevice(fcmToken: String) {
-    send("devices", EscudoJson.encodeToString(RegisterDeviceRequest.serializer(), RegisterDeviceRequest(fcmToken)).asJson())
+  override suspend fun registerDevice(fcmToken: String, deviceId: String) {
+    send("devices", EscudoJson.encodeToString(RegisterDeviceRequest.serializer(), RegisterDeviceRequest(fcmToken, deviceId = deviceId)).asJson())
   }
 
   override suspend fun postEvent(event: EscudoEvent) {

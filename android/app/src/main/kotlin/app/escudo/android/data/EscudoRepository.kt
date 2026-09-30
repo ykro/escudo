@@ -48,5 +48,5 @@ class EscudoRepository(private val api: EscudoApi) {
 
   suspend fun reject(approvalId: String) = api.reject(approvalId)
 
-  suspend fun registerDevice(fcmToken: String) = api.registerDevice(fcmToken)
+  suspend fun registerDevice(fcmToken: String, deviceId: String) = api.registerDevice(fcmToken, deviceId)
 }

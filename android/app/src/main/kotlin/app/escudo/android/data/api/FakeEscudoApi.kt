@@ -123,7 +123,7 @@ class FakeEscudoApi(
     approvals[approvalId] = approval.copy(status = "rejected")
   }
 
-  override suspend fun registerDevice(fcmToken: String) = simulate { deviceTokens += fcmToken; Unit }
+  override suspend fun registerDevice(fcmToken: String, deviceId: String) = simulate { deviceTokens += fcmToken; Unit }
 
   override suspend fun postEvent(event: EscudoEvent) = mutex.withLock { events += event; Unit }
 

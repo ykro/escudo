@@ -133,6 +133,8 @@ data class ApproveRequest(
 data class RegisterDeviceRequest(
   @SerialName("fcm_token") val fcmToken: String,
   val platform: String = "android",
+  /** Stable per-install id: re-registering after a token refresh replaces this phone's entry. */
+  @SerialName("device_id") val deviceId: String? = null,
 )
 
 /** One step in the presenter timeline (contracts/events.schema.json). */

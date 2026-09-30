@@ -30,7 +30,7 @@ google-services:
 	firebase apps:sdkconfig ANDROID $(FIREBASE_APP_ID) --project $(FIREBASE_PROJECT) -o app/google-services.json
 
 appfunctions:
-	$(ADB) shell cmd app_function list-app-functions | grep -A 3 '$(PACKAGE)'
+	@$(ADB) shell cmd app_function list-app-functions | grep -o '"$(PACKAGE).appfunctions[^"]*#[^"]*"' | sort -u
 
 clean:
 	$(GRADLE) clean

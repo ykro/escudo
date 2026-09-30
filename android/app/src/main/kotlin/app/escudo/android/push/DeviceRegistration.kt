@@ -21,7 +21,7 @@ object DeviceRegistration {
   }
 
   suspend fun register(container: AppContainer, token: String) {
-    runCatching { container.repository.registerDevice(token) }
+    runCatching { container.repository.registerDevice(token, container.deviceId) }
       .onSuccess { Log.i(TAG, "Device registered for approval pushes") }
       .onFailure { Log.w(TAG, "POST /devices failed", it) }
   }

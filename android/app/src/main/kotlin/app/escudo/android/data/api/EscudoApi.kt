@@ -31,7 +31,7 @@ interface EscudoApi {
   suspend fun approve(approvalId: String, deviceId: String)
   suspend fun reject(approvalId: String)
 
-  suspend fun registerDevice(fcmToken: String)
+  suspend fun registerDevice(fcmToken: String, deviceId: String)
   suspend fun postEvent(event: EscudoEvent)
 }
 
