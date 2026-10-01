@@ -8,6 +8,8 @@ pipeline as the microphone (`FileSource` → WebSocket → Gemini Live → MCP t
 | `01_choque.wav` | Tuve un choque menor, me pegaron atrás en un semáforo. Ya subí las fotos en la app. Ayúdame con todo, por favor. | synthetic |
 | `02_taller.wav` | Sí, agenda el taller más cercano con el primer horario disponible. | synthetic |
 | `03_deducible.wav` | Sí, acepta el deducible y firma el reclamo. | synthetic |
+| `04_acepto.wav` | Sí, acepto el deducible. | synthetic |
+| `05_firma.wav` | Firma el reclamo, por favor. | synthetic |
 
 - origin: `synthetic` — macOS `say -v Paulina -r 175` (es_MX), converted with ffmpeg to WAV PCM16 LE,
   16 kHz, mono, with 250 ms leading silence. Generator: `generate.sh` (deterministic for a given

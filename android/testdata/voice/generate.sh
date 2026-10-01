@@ -19,3 +19,5 @@ make_fixture() {
 make_fixture 01_choque     "Tuve un choque menor, me pegaron atrás en un semáforo. Ya subí las fotos en la app. Ayúdame con todo, por favor."
 make_fixture 02_taller     "Sí, agenda el taller más cercano con el primer horario disponible."
 make_fixture 03_deducible  "Sí, acepta el deducible y firma el reclamo."
+make_fixture 04_acepto     "Sí, acepto el deducible."
+make_fixture 05_firma      "Firma el reclamo, por favor."
