@@ -68,6 +68,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.escudo.android.R
+import app.escudo.android.ScenarioLog
 import app.escudo.android.assistant.AssistantEvent
 import app.escudo.android.assistant.AssistantSession
 import app.escudo.android.assistant.AssistantSessionFactory
@@ -84,6 +85,7 @@ import app.escudo.android.ui.components.QuietButton
 import app.escudo.android.ui.theme.Spacing
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -129,6 +131,22 @@ class AssistantViewModel(private val factory: AssistantSessionFactory) : ViewMod
   private var activeSource: VoiceSource? = null
   private var speaker: SpeakerPlayer? = null
 
+  @Volatile private var turnEnded = true
+
+  // "The assistant is done for now": it answered since the customer last spoke, the turn is
+  // complete, playback drained, and nothing new arrived for a moment. Live may complete several
+  // turns around tool calls, so a single turn_complete is not enough.
+  @Volatile private var repliedSinceUserSpoke = false
+  private var idleJob: Job? = null
+
+  private fun scheduleIdleMark() {
+    idleJob?.cancel()
+    idleJob = viewModelScope.launch {
+      delay(IDLE_QUIET_MS)
+      if (repliedSinceUserSpoke && turnEnded && playback.isEmpty) ScenarioLog.mark("assistant_idle")
+    }
+  }
+
   /** A recorded voice waiting for the session to be ready (debug rehearsals and tests). */
   private var pendingVoice: VoiceRequest? = null
 
@@ -137,7 +155,11 @@ class AssistantViewModel(private val factory: AssistantSessionFactory) : ViewMod
 
   init {
     viewModelScope.launch(Dispatchers.IO) {
-      for (chunk in playback) speaker?.write(chunk)
+      for (chunk in playback) {
+        speaker?.write(chunk)
+        // Queue drained after the turn ended: the assistant has (almost) finished speaking.
+        if (playback.isEmpty && turnEnded) ScenarioLog.mark("playback_idle")
+      }
     }
     connect()
   }
@@ -172,12 +194,14 @@ class AssistantViewModel(private val factory: AssistantSessionFactory) : ViewMod
     if (_state.value.connection != AssistantUiState.Connection.CONNECTED || activeSource != null) return
     speaker?.interrupt() // barge-in: the customer talks over the assistant
     activeSource = source
+    repliedSinceUserSpoke = false
+    idleJob?.cancel()
     s.startTalking()
     _state.update { it.copy(talking = true) }
     source.start(
       onLevel = { level -> _state.update { it.copy(micLevel = level) } },
       onChunk = s::sendAudio,
-      onEnd = ::stopTalking, // a file ends by itself; the microphone ends when the button is released
+      onEnd = { ScenarioLog.mark("voice_end"); stopTalking() }, // a file ends by itself; the mic ends on release
     )
   }
 
@@ -201,6 +225,21 @@ class AssistantViewModel(private val factory: AssistantSessionFactory) : ViewMod
   fun approvalSeen() = _state.update { it.copy(pendingApprovalId = null) }
 
   private fun onEvent(event: AssistantEvent) {
+    when (event) {
+      AssistantEvent.Connected -> ScenarioLog.mark("connected")
+      is AssistantEvent.Audio -> { turnEnded = false; repliedSinceUserSpoke = true }
+      is AssistantEvent.ToolActivity -> ScenarioLog.mark("tool_call", event.tool)
+      is AssistantEvent.ApprovalRequested -> ScenarioLog.mark("approval_required", event.approvalId)
+      AssistantEvent.TurnComplete -> {
+        turnEnded = true
+        ScenarioLog.mark("turn_complete")
+        if (playback.isEmpty) ScenarioLog.mark("playback_idle")
+      }
+      is AssistantEvent.Disconnected -> ScenarioLog.mark("disconnected", event.reason.orEmpty())
+      is AssistantEvent.Transcript -> if (event.role == AssistantEvent.Role.ASSISTANT) repliedSinceUserSpoke = true
+      else -> Unit
+    }
+    if (activeSource == null) scheduleIdleMark()
     when (event) {
       AssistantEvent.Connected -> {
         if (speaker == null) speaker = SpeakerPlayer()
@@ -233,6 +272,10 @@ class AssistantViewModel(private val factory: AssistantSessionFactory) : ViewMod
         )
       }
     }
+  }
+
+  private companion object {
+    const val IDLE_QUIET_MS = 2_500L
   }
 
   override fun onCleared() {

@@ -52,6 +52,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.escudo.android.AppContainer
 import app.escudo.android.R
+import app.escudo.android.ScenarioLog
 import app.escudo.android.data.model.AccidentReport
 import app.escudo.android.data.model.Location
 import app.escudo.android.ui.components.PrimaryButton
@@ -89,7 +90,10 @@ class ReportAccidentViewModel(private val container: AppContainer) : ViewModel()
           photos = container.photos.load(photos),
           location = locationLabel.trim().takeIf { it.isNotEmpty() }?.let { Location(label = it) },
         )
-      }.fold({ ReportState.Done(it) }, { ReportState.Failed(it.userMessage()) })
+      }.fold(
+        { ScenarioLog.mark("report_done", it.claim.claimId); ReportState.Done(it) },
+        { ScenarioLog.mark("report_failed"); ReportState.Failed(it.userMessage()) },
+      )
     }
   }
 }

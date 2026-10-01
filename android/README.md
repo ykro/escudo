@@ -98,6 +98,15 @@ fragmentos de 40 ms → WebSocket → Gemini Live → herramientas MCP → voz d
   `emulator -avd Pixel_9_API_36_1 -allow-host-audio`. Probado con `say` por los parlantes: el
   micrófono de la laptop capta muy poco (pico 0.013), así que el camino probado y para ensayos es
   `FileSource`; la voz real requiere hablar cerca del micrófono.
+- Escenario completo por voz, cronometrado: `make voice-scenario` (`scripts/voice_scenario.sh`). Reporta
+  el accidente con 3 fotos, habla con las grabaciones y aprueba cada pausa con la huella virtual
+  (`adb emu finger touch 1`) hasta el reclamo firmado. No duerme tiempos fijos: espera los
+  marcadores `EscudoScenario` de logcat (`voice_end`, `assistant_idle`, `approval_required`,
+  `approval_outcome`, `report_done`). Antes: `make reset CLOUD=1` en la raíz. Medido el
+  2026-09-30: **168 s** de punta a punta (41 s son automatización de la UI del reporte), 3 aprobaciones.
+- Preparar la huella del emulador (una vez): PIN `adb shell locksettings set-pin 1234`, luego
+  Ajustes → Seguridad → Huella (`adb shell am start -a android.settings.FINGERPRINT_ENROLL`) y tocar
+  el sensor con `adb emu finger touch 1` hasta «Fingerprint added».
 - Al soltar el botón se envían 2 s de silencio: con 800 ms Live no detecta el fin del turno.
 
 ## Protocolos con el backend

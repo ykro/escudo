@@ -36,6 +36,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.escudo.android.AppContainer
 import app.escudo.android.R
+import app.escudo.android.ScenarioLog
 import app.escudo.android.approvals.ApprovalFlow
 import app.escudo.android.approvals.ApprovalOutcome
 import app.escudo.android.approvals.BiometricVerifier
@@ -91,7 +92,9 @@ class ApprovalsViewModel(private val container: AppContainer) : ViewModel() {
     _busy.value = approval.approvalId
     viewModelScope.launch {
       val flow = ApprovalFlow(container.repository, verifier, { container.deviceId }, container.events)
-      _outcomes.emit(action(flow))
+      val outcome = action(flow)
+      ScenarioLog.mark("approval_outcome", "${outcome.javaClass.simpleName} ${approval.tool}")
+      _outcomes.emit(outcome)
       _busy.value = null
       refresh(silent = true)
     }

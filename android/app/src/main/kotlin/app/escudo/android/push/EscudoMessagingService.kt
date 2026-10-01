@@ -1,5 +1,6 @@
 package app.escudo.android.push
 
+import app.escudo.android.ScenarioLog
 import app.escudo.android.container
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
@@ -17,6 +18,7 @@ class EscudoMessagingService : FirebaseMessagingService() {
 
   override fun onMessageReceived(message: RemoteMessage) {
     val request = ApprovalPush.parse(message.data, message.notification?.title, message.notification?.body) ?: return
+    ScenarioLog.mark("approval_push", "${request.approvalId} ${message.data["tool"].orEmpty()}")
     ApprovalNotifications.show(this, request)
   }
 }
