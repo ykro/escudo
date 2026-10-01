@@ -133,6 +133,11 @@
     <string name="report_see_claim">Ver mi reclamo</string>
     <string name="report_error_title">No pudimos enviar tu reporte</string>
 
+    <!-- Debug builds only: voice fixtures -->
+    <string name="debug_voice_title">Voz de prueba</string>
+    <string name="debug_voice_empty">No hay grabaciones en esta versión.</string>
+    <string name="debug_voice_close">Cerrar</string>
+
     <!-- Notifications -->
     <string name="notification_channel_approvals">Aprobaciones</string>
     <string name="notification_channel_approvals_description">Solicitudes de tu asistente que necesitan tu aprobación</string>

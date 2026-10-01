@@ -2,7 +2,18 @@ package app.escudo.android.ui.navigation
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.platform.LocalContext
+import app.escudo.android.BuildConfig
+import app.escudo.android.assistant.VoiceFixtures
+import app.escudo.android.assistant.VoiceRequest
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
@@ -72,15 +83,25 @@ private enum class Tab(val route: Any, val routeClass: KClass<*>, @StringRes val
  * @param deepLinkApprovalId set when the app was opened from an approval push; the host
  * navigates to the approvals screen and highlights that request, then calls [onDeepLinkHandled].
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun EscudoNavHost(container: AppContainer, deepLinkApprovalId: String?, deepLinkNonce: Int, onDeepLinkHandled: () -> Unit) {
+fun EscudoNavHost(
+  container: AppContainer,
+  deepLinkApprovalId: String?,
+  deepLinkNonce: Int,
+  onDeepLinkHandled: () -> Unit,
+  debugVoice: VoiceRequest? = null,
+  onDebugVoiceHandled: () -> Unit = {},
+) {
   val nav = rememberNavController()
   val snackbar = remember { SnackbarHostState() }
   val backStack by nav.currentBackStackEntryAsState()
   val destination = backStack?.destination
   val onReport = destination?.hasRoute(ReportRoute::class) == true
   var pendingApprovals by remember { mutableIntStateOf(0) }
+  // Debug only: a recorded voice to play into the assistant, from the intent or the hidden picker.
+  var voiceForAssistant by remember { mutableStateOf<VoiceRequest?>(null) }
+  var showVoicePicker by remember { mutableStateOf(false) }
 
   fun openTab(route: Any) = nav.navigate(route) {
     popUpTo(nav.graph.findStartDestination().id) { saveState = true }
@@ -92,6 +113,13 @@ fun EscudoNavHost(container: AppContainer, deepLinkApprovalId: String?, deepLink
     if (deepLinkNonce > 0) {
       openTab(ApprovalsRoute(deepLinkApprovalId))
       onDeepLinkHandled()
+    }
+  }
+  LaunchedEffect(debugVoice) {
+    if (debugVoice != null) {
+      voiceForAssistant = debugVoice
+      openTab(AssistantRoute)
+      onDebugVoiceHandled()
     }
   }
   // Badge on the Approvals tab: the agent can ask at any moment, whatever screen is open.
@@ -108,7 +136,17 @@ fun EscudoNavHost(container: AppContainer, deepLinkApprovalId: String?, deepLink
     topBar = {
       CenterAlignedTopAppBar(
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = MaterialTheme.colorScheme.background),
-        title = { TopBarTitle(destination) },
+        title = {
+          val onAssistant = destination?.hasRoute(AssistantRoute::class) == true
+          Box(
+            if (BuildConfig.DEBUG && onAssistant) {
+              // Hidden developer toggle: long-press the title to play a voice fixture.
+              Modifier.combinedClickable(onClick = {}, onLongClick = { showVoicePicker = true })
+            } else {
+              Modifier
+            },
+          ) { TopBarTitle(destination) }
+        },
         navigationIcon = {
           if (onReport) {
             IconButton(onClick = { nav.popBackStack() }) {
@@ -143,6 +181,12 @@ fun EscudoNavHost(container: AppContainer, deepLinkApprovalId: String?, deepLink
       }
     },
   ) { padding ->
+    if (showVoicePicker) {
+      VoicePickerDialog(
+        onPick = { voiceForAssistant = it; showVoicePicker = false },
+        onDismiss = { showVoicePicker = false },
+      )
+    }
     NavHost(nav, startDestination = PolicyRoute, modifier = Modifier.padding(padding).consumeWindowInsets(padding)) {
       composable<PolicyRoute> { PolicyScreen(container.repository, onReportAccident = { nav.navigate(ReportRoute) }) }
       composable<ClaimRoute> {
@@ -156,13 +200,39 @@ fun EscudoNavHost(container: AppContainer, deepLinkApprovalId: String?, deepLink
         ApprovalsScreen(container, highlightId = entry.toRoute<ApprovalsRoute>().highlightId, snackbar = snackbar)
       }
       composable<AssistantRoute> {
-        AssistantScreen(container.assistant, pendingApprovals, onOpenApprovals = { openTab(ApprovalsRoute(it)) })
+        AssistantScreen(
+          container.assistant,
+          pendingApprovals,
+          onOpenApprovals = { openTab(ApprovalsRoute(it)) },
+          voiceRequest = voiceForAssistant,
+          onVoiceConsumed = { voiceForAssistant = null },
+        )
       }
       composable<ReportRoute> {
         ReportAccidentScreen(container, onSeeClaim = { nav.popBackStack(); openTab(ClaimRoute) })
       }
     }
   }
+}
+
+/** Debug-only list of bundled voice fixtures (testdata/voice). */
+@Composable
+private fun VoicePickerDialog(onPick: (VoiceRequest) -> Unit, onDismiss: () -> Unit) {
+  val context = LocalContext.current
+  val names = remember { VoiceFixtures.bundled(context) }
+  AlertDialog(
+    onDismissRequest = onDismiss,
+    title = { Text(stringResource(R.string.debug_voice_title)) },
+    text = {
+      Column {
+        if (names.isEmpty()) Text(stringResource(R.string.debug_voice_empty))
+        names.forEach { name ->
+          TextButton(onClick = { onPick(VoiceFixtures.resolve(context, name)) }) { Text(name) }
+        }
+      }
+    },
+    confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.debug_voice_close)) } },
+  )
 }
 
 @Composable

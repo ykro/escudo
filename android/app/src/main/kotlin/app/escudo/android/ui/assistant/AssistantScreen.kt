@@ -71,7 +71,10 @@ import app.escudo.android.R
 import app.escudo.android.assistant.AssistantEvent
 import app.escudo.android.assistant.AssistantSession
 import app.escudo.android.assistant.AssistantSessionFactory
-import app.escudo.android.assistant.MicrophoneStreamer
+import app.escudo.android.assistant.FileSource
+import app.escudo.android.assistant.MicrophoneSource
+import app.escudo.android.assistant.VoiceRequest
+import app.escudo.android.assistant.VoiceSource
 import app.escudo.android.assistant.SpeakerPlayer
 import app.escudo.android.ui.components.LoadingView
 import app.escudo.android.ui.components.MessageView
@@ -122,8 +125,12 @@ class AssistantViewModel(private val factory: AssistantSessionFactory) : ViewMod
 
   private var session: AssistantSession? = null
   private var sessionEvents: Job? = null
-  private val mic = MicrophoneStreamer(viewModelScope)
+  private val mic = MicrophoneSource(viewModelScope)
+  private var activeSource: VoiceSource? = null
   private var speaker: SpeakerPlayer? = null
+
+  /** A recorded voice waiting for the session to be ready (debug rehearsals and tests). */
+  private var pendingVoice: VoiceRequest? = null
 
   // Audio is written on its own thread so a slow speaker never stalls the socket.
   private val playback = Channel<ByteArray>(Channel.UNLIMITED)
@@ -144,19 +151,40 @@ class AssistantViewModel(private val factory: AssistantSessionFactory) : ViewMod
     s.connect()
   }
 
-  @SuppressLint("MissingPermission") // checked by the screen before calling
-  fun startTalking() {
+  /** Push-to-talk with the microphone (production). */
+  fun startTalking() = talk(mic)
+
+  /**
+   * Makes the assistant "hear" a recorded file through the same pipeline as the microphone.
+   * Waits for the session if it is still connecting.
+   */
+  fun playVoice(request: VoiceRequest) {
+    when (_state.value.connection) {
+      AssistantUiState.Connection.CONNECTED -> talk(FileSource(viewModelScope, request.label, request.open))
+      AssistantUiState.Connection.CONNECTING -> pendingVoice = request
+      AssistantUiState.Connection.DISCONNECTED -> { pendingVoice = request; connect() }
+    }
+  }
+
+  @SuppressLint("MissingPermission") // the screen checks RECORD_AUDIO before using the microphone
+  private fun talk(source: VoiceSource) {
     val s = session ?: return
-    if (_state.value.connection != AssistantUiState.Connection.CONNECTED) return
+    if (_state.value.connection != AssistantUiState.Connection.CONNECTED || activeSource != null) return
     speaker?.interrupt() // barge-in: the customer talks over the assistant
+    activeSource = source
     s.startTalking()
-    mic.start(onLevel = { level -> _state.update { it.copy(micLevel = level) } }) { s.sendAudio(it) }
     _state.update { it.copy(talking = true) }
+    source.start(
+      onLevel = { level -> _state.update { it.copy(micLevel = level) } },
+      onChunk = s::sendAudio,
+      onEnd = ::stopTalking, // a file ends by itself; the microphone ends when the button is released
+    )
   }
 
   fun stopTalking() {
-    if (!_state.value.talking) return
-    mic.stop()
+    val source = activeSource ?: return
+    activeSource = null
+    source.stop()
     session?.stopTalking()
     _state.update { it.copy(talking = false, micLevel = 0f) }
   }
@@ -177,9 +205,11 @@ class AssistantViewModel(private val factory: AssistantSessionFactory) : ViewMod
       AssistantEvent.Connected -> {
         if (speaker == null) speaker = SpeakerPlayer()
         _state.update { it.copy(connection = AssistantUiState.Connection.CONNECTED, errorText = null, errorRes = null) }
+        pendingVoice?.let { pendingVoice = null; playVoice(it) }
       }
       is AssistantEvent.Disconnected -> {
-        mic.stop()
+        activeSource?.stop()
+        activeSource = null
         _state.update { it.copy(connection = AssistantUiState.Connection.DISCONNECTED, talking = false) }
       }
       is AssistantEvent.Audio -> playback.trySend(event.pcm24k)
@@ -206,7 +236,7 @@ class AssistantViewModel(private val factory: AssistantSessionFactory) : ViewMod
   }
 
   override fun onCleared() {
-    mic.stop()
+    activeSource?.stop()
     session?.close()
     playback.close()
     speaker?.release()
@@ -218,7 +248,13 @@ class AssistantViewModel(private val factory: AssistantSessionFactory) : ViewMod
  * something is actually waiting, even if it was approved from the notification.
  */
 @Composable
-fun AssistantScreen(factory: AssistantSessionFactory, pendingApprovals: Int, onOpenApprovals: (String?) -> Unit) {
+fun AssistantScreen(
+  factory: AssistantSessionFactory,
+  pendingApprovals: Int,
+  onOpenApprovals: (String?) -> Unit,
+  voiceRequest: VoiceRequest? = null,
+  onVoiceConsumed: () -> Unit = {},
+) {
   val vm = viewModel { AssistantViewModel(factory) }
   val state by vm.state.collectAsStateWithLifecycle()
   val context = LocalContext.current
@@ -228,6 +264,10 @@ fun AssistantScreen(factory: AssistantSessionFactory, pendingApprovals: Int, onO
 
   LaunchedEffect(Unit) { if (!hasMic()) micPermission.launch(Manifest.permission.RECORD_AUDIO) }
   LaunchedEffect(pendingApprovals) { if (pendingApprovals == 0) vm.approvalSeen() }
+  // Debug builds: a recorded voice (intent extra or hidden picker) goes through the same pipeline.
+  LaunchedEffect(voiceRequest) {
+    voiceRequest?.let { vm.playVoice(it); onVoiceConsumed() }
+  }
   LaunchedEffect(state.lines.size, state.lines.lastOrNull()?.text) {
     if (state.lines.isNotEmpty()) listState.animateScrollToItem(state.lines.lastIndex)
   }
@@ -241,7 +281,7 @@ fun AssistantScreen(factory: AssistantSessionFactory, pendingApprovals: Int, onO
   Column(Modifier.fillMaxSize().imePadding()) {
     Box(Modifier.weight(1f).fillMaxWidth()) {
       when {
-        state.connection == AssistantUiState.Connection.DISCONNECTED -> MessageView(
+        state.connection == AssistantUiState.Connection.DISCONNECTED && state.lines.isEmpty() -> MessageView(
           icon = R.drawable.ic_cloud_off,
           title = stringResource(R.string.assistant_unavailable_title),
           body = errorMessage ?: stringResource(R.string.assistant_unavailable_body),
@@ -266,6 +306,22 @@ fun AssistantScreen(factory: AssistantSessionFactory, pendingApprovals: Int, onO
       }
     }
 
+    // Lost the session mid-conversation: keep what was said on screen, offer to reconnect.
+    if (state.connection == AssistantUiState.Connection.DISCONNECTED && state.lines.isNotEmpty()) {
+      Column(
+        Modifier.fillMaxWidth().padding(Spacing.m),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.s),
+      ) {
+        Text(
+          errorMessage ?: stringResource(R.string.assistant_unavailable_body),
+          style = MaterialTheme.typography.bodyMedium,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+          textAlign = TextAlign.Center,
+        )
+        PrimaryButton(stringResource(R.string.assistant_reconnect), onClick = vm::connect, modifier = Modifier.fillMaxWidth())
+      }
+    }
     if (state.connection != AssistantUiState.Connection.DISCONNECTED) {
       Column(
         Modifier.fillMaxWidth().padding(horizontal = Spacing.m).padding(bottom = Spacing.m),
