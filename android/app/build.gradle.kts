@@ -23,6 +23,7 @@ val localProps = Properties().apply {
 }
 fun localOrEnv(key: String, env: String): String =
   (localProps.getProperty(key) ?: System.getenv(env) ?: "").trim()
+val liveTests = (providers.gradleProperty("LIVE_TESTS").orNull ?: providers.environmentVariable("LIVE_TESTS").orNull) == "1"
 fun String.quoted() = "\"" + replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 
 android {
@@ -35,6 +36,13 @@ android {
     targetSdk = 37
     versionCode = 1
     versionName = "0.1.0"
+    testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    // Live (cloud) instrumented tests run only with LIVE_TESTS=1 (env or -PLIVE_TESTS=1).
+    if (liveTests) {
+      testInstrumentationRunnerArguments["LIVE_TESTS"] = "1"
+    } else {
+      testInstrumentationRunnerArguments["notAnnotation"] = "app.escudo.android.LiveTest"
+    }
 
     buildConfigField("String", "ESCUDO_API_URL", localOrEnv("escudo.apiUrl", "ESCUDO_API_URL").quoted())
     buildConfigField("String", "CUSTOMER_EMAIL", localOrEnv("escudo.customerEmail", "ESCUDO_CUSTOMER_EMAIL").quoted())
@@ -72,6 +80,13 @@ android {
     buildConfig = true
   }
   testOptions { unitTests.isReturnDefaultValues = true }
+
+  // Spoken Spanish fixtures (testdata/voice) ship in debug builds only, as assets voice/*.wav, so
+  // the assistant can "hear" them on the emulator. Release builds contain none of this.
+  sourceSets.getByName("debug").assets.srcDir(rootProject.file("testdata"))
+  androidResources {
+    ignoreAssetsPattern = "!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~:!*.sh:!*.md"
+  }
 }
 
 kotlin { jvmToolchain(17) }
@@ -112,10 +127,21 @@ dependencies {
   testImplementation(libs.junit)
   testImplementation(libs.kotlinx.coroutines.test)
   testImplementation(libs.okhttp.mockwebserver)
+
+  androidTestImplementation(libs.androidx.test.runner)
+  androidTestImplementation(libs.androidx.test.ext.junit)
 }
 
 // With product flavors AGP has no plain `testDebugUnitTest`; keep that name working
 // (`./gradlew assembleDebug testDebugUnitTest`) by running the unit tests of both flavors.
+// Instrumented tests talk to the deployed backend, so only the live flavor runs them, and only
+// with -Pandroid.testInstrumentationRunnerArguments.LIVE_TESTS=1 (see Makefile `live-test`).
+tasks.register("connectedDebugAndroidTest") {
+  group = "verification"
+  description = "Runs instrumented tests (live flavor) on the connected device or emulator."
+  dependsOn("connectedLiveDebugAndroidTest")
+}
+
 tasks.register("testDebugUnitTest") {
   group = "verification"
   description = "Runs debug unit tests for the fake and live flavors."
