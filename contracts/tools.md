@@ -72,7 +72,7 @@ are disabled. If a voice session of that customer is open, approving also nudges
   - `{"type":"text","text":"…"}` — a typed user turn (rehearsals, accessibility).
   - `{"type":"end"}` — close the session.
   - `{"type":"activity_start"}` / `{"type":"activity_end"}` — accepted and ignored (turns are detected
-    by automatic voice activity detection; Android appends ~800 ms of silence on push-to-talk release).
+    by automatic voice activity detection; Android appends 2 s of silence on push-to-talk release: measured against the deployed Live model, 800 ms never ends the turn and 2 s always does).
 - **Server → phone text frames** (JSON):
 
 | `type` | Fields | Meaning |
