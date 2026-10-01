@@ -13,7 +13,7 @@ import hashlib
 import json
 from typing import TYPE_CHECKING, Any
 
-from .errors import ApprovalInvalid, Conflict, NotFound
+from .errors import ApprovalInvalid, Conflict
 from .models import Approval, PendingApproval, new_approval_id, now_iso
 from .repository import Repository
 
@@ -75,13 +75,19 @@ async def redeem(repo: Repository, approval_id: str, *, tool: str, args: dict[st
     return await repo.mutate_approval(approval_id, check_and_use)
 
 
-async def decide(repo: Repository, approval_id: str, *, customer_id: str, approve: bool, device_id: str | None) -> Approval:
-    """Human decision. 404 if unknown (or someone else's), 409 if it is not pending anymore."""
+async def decide(
+    repo: Repository, approval_id: str, *, customer_id: str, approve: bool, device_id: str | None, signature: str | None
+) -> Approval:
+    """Human decision, device-bound (escudo-approval:v1): 403 unless the customer's registered device
+    signed exactly this approval + args_hash + decision; 409 if it is not pending anymore."""
+    from .devices import check_decision
+
+    approval = await repo.get_approval(approval_id)
+    await check_decision(repo, approval, customer_id=customer_id, device_id=device_id, signature=signature,
+                         decision="approve" if approve else "reject")
 
     def transition(doc: dict[str, Any] | None) -> dict[str, Any]:
-        if doc is None or doc.get("customer_id") != customer_id:
-            raise NotFound("approval_not_found", "No encontramos esa aprobación.")
-        if doc["status"] != "pending":
+        if doc is None or doc["status"] != "pending":
             raise Conflict("approval_not_pending", "Esa aprobación ya fue decidida.")
         return {"status": "approved" if approve else "rejected", "decided_at": now_iso(), "device_id": device_id}
 

@@ -42,3 +42,7 @@ class ApprovalInvalid(EscudoError):
 
 class Unauthorized(EscudoError):
     status = 401
+
+
+class Forbidden(EscudoError):
+    status = 403

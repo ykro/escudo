@@ -8,7 +8,6 @@ the human surface, never a tool.
 from __future__ import annotations
 
 import base64
-import hashlib
 import hmac
 from typing import Any
 
@@ -16,12 +15,12 @@ from fastapi import APIRouter, Body, Depends, File, Header, Request, Response, U
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from .. import approvals, seed
+from .. import approvals, devices, seed
 from ..auth import bearer
 from ..capabilities import Caller
-from ..errors import EscudoError, InvalidInput, Unauthorized
+from ..errors import EscudoError, Forbidden, InvalidInput, Unauthorized
 from ..gateway import call_capability
-from ..models import Location, now_iso
+from ..models import Location
 from ..services import Services
 
 router = APIRouter()
@@ -146,7 +145,7 @@ async def sign_claim(
 
 # --- the human surface: approvals ----------------------------------------------------
 
-APPROVAL_FIELDS = ("approval_id", "claim_id", "tool", "reason", "summary", "amount_usd", "status", "created_at")
+APPROVAL_FIELDS = ("approval_id", "claim_id", "tool", "args_hash", "reason", "summary", "amount_usd", "status", "created_at")
 
 
 @router.get("/approvals")
@@ -156,13 +155,19 @@ async def list_pending_approvals(request: Request, caller: Caller = Depends(curr
 
 
 class DecisionBody(BaseModel):
+    """escudo-approval:v1: the registered device's signature over approval_id + args_hash + decision."""
+
     device_id: str | None = None
+    signature: str | None = None
 
 
 async def _decide(approval_id: str, approve: bool, request: Request, caller: Caller, body: DecisionBody | None) -> dict[str, Any]:
     services = services_of(request)
     device_id = body.device_id if body else None
-    approval = await approvals.decide(services.repo, approval_id, customer_id=caller.customer_id, approve=approve, device_id=device_id)
+    approval = await approvals.decide(
+        services.repo, approval_id, customer_id=caller.customer_id, approve=approve,
+        device_id=device_id, signature=body.signature if body else None,
+    )
     surface = caller.surface if caller.surface != "rest" else "android"
     await services.events.emit(
         actor="customer", surface=surface, kind="approval_granted" if approve else "approval_rejected",
@@ -183,7 +188,7 @@ async def _decide(approval_id: str, approve: bool, request: Request, caller: Cal
 async def approve(
     approval_id: str, request: Request, body: DecisionBody | None = Body(default=None), caller: Caller = Depends(current_caller)
 ) -> dict[str, Any]:
-    """Human-only. Called by the Android app after BiometricPrompt. Never a tool."""
+    """Human-only: the Android app, after BiometricPrompt unlocks the device key that signs. Never a tool."""
     return await _decide(approval_id, True, request, caller, body)
 
 
@@ -197,25 +202,31 @@ async def reject(
 # --- devices, events, admin ------------------------------------------------------------
 
 class DeviceBody(BaseModel):
+    device_id: str
     fcm_token: str
+    public_key: str  # base64 DER SubjectPublicKeyInfo, EC P-256 (Android Keystore)
     platform: str | None = None
-    device_id: str | None = None
 
 
 @router.post("/devices", status_code=204)
 async def register_device(body: DeviceBody, request: Request, caller: Caller = Depends(current_caller)) -> Response:
-    key = body.device_id or hashlib.sha256(body.fcm_token.encode()).hexdigest()[:24]
-    await services_of(request).repo.register_device(
-        key,
-        {"device_key": key, "customer_id": caller.customer_id, "uid": caller.uid, "fcm_token": body.fcm_token,
-         "platform": body.platform, "device_id": body.device_id, "updated_at": now_iso(), "disabled": False},
+    await devices.register(
+        services_of(request).repo, customer_id=caller.customer_id, uid=caller.uid, device_id=body.device_id,
+        fcm_token=body.fcm_token, platform=body.platform, public_key=body.public_key,
     )
     return Response(status_code=204)
 
 
 @router.post("/events", status_code=204)
 async def post_event(event: dict[str, Any], request: Request, caller: Caller = Depends(current_caller)) -> Response:
-    await services_of(request).events.append_external(event)
+    """Narrative events from the apps (kind=message only); capability calls are recorded by the backend."""
+    services = services_of(request)
+    if event.get("claim_id"):
+        try:
+            await services.repo.get_claim(event["claim_id"], caller.customer_id)
+        except EscudoError as exc:
+            raise Forbidden("not_your_claim", "Ese reclamo no es tuyo.") from exc
+    await services.events.append_external(event)
     return Response(status_code=204)
 
 
@@ -235,7 +246,7 @@ async def reset(
     return Response(status_code=204, headers={"X-Reset-Seconds": f"{seconds:.2f}"})
 
 
-@router.get("/health", include_in_schema=False)  # /health is reserved by Cloud Run's front end
+@router.get("/health", include_in_schema=False)  # not /healthz: Cloud Run's front end reserves that path
 async def healthz() -> dict[str, str]:
     return {"status": "ok"}
 

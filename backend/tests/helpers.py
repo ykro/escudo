@@ -5,6 +5,7 @@ import json
 from typing import Any
 
 from conftest import tiny_jpeg
+from escudo.test_device import TestDevice
 
 
 async def ready_claim(http) -> dict[str, Any]:  # noqa: ANN001
@@ -20,8 +21,29 @@ async def ready_claim(http) -> dict[str, Any]:  # noqa: ANN001
     return claim
 
 
+PHONE = TestDevice("test-phone")  # plays the customer's registered phone (escudo-approval:v1)
+
+
+async def register_phone(http, device: TestDevice = PHONE) -> TestDevice:  # noqa: ANN001
+    r = await http.post("/devices", json=device.registration())
+    assert r.status_code == 204, r.text
+    return device
+
+
+async def args_hash_of(http, approval_id: str) -> str:  # noqa: ANN001
+    pending = (await http.get("/approvals")).json()
+    return next(a["args_hash"] for a in pending if a["approval_id"] == approval_id)
+
+
+async def decide(http, approval_id: str, decision: str = "approve"):  # noqa: ANN001, ANN201
+    """The customer decides on her phone: registered device + signature over approval_id and args_hash."""
+    device = await register_phone(http)
+    body = device.decision(approval_id, await args_hash_of(http, approval_id), decision)  # type: ignore[arg-type]
+    return await http.post(f"/approvals/{approval_id}/{decision}", json=body)
+
+
 async def approve(http, approval_id: str) -> None:  # noqa: ANN001
-    r = await http.post(f"/approvals/{approval_id}/approve", json={"device_id": "test-phone"})
+    r = await decide(http, approval_id)
     assert r.status_code == 200, r.text
 
 

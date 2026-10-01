@@ -72,8 +72,10 @@ class EventWriter:
         return event
 
     async def append_external(self, event: dict[str, Any]) -> dict[str, Any]:
-        """Events posted by Android/web. `id` and `ts` are filled in when missing."""
-        event = {"id": new_event_id(), "ts": now_iso(), **event}
+        """Events posted by Android/web: narrative `message`s only; the server owns `id` and `ts`."""
+        if event.get("kind") != "message":
+            raise InvalidInput("event_kind_not_allowed", "Las apps solo pueden publicar eventos de tipo message.")
+        event = {**event, "id": new_event_id(), "ts": now_iso()}
         self.validate(event)
         await self._store(event)
         return event

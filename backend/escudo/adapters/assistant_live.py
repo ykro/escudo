@@ -93,8 +93,11 @@ def ready_message(mock: bool) -> dict[str, Any]:
 @router.websocket("/assistant/live")
 async def assistant_live(ws: WebSocket) -> None:
     services: Services = ws.app.state.services
-    token = bearer(ws.headers.get("authorization")) or ws.query_params.get("token")
+    # Tokens never travel in the URL (they end up in logs): header, or a first {"type":"auth"} frame.
+    token = bearer(ws.headers.get("authorization"))
     await ws.accept()
+    if not token and not services.auth.mock:
+        token = await _first_frame_token(ws)
     try:
         identity = await services.auth.verify(token)
     except EscudoError as exc:
@@ -175,6 +178,22 @@ async def assistant_live(ws: WebSocket) -> None:
             await ws.close()
         except Exception:
             pass
+
+
+AUTH_FRAME_TIMEOUT_SECONDS = 10
+
+
+async def _first_frame_token(ws: WebSocket) -> str | None:
+    """For clients that cannot set headers on the upgrade: {"type":"auth","token":"<Firebase ID token>"}."""
+    try:
+        message = await asyncio.wait_for(ws.receive(), timeout=AUTH_FRAME_TIMEOUT_SECONDS)
+    except (TimeoutError, WebSocketDisconnect):
+        return None
+    try:
+        data = json.loads(message.get("text") or "{}")
+    except json.JSONDecodeError:
+        return None
+    return data.get("token") if isinstance(data, dict) and data.get("type") == "auth" else None
 
 
 def _to_client(event: Any) -> list[bytes | dict[str, Any]]:

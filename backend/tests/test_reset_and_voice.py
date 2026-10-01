@@ -44,7 +44,35 @@ def test_voice_websocket_mock_protocol():
         ws.send_json({"type": "end"})
 
 
+def _real_auth_app():
+    services = build_services(make_settings(mock_auth=False))
+
+    async def fake_claims(token: str) -> dict:
+        if token != "tok-andrea":
+            raise ValueError("bad token")
+        return {"uid": "u-andrea", "customer_id": "cus_demo"}
+
+    services.auth._verified_claims = fake_claims  # type: ignore[method-assign]
+    return create_app(services)
+
+
 def test_voice_websocket_requires_auth():
-    app = create_app(build_services(make_settings(mock_auth=False)))
-    with TestClient(app) as client, client.websocket_connect("/assistant/live") as ws:
+    with TestClient(_real_auth_app()) as client, client.websocket_connect("/assistant/live") as ws:
+        ws.send_json({"type": "text", "text": "hola"})  # not an auth frame
         assert ws.receive_json()["code"] == "unauthenticated"
+
+
+def test_voice_token_in_the_url_is_ignored():
+    with TestClient(_real_auth_app()) as client, client.websocket_connect("/assistant/live?token=tok-andrea") as ws:
+        ws.send_json({"type": "end"})
+        assert ws.receive_json()["code"] == "unauthenticated"
+
+
+def test_voice_accepts_header_or_first_auth_frame():
+    app = _real_auth_app()
+    with TestClient(app) as client:
+        with client.websocket_connect("/assistant/live", headers={"Authorization": "Bearer tok-andrea"}) as ws:
+            assert ws.receive_json()["type"] == "ready"
+        with client.websocket_connect("/assistant/live") as ws:
+            ws.send_json({"type": "auth", "token": "tok-andrea"})
+            assert ws.receive_json()["type"] == "ready"

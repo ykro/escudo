@@ -38,7 +38,9 @@ class FcmPush:
         self._repo = repo
 
     async def approval_requested(self, approval: Approval) -> int:
-        devices = [d for d in await self._repo.list_devices(approval.customer_id) if not d.get("disabled")]
+        # platform "test" is the scenario runner's software device: it signs, but has nobody to notify.
+        devices = [d for d in await self._repo.list_devices(approval.customer_id)
+                   if not d.get("disabled") and d.get("platform") != "test" and d.get("fcm_token")]
         tokens = [d["fcm_token"] for d in devices]
         if not tokens:
             log.info("no devices registered for %s; approval %s waits in the app", approval.customer_id, approval.approval_id)
@@ -53,6 +55,7 @@ class FcmPush:
                 "tool": approval.tool,
                 "claim_id": approval.claim_id or "",
                 "reason": approval.reason,
+                "args_hash": approval.args_hash,  # the app signs approval_id + args_hash (escudo-approval:v1)
             },
             android=m.AndroidConfig(priority="high", notification=m.AndroidNotification(channel_id="approvals")),
         )

@@ -6,8 +6,10 @@ then prints a timing table. Acceptance: < 3 minutes, exactly 3 approvals.
     uv run python -m escudo.scenario --base-url http://127.0.0.1:8080            # waits for you to approve on the phone
     uv run python -m escudo.scenario --base-url URL --test-mode --auto-approve    # rehearsal: approves via the human endpoint
 
-`--auto-approve` plays the human (POST /approvals/{id}/approve) and is refused
-unless `--test-mode` is set: in a real run only the customer approves.
+`--auto-approve` plays the customer's phone: it registers a software test device
+(escudo/test_device.py, key in infra/.generated/) and signs each decision with it,
+exactly like the app (escudo-approval:v1). Refused unless `--test-mode` is set: in a
+real run only the customer approves, on her phone.
 """
 
 from __future__ import annotations
@@ -26,6 +28,8 @@ from typing import Any, Awaitable, Callable
 import httpx2
 from mcp import Client
 from mcp.client.streamable_http import streamable_http_client
+
+from .test_device import TestDevice
 
 PHOTOS_DIR = Path(__file__).resolve().parents[1] / "samples" / "photos"
 BUDGET_SECONDS = 180
@@ -59,7 +63,8 @@ class Report:
         print(f"  total {self.total:.1f} s (límite {BUDGET_SECONDS} s) · aprobaciones: {len(self.approvals)} (esperadas {EXPECTED_APPROVALS}) · {verdict}\n", file=out)
 
 
-Approver = Callable[[str], Awaitable[None]]
+Approver = Callable[[str, str], Awaitable[None]]  # (approval_id, args_hash)
+DEVICE_KEY = Path(__file__).resolve().parents[2] / "infra" / ".generated" / "scenario-device.pem"
 
 
 def load_sample_photos() -> list[str]:
@@ -96,7 +101,7 @@ async def run_scenario(mcp_client: Client, approve: Approver, photos: list[str],
         report.approvals.append(first["approval_id"])
         t0 = time.perf_counter()
         print(f"    ⏸  aprobación requerida: {first['summary']}", file=out, flush=True)
-        await approve(first["approval_id"])
+        await approve(first["approval_id"], first["args_hash"])
         report.steps.append(("  (aprobación humana)", time.perf_counter() - t0, first["approval_id"]))
         return await step(name + " (aprobado)", tool, {**args, "approval_id": first["approval_id"]})
 
@@ -146,12 +151,13 @@ def _note(tool: str, data: dict[str, Any]) -> str:
     return "ok"
 
 
-def human_endpoint_approver(http: httpx2.AsyncClient, delay: float = 0.0) -> Approver:
-    """Test mode only: plays the customer by calling the human endpoint (after `delay` s of "reaching for the phone")."""
+def human_endpoint_approver(http: httpx2.AsyncClient, device: TestDevice, delay: float = 0.0) -> Approver:
+    """Test mode only: plays the customer's phone — signs with the test device and calls the human
+    endpoint (after `delay` s of "reaching for the phone")."""
 
-    async def approve(approval_id: str) -> None:
+    async def approve(approval_id: str, args_hash: str) -> None:
         await asyncio.sleep(delay)
-        r = await http.post(f"/approvals/{approval_id}/approve", json={"device_id": "scenario-runner"},
+        r = await http.post(f"/approvals/{approval_id}/approve", json=device.decision(approval_id, args_hash),
                             headers={"X-Escudo-Surface": "android"})
         r.raise_for_status()
 
@@ -161,7 +167,7 @@ def human_endpoint_approver(http: httpx2.AsyncClient, delay: float = 0.0) -> App
 def wait_for_phone_approver(http: httpx2.AsyncClient, timeout: float = 120) -> Approver:
     """Real mode: the customer approves on the phone; we poll until the approval leaves 'pending'."""
 
-    async def approve(approval_id: str) -> None:
+    async def approve(approval_id: str, args_hash: str) -> None:
         deadline = time.monotonic() + timeout
         print("    📱 apruébalo en el teléfono…", flush=True)
         while time.monotonic() < deadline:
@@ -216,7 +222,12 @@ async def main() -> int:
     base = args.base_url.rstrip("/")
     print(f"\nEscudo · escenario vía MCP contra {base}\n")
     async with httpx2.AsyncClient(base_url=base, headers=headers, timeout=120) as http:
-        approver = human_endpoint_approver(http, args.approve_delay) if args.auto_approve else wait_for_phone_approver(http)
+        if args.auto_approve:
+            device = TestDevice.load_or_create(DEVICE_KEY)
+            (await http.post("/devices", json=device.registration())).raise_for_status()
+            approver = human_endpoint_approver(http, device, args.approve_delay)
+        else:
+            approver = wait_for_phone_approver(http)
         mcp_http = httpx2.AsyncClient(headers=headers, timeout=httpx2.Timeout(120, read=180))
         async with Client(streamable_http_client(f"{base}/mcp", http_client=mcp_http)) as mcp_client:
             report = await run_scenario(mcp_client, approver, load_sample_photos())

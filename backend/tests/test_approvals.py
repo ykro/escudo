@@ -11,7 +11,7 @@ import pytest
 
 from escudo.repository.repository import POLICIES
 from escudo.seed import POLICY
-from helpers import approve, mcp_error, mcp_payload, ready_claim
+from helpers import PHONE, approve, decide, mcp_error, mcp_payload, ready_claim, register_phone
 
 pytestmark = pytest.mark.anyio
 
@@ -108,20 +108,24 @@ async def test_rejected_approval_cannot_be_used(http):
     claim = await ready_claim(http)
     path = f"/claims/{claim['claim_id']}/deductible"
     pending = (await http.post(path, json={})).json()
-    assert (await http.post(f"/approvals/{pending['approval_id']}/reject")).status_code == 200
+    assert (await decide(http, pending["approval_id"], "reject")).status_code == 200
     r = await http.post(path, json={"approval_id": pending["approval_id"]})
     assert r.status_code == 403 and r.json()["detail"] == "rejected"
 
 
 async def test_approve_endpoint_status_codes(http):
-    assert (await http.post("/approvals/apr_nope/approve")).status_code == 404
+    phone = await register_phone(http)
+    r = await http.post("/approvals/apr_nope/approve", json=phone.decision("apr_nope", "sha256:x"))
+    assert r.status_code == 403 and r.json()["detail"] == "not_your_approval"
     claim = await ready_claim(http)
     pending = (await http.post(f"/claims/{claim['claim_id']}/deductible", json={})).json()
     listed = (await http.get("/approvals")).json()
     assert [a["approval_id"] for a in listed] == [pending["approval_id"]]
     assert listed[0]["summary"].startswith("Aceptar pagar el deducible")
+    args_hash = listed[0]["args_hash"]
     await approve(http, pending["approval_id"])
-    assert (await http.post(f"/approvals/{pending['approval_id']}/approve")).status_code == 409
+    replay = await http.post(f"/approvals/{pending['approval_id']}/approve", json=PHONE.decision(pending["approval_id"], args_hash))
+    assert replay.status_code == 409
     assert (await http.get("/approvals")).json() == []
 
 

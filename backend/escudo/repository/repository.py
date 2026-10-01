@@ -16,6 +16,7 @@ CLAIMS = "claims"
 APPROVALS = "approvals"
 EVENTS = "events"
 DEVICES = "devices"
+DEVICE_AUDIT = "device_audit"
 
 # What `make reset` wipes. Devices survive a reset on purpose: the presenter's
 # phone registers its FCM token once, before the talk.
@@ -88,6 +89,14 @@ class Repository:
 
     async def register_device(self, device_key: str, data: dict[str, Any]) -> None:
         await self.store.set(DEVICES, device_key, data)
+
+    async def get_device(self, device_id: str) -> dict[str, Any] | None:
+        return await self.store.get(DEVICES, device_id)
+
+    async def add_device_audit(self, record: dict[str, Any]) -> None:
+        from ..models import new_event_id
+
+        await self.store.set(DEVICE_AUDIT, new_event_id().replace("evt_", "aud_"), record)
 
     async def list_devices(self, customer_id: str) -> list[dict[str, Any]]:
         return await self.store.where(DEVICES, customer_id=customer_id)
