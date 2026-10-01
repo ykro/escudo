@@ -110,6 +110,8 @@ fragmentos de 40 ms → WebSocket → Gemini Live → herramientas MCP → voz d
   marcadores `EscudoScenario` de logcat (`voice_end`, `assistant_idle`, `approval_required`,
   `approval_outcome`, `report_done`). Antes: `make reset CLOUD=1` en la raíz. Medido el
   2026-09-30: **168 s** de punta a punta (41 s son automatización de la UI del reporte), 3 aprobaciones.
+  Con `escudo-approval:v1` (2026-10-01): **223 s**, 3 aprobaciones firmadas; 36 s son automatización de
+  la UI y ~25 s un timeout A2A al taller (`list_repair_options`) que el backend reintenta.
 - Las aprobaciones del escenario se firman con la llave del dispositivo: la huella virtual desbloquea
   la llave a través de BiometricPrompt (`CryptoObject`), igual que en un teléfono real.
 - Preparar la huella del emulador (una vez): PIN `adb shell locksettings set-pin 1234`, luego

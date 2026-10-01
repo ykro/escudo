@@ -25,7 +25,7 @@ adb() { "$ADB_BIN" -s "$SERIAL" "$@"; }
 now() { python3 -c 'import time; print(f"{time.time():.3f}")'; }
 T0=$(now)
 say() { python3 -c "import sys; print(f'{float(sys.argv[1]) - float(sys.argv[2]):6.1f}s  {sys.argv[3]}')" "$(now)" "$T0" "$*"; }
-die() { say "FAILED: $*"; exit 1; }
+die() { say "FAILED: $*" >&2; exit 1; } # stderr: also visible when called inside $(...)
 
 LOG="$(mktemp -t escudo-scenario)"
 adb logcat -c
@@ -72,41 +72,48 @@ hide_keyboard() { # Back only while the IME is up; otherwise Back would leave th
   done
 }
 
+centers_in() { # <dump> <attribute regex> → "x y" of the first match in an existing dump
+  grep -o -E "$2[^>]*bounds=\"\[[0-9]+,[0-9]+\]\[[0-9]+,[0-9]+\]\"" <<< "$1" | head -1 |
+    sed -E 's/.*\[([0-9]+),([0-9]+)\]\[([0-9]+),([0-9]+)\].*/\1 \2 \3 \4/' | awk '{print int(($1+$3)/2), int(($2+$4)/2)}' || true
+}
+dump_until() { # <regex> [timeout] → prints the first UI dump that matches (one dump per screen)
+  local start d; start=$(date +%s)
+  while true; do
+    d=$(ui_dump || true)
+    grep -q -E "$1" <<< "$d" && { printf '%s' "$d"; return 0; } # no pipe: grep -q + pipefail = SIGPIPE
+    [ $(( $(date +%s) - start )) -ge "${2:-20}" ] && die "not on screen: $1"
+    front; sleep 0.2
+  done
+}
+ftap() { front; adb shell input tap "$@"; } # other agents may share the emulator
+
 report_accident() {
   adb shell am force-stop "$PKG"
   adb shell am start -W -n "$PKG/.MainActivity" >/dev/null
-  local start; start=$(date +%s)
-  until (ui_dump || true) | grep -q 'text="Póliza activa"'; do
-    [ $(( $(date +%s) - start )) -ge 30 ] && die "policy did not load"; sleep 0.3
-  done
-  tap 'text="Reportar accidente"' 30
-  start=$(date +%s)
-  until (ui_dump || true) | grep -q 'class="android.widget.EditText"'; do
-    [ $(( $(date +%s) - start )) -ge 10 ] && die "report screen did not open"; sleep 0.3
-  done
-  tap 'class="android.widget.EditText"'
+  local d
+  d=$(dump_until 'text="Reportar accidente"' 30); ftap $(centers_in "$d" 'text="Reportar accidente"')
+  d=$(dump_until 'class="android.widget.EditText"')
+  local photos_button; photos_button=$(centers_in "$d" 'text="Elegir fotos de la galería"')
+  ftap $(centers_in "$d" 'class="android.widget.EditText"')
   adb shell input text "Choque%smenor:%sme%spegaron%satras%sen%sun%ssemaforo."
   hide_keyboard
-  tap 'text="Elegir fotos de la galería"'
+  ftap $photos_button
   # Thumbnails in the system photo picker, newest first; wait until the layout settles.
-  start=$(date +%s); local photos="" previous="-"
+  local start; start=$(date +%s); local photos="" previous="-"
   until [ -n "$photos" ] && [ "$photos" = "$previous" ]; do
     previous="$photos"
     photos=$( (ui_dump || true) | grep -o -E 'content-desc="Photo taken on[^"]*"[^>]*bounds="\[[0-9]+,[0-9]+\]\[[0-9]+,[0-9]+\]"' | head -3 |
       sed -E 's/.*\[([0-9]+),([0-9]+)\]\[([0-9]+),([0-9]+)\].*/\1 \2 \3 \4/' | awk '{print int(($1+$3)/2), int(($2+$4)/2)}' || true)
     [ $(( $(date +%s) - start )) -ge 20 ] && die "photo picker empty"
   done
-  while read -r x y; do adb shell input tap "$x" "$y" </dev/null; sleep 0.5; done <<< "$photos" # adb would eat stdin
-  start=$(date +%s)
-  until (ui_dump || true) | grep -q 'text="3"'; do
-    [ $(( $(date +%s) - start )) -ge 10 ] && die "could not select 3 photos"; sleep 0.3
-  done
-  tap 'text="Done"'
+  while read -r x y; do adb shell input tap "$x" "$y" </dev/null; sleep 0.4; done <<< "$photos" # adb would eat stdin
+  d=$(dump_until 'text="3"' 10); ftap $(centers_in "$d" 'text="Done"')
   local before; before=$(count "report_done")
-  front
-  tap 'text="Enviar reporte"'
+  d=$(dump_until 'text="Enviar reporte"'); ftap $(centers_in "$d" 'text="Enviar reporte"')
   say "report sent, waiting for the damage assessment"
-  wait_for "report_done" "$before" 120 || die "report did not finish"
+  local failed; failed=$(count "report_failed")
+  wait_for "report_done|report_failed" $((before + failed)) 150 || die "report did not finish"
+  [ "$(count "report_failed")" -gt "$failed" ] && die "the app could not send the report (see logcat tag Escudo)"
   say "claim $(grep -o 'report_done [A-Z0-9-]*' "$LOG" | tail -1 | cut -d' ' -f2) opened and assessed (3 photos)"
 }
 

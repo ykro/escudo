@@ -123,8 +123,9 @@ class HttpEscudoApi(
 
     fun defaultClient(): OkHttpClient = OkHttpClient.Builder()
       .connectTimeout(15, TimeUnit.SECONDS)
-      // Attaching photos runs the multimodal damage assessor server-side; give it room.
-      .readTimeout(90, TimeUnit.SECONDS)
+      // Attaching photos runs the multimodal damage assessor server-side; usually 6–18 s, but a
+      // 115 s spike was measured on 2026-10-01. Better a long wait than a false "sin conexión".
+      .readTimeout(150, TimeUnit.SECONDS)
       .writeTimeout(60, TimeUnit.SECONDS)
       .build()
   }

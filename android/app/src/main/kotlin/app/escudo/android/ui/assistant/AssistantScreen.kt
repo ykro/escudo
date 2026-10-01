@@ -275,7 +275,7 @@ class AssistantViewModel(private val factory: AssistantSessionFactory) : ViewMod
   }
 
   private companion object {
-    const val IDLE_QUIET_MS = 2_500L
+    const val IDLE_QUIET_MS = 1_500L
   }
 
   override fun onCleared() {
