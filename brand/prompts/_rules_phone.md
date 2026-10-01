@@ -1,0 +1,1 @@
+Show one mobile app screen as a flat, straight-on, full-frame portrait screenshot: the app UI fills the entire image edge to edge. No phone hardware, no device outline, no bezel, no dark surround or dark margins, no hands, no perspective. The status bar is light (same color as the app background) with small dark "9:41" text; no black bars.

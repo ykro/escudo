@@ -1,0 +1,1 @@
+Flat vector brand identity presentation on a plain light background: the logo mark centered and large, the wordmark set cleanly below it. Nothing else: no tagline, no color swatches, no guides, no mockups, no extra text.
