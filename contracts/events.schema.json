@@ -11,7 +11,7 @@
     "run_id": { "type": "string", "description": "Groups one scenario run (usually the claim id or a session id)." },
     "claim_id": { "type": ["string", "null"] },
     "actor": { "type": "string", "enum": ["customer", "escudo_assistant", "escudo_agent", "tow_agent", "repair_agent", "damage_assessor", "gemini", "backend"] },
-    "surface": { "type": "string", "enum": ["android", "web", "mcp", "a2a", "rest", "voice", "appfunctions", "webmcp"] },
+    "surface": { "type": "string", "enum": ["android", "web", "mcp", "a2a", "rest", "chat", "appfunctions", "webmcp"] },
     "kind": { "type": "string", "enum": ["tool_call", "tool_result", "a2a_request", "a2a_response", "approval_requested", "approval_granted", "approval_rejected", "message", "error"] },
     "tool": { "type": ["string", "null"], "description": "Capability name from contracts/tools.md." },
     "summary": { "type": "string", "description": "One human-readable line in Spanish for the timeline." },

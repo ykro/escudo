@@ -24,7 +24,7 @@ One domain function per capability lives in `backend/escudo/capabilities/`. Ever
 3. The customer approves in the Android app with BiometricPrompt, which unlocks a device-bound key that
    signs the decision → `POST /approvals/{id}/approve` with the customer's Firebase ID token **and** a
    signature from a registered device (protocol `escudo-approval:v1` below). A token alone cannot approve:
-   an agent holding the customer's token (MCP, voice, A2A) has no device key. **This endpoint is never
+   an agent holding the customer's token (MCP, chat, A2A) has no device key. **This endpoint is never
    exposed as a tool, AppFunction or WebMCP function.**
 4. The agent retries the same capability with `approval_id`. The server checks: exists, status `approved`, same tool, same args_hash, not used. Then executes and marks it `used`.
 5. Anything else → `403` / MCP error `approval_invalid`. The REST body is
@@ -87,7 +87,7 @@ exactly like the app.
 
 - MCP: streamable HTTP at `/mcp`, bearer = customer Firebase ID token.
 - A2A: Escudo agent at `/a2a/escudo`, Tow at `/a2a/tow`, Repair at `/a2a/repair`, each with its Agent Card at the well-known path of the current A2A version. Escudo discovers peers from `A2A_PEERS` (base URLs only). Cards are public. Calling `/a2a/escudo` requires the customer's Firebase ID token (bearer) or the partner key `X-Escudo-A2A-Key` plus `X-Escudo-Customer-Id`; Tow and Repair require the partner key when `A2A_SHARED_SECRET` is set. Every surface acts as the `customer_id` of the verified token.
-- Voice: Escudo Assistant WebSocket at `/assistant/live` (PCM16 16 kHz in, 24 kHz out), ADK + Gemini Live, uses the MCP tools (loopback to `/mcp` with the customer's own token, header `X-Escudo-Actor: escudo_assistant`).
+- Chat: Escudo Assistant, a typed chat over a WebSocket at `/assistant/chat` (protocol below). An ADK agent on `GEMINI_MODEL` that acts only through the MCP tools (loopback to `/mcp` with the customer's own token, header `X-Escudo-Actor: escudo_assistant`).
 - Timeline events from clients: `POST /events` accepts only `kind: "message"` (capability calls and
   approvals are recorded by the backend itself). The server always sets `id` and `ts`; a `claim_id` must
   belong to the caller (else `403`). Schema: `events.schema.json`.
@@ -112,36 +112,43 @@ Sent to every device registered with `POST /devices` for the customer when an ap
 
 The app opens `escudo://approvals/{approval_id}`, shows the summary, and after BiometricPrompt signs and
 calls `POST /approvals/{approval_id}/approve` with `{"device_id", "signature"}` (`escudo-approval:v1`). Devices answering `UNREGISTERED` to FCM
-are disabled. If a voice session of that customer is open, approving also nudges the assistant
+are disabled. If the customer has a chat open on that approval, the assistant resumes on its own
 (`[Aviso de Escudo] La clienta aprobó <tool> … approval_id=…`) so it retries on its own.
 
-## Voice WebSocket `/assistant/live`
+## Chat WebSocket `/assistant/chat`
 
-- **Auth** (tokens never go in the URL; `?token=` is ignored): either the
-  `Authorization: Bearer <Firebase ID token>` header on the upgrade request, or — for clients that cannot
-  set headers — the **first** text frame `{"type":"auth","token":"<Firebase ID token>"}`, sent within
-  10 s of opening. The server answers `ready` only after auth. On failure it sends
-  `{"type":"error","code":"unauthenticated"|"invalid_token","message":…}` and closes with code `4401`.
-- **Audio**: binary frames, raw PCM signed 16-bit little-endian, mono.
-  Phone → server: **16 000 Hz** (any chunk size; 20–100 ms recommended).
-  Server → phone: **24 000 Hz**, played in arrival order.
-- **Phone → server text frames** (JSON):
-  - `{"type":"text","text":"…"}` — a typed user turn (rehearsals, accessibility).
-  - `{"type":"end"}` — close the session.
-  - `{"type":"activity_start"}` / `{"type":"activity_end"}` — accepted and ignored (turns are detected
-    by automatic voice activity detection; Android appends 2 s of silence on push-to-talk release: measured against the deployed Live model, 800 ms never ends the turn and 2 s always does).
-- **Server → phone text frames** (JSON):
+The Escudo Assistant is a typed chat. Every frame is a JSON text frame.
+
+- **Auth**: `Authorization: Bearer <Firebase ID token>` on the upgrade request — nothing else (no query
+  parameter, no auth frame). Missing or invalid → `{"type":"error","code":"unauthenticated"|"invalid_token",…}`
+  and close `4401`.
+- **Continue a conversation**: optional header `X-Escudo-Chat-Session: <session_id>` (from a previous
+  `ready`). The transcript lives in Firestore (`chat_sessions/{id}`), so any server instance can continue
+  it; a session of another customer is ignored and a new one starts.
+
+Client → server:
 
 | `type` | Fields | Meaning |
 | --- | --- | --- |
-| `ready` | `mock`, `session_id`, `input_audio` {encoding `pcm_s16le`, sample_rate 16000, channels 1}, `output_audio` {… 24000 …} | First frame after auth: connected |
-| `transcript` | `role` (`user`\|`assistant`), `text`, `final` | Live captions. `final:false` frames are deltas to append; a `final:true` frame carries the whole utterance and replaces the deltas since the previous final of that role |
+| `text` | `text` | A user message |
+| `end` | – | Close the chat |
+
+Server → client:
+
+| `type` | Fields | Meaning |
+| --- | --- | --- |
+| `ready` | `session_id`, `mock` | Authenticated; send messages |
+| `text` | `text`, `final` | Assistant reply. `final:false` frames are deltas to append; the `final:true` frame carries the whole message and replaces the deltas |
 | `tool_call` | `name` | The assistant called an MCP tool |
 | `tool_result` | `name` | The tool answered |
-| `approval_required` | `approval_id`, `tool`, `summary`, `reason` | A gated tool returned `pending_approval` (the push is on its way) |
-| `interrupted` | – | The user barged in: stop playback |
-| `turn_complete` | – | The model finished a turn (also after a tool-only turn) |
-| `error` | `code`, `message` (Spanish) | Session failed; the server closes the socket |
+| `approval_required` | `approval_id`, `tool`, `summary`, `reason`, `args_hash` | A gated tool returned `pending_approval`; the push is on its way |
+| `approval_resolved` | `approval_id`, `tool`, `status` (`approved`\|`rejected`) | The customer decided on her phone; the assistant continues **on its own** (no message needed) |
+| `turn_complete` | – | The assistant finished a turn |
+| `error` | `code`, `message` (Spanish) | The turn failed; the chat stays open unless the code is `unauthenticated`/`invalid_token` |
 
-- `MOCK_AI=1`: same protocol with `ready.mock=true`; text turns are echoed and answered with 100 ms of silence.
-- Model: `GEMINI_LIVE_MODEL` on Vertex AI in `GEMINI_LIVE_LOCATION` (see `.env.example`).
+Resume after approval: while an approval from this chat is pending, the server watches it in Firestore;
+when it is decided — on any instance, by the phone — it sends `approval_resolved` and runs the next
+assistant turn, which retries the action with the `approval_id`.
+
+`MOCK_AI=1`: same protocol with `ready.mock=true` and a deterministic assistant (no model) that uses the
+same capabilities, so clients and tests run offline.

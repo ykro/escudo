@@ -197,5 +197,15 @@ paths:
       operationId: postEvent
       description: "Clients (Android, web) append narrative timeline events: only kind=message (capability calls and approvals are recorded by the backend). The server always sets id and ts. Schema in events.schema.json."
       responses: { '204': { description: stored }, '403': { description: claim_id is not the caller's }, '422': { description: does not match events.schema.json or kind is not message } }
+  /admin/runs:
+    post:
+      operationId: createRun
+      description: "Creates an isolated, ephemeral customer for one scenario run: its own policy (same coverage as the seed), Firebase Auth user (custom claim customer_id) and run id. Send the run id as X-Escudo-Run-Id so the presenter can follow it (/presenter?run=<run_id>). POST /admin/reset removes every run customer, user and device. Requires ADMIN_TOKEN."
+      security: [{ adminToken: [] }]
+      responses:
+        '201':
+          description: created
+          content: { application/json: { schema: { type: object, required: [run_id, customer_id, email, password], properties: { run_id: { type: string }, customer_id: { type: string }, email: { type: string }, password: { type: string, description: "Sign in with Firebase email/password to get the run's ID token" } } } } }
+        '401': { description: wrong or missing admin token }
   /admin/reset:
-    post: { operationId: reset, description: "Restores seed data, clears claims/approvals/events (devices are kept). Requires ADMIN_TOKEN in X-Admin-Token (or as bearer). Response header X-Reset-Seconds.", security: [{ adminToken: [] }], responses: { '204': { description: reset }, '401': { description: wrong or missing admin token } } }
+    post: { operationId: reset, description: "Restores seed data, clears claims/approvals/events and every run customer (POST /admin/runs) with its Firebase user and devices; keeps the seeded customer's keyed devices. Requires ADMIN_TOKEN in X-Admin-Token (or as bearer). Response header X-Reset-Seconds.", security: [{ adminToken: [] }], responses: { '204': { description: reset }, '401': { description: wrong or missing admin token } } }

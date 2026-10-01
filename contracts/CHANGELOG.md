@@ -1,11 +1,11 @@
 # Contracts: current state
 
 What the contracts in this folder say today, in one page, for anyone implementing a client. Details
-live in `openapi.yaml` (REST), `tools.md` (capabilities, approvals, push, voice) and
-`events.schema.json` (timeline). Last change: 2026-10-01, `escudo-approval:v1`.
+live in `openapi.yaml` (REST), `tools.md` (capabilities, approvals, push, chat) and
+`events.schema.json` (timeline). Last change: 2026-10-01 — chat replaces voice; per-run customers.
 
 ## Identity
-- Every REST, MCP, voice and A2A call carries the customer's **Firebase ID token**; the backend acts as
+- Every REST, MCP, chat and A2A call carries the customer's **Firebase ID token**; the backend acts as
   the token's `customer_id` custom claim (set on the seeded login by `make seed`). A verified user
   without the claim is their own customer and sees no policy or claims.
 - `MOCK_AUTH=1` (local tests only) maps every caller to `DEMO_CUSTOMER_ID`.
@@ -32,8 +32,13 @@ live in `openapi.yaml` (REST), `tools.md` (capabilities, approvals, push, voice)
 - A2A: Agent Cards are public at `{base}/.well-known/agent-card.json`. `/a2a/escudo` requires the
   customer's token or the partner key (`X-Escudo-A2A-Key`) plus `X-Escudo-Customer-Id`; `/a2a/tow` and
   `/a2a/repair` require the partner key. Cards declare these schemes.
-- Voice: `/assistant/live`; token in the `Authorization` header or as the first frame
-  `{"type":"auth","token":…}` — never in the URL. Audio PCM16 16 kHz up, 24 kHz down.
+- Chat (Escudo Assistant): WebSocket `/assistant/chat`, `Authorization` header only; client frames
+  `text`, `end`; server frames `ready`, `text` (deltas + final), `tool_call`, `tool_result`,
+  `approval_required`, `approval_resolved`, `turn_complete`, `error`. After an approval the assistant
+  resumes by itself, from any instance. There is no voice surface; the event surface is `chat`.
 - Timeline: clients may `POST /events` with `kind: "message"` only; the server sets `id` and `ts` and
   rejects `claim_id`s the caller does not own.
-- Admin: `POST /admin/reset` with `X-Admin-Token`.
+- Runs: `POST /admin/runs` (admin token) creates an isolated customer (policy, Firebase user) for one
+  scenario run; send its `run_id` as `X-Escudo-Run-Id`; `/presenter?run=<run_id>` follows that run
+  (default: the latest). The Android app's stage customer stays the seeded one.
+- Admin: `POST /admin/reset` with `X-Admin-Token` (also removes run customers).
