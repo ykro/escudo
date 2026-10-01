@@ -11,11 +11,11 @@
 # (backend/samples/photos); device PIN + one enrolled fingerprint (see README); backend reset
 # (`make reset CLOUD=1` at the repo root).
 #
-# Usage: scripts/voice_scenario.sh            (ANDROID_SERIAL defaults to emulator-5556)
+# Usage: scripts/voice_scenario.sh            (ANDROID_SERIAL defaults to the running Pixel_9_API_36_1)
 set -euo pipefail
 
 ADB_BIN="${ADB:-$HOME/Library/Android/sdk/platform-tools/adb}"
-SERIAL="${ANDROID_SERIAL:-emulator-5556}"
+SERIAL="${ANDROID_SERIAL:-$("$(dirname "$0")/emulator_serial.sh")}"
 PKG=app.escudo.android
 FIXTURES=(01_choque 02_taller 04_acepto 05_firma)
 APPROVALS_NEEDED=3

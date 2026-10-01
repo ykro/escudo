@@ -6,6 +6,7 @@
 #   make install [FLAVOR=live] install on the connected device/emulator and launch
 #   make google-services       download app/google-services.json from Firebase
 #   make appfunctions          list Escudo's AppFunctions on the device (Android 16 QPR2+)
+#   make serial                adb serial of the running $(ANDROID_AVD) emulator
 
 GRADLE  ?= ./gradlew --console=plain
 FLAVOR  ?= live
@@ -14,9 +15,16 @@ PACKAGE := app.escudo.android
 FIREBASE_PROJECT ?= ai-experiments-487722
 FIREBASE_APP_ID  ?= 1:611681112050:android:cecc13cdf49afe50f6e56b
 
+# Every target talks to the running emulator of this AVD (or ANDROID_SERIAL if you set it);
+# adb and Gradle's connected tasks both honor ANDROID_SERIAL.
+ANDROID_AVD ?= Pixel_9_API_36_1
+export ANDROID_AVD
+ANDROID_SERIAL ?= $(shell ADB=$(ADB) scripts/emulator_serial.sh $(ANDROID_AVD) 2>/dev/null)
+export ANDROID_SERIAL
+
 FLAVOR_CAP := $(shell echo $(FLAVOR) | awk '{print toupper(substr($$0,1,1)) substr($$0,2)}')
 
-.PHONY: build test live-test voice-scenario install google-services appfunctions clean
+.PHONY: build test live-test voice-scenario install google-services appfunctions serial clean
 
 build:
 	$(GRADLE) assembleDebug
@@ -42,6 +50,9 @@ google-services:
 
 appfunctions:
 	@$(ADB) shell cmd app_function list-app-functions | grep -o '"$(PACKAGE).appfunctions[^"]*#[^"]*"' | sort -u
+
+serial:
+	@ADB=$(ADB) scripts/emulator_serial.sh $(ANDROID_AVD)
 
 clean:
 	$(GRADLE) clean
