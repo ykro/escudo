@@ -1,0 +1,335 @@
+/* Presenter view: a fixed 1920×1080 stage, readable from the back row.
+   Body text never below 32 px; figures 64–120 px (tokens.json → presenter). */
+
+.viewport {
+  position: fixed;
+  inset: 0;
+  background: var(--mist);
+  overflow: hidden;
+}
+
+.stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1920px;
+  height: 1080px;
+  transform-origin: center center;
+  padding: 56px 72px 64px;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 40px;
+  font-size: 32px;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+/* ---------- header ---------- */
+.header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 88px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 44px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+.title { display: flex; align-items: baseline; gap: 28px; min-width: 0; }
+.title h1 { font-size: 60px; font-weight: 600; letter-spacing: -0.02em; }
+.claimId { color: var(--muted); font-size: 32px; font-variant-numeric: tabular-nums; }
+
+.meters { display: flex; align-items: center; gap: 72px; }
+.approvals { display: flex; flex-direction: column; align-items: flex-end; }
+.meterLabel { font-size: 32px; color: var(--muted); }
+.meterValue { font-size: 64px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.05; }
+.clockBox { display: flex; flex-direction: column; align-items: flex-end; }
+.clock {
+  font-size: 120px;
+  font-weight: 650;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.clockDone { color: var(--pine); }
+.doneChip {
+  margin-top: 8px;
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--pine);
+}
+
+/* ---------- body ---------- */
+.body {
+  display: grid;
+  grid-template-columns: 1fr 440px;
+  gap: 88px;
+  min-height: 0;
+}
+.timelineCol {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 0;
+}
+
+.timeline { display: flex; flex-direction: column; min-height: 0; height: 100%; gap: 28px; }
+
+.rowsClip {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  /* older steps fade out under the header */
+  mask-image: linear-gradient(to bottom, transparent 0, #000 120px);
+}
+
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  /* one shared grid: badges size to the widest one on screen, text starts in a single column */
+  grid-template-columns: 112px 48px max-content 1fr;
+  row-gap: 26px;
+  column-gap: 16px;
+  position: relative;
+}
+/* the vertical thread that ties the steps together */
+.rows::before {
+  content: "";
+  position: absolute;
+  left: 135px;
+  top: 22px;
+  bottom: 22px;
+  width: 3px;
+  background: var(--pine);
+  opacity: 0.85;
+  border-radius: 2px;
+}
+
+.row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  align-items: center;
+  animation: enter 250ms var(--ease) both;
+}
+@keyframes enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+
+.rowClock {
+  font-size: 32px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.rowDot {
+  justify-self: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--pine);
+  box-shadow: 0 0 0 6px var(--mist);
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  color: var(--mist);
+}
+.rowText {
+  font-size: 40px;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.rowText strong { font-weight: 600; }
+
+.badge {
+  justify-self: start;
+  font-size: 32px;
+  font-weight: 500;
+  padding: 4px 22px;
+  border-radius: var(--r-pill);
+  background: var(--sand);
+  color: var(--ink);
+  white-space: nowrap;
+}
+/* Surfaces agents use get the pine outline; human surfaces stay sand. */
+.badge_mcp, .badge_a2a, .badge_webmcp, .badge_appfunctions, .badge_voice {
+  background: var(--pine-soft);
+  color: var(--pine);
+}
+
+/* A human decision, once taken, becomes part of the calm pine thread (amber is only for waiting). */
+.tone_approved .rowDot { width: 36px; height: 36px; background: var(--pine); }
+.tone_rejected .rowDot { background: var(--muted); }
+.tone_error .rowDot { background: var(--danger); }
+.tone_error .rowText { color: var(--danger); }
+
+/* ---------- approval pause: the only amber on screen ---------- */
+.pause {
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  align-items: center;
+  gap: 32px;
+  background: var(--amber-bg);
+  border-radius: var(--r-lg);
+  padding: 32px 48px 36px 40px;
+  animation: pause-in 250ms var(--ease) both, pause-beat 900ms var(--ease) 250ms 1;
+}
+@keyframes pause-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pause-beat {
+  0% { box-shadow: 0 0 0 0 rgb(138 82 0 / 0.35); }
+  60% { box-shadow: 0 0 0 18px rgb(138 82 0 / 0); }
+  100% { box-shadow: 0 0 0 0 rgb(138 82 0 / 0); }
+}
+.pauseIcon {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: var(--amber);
+  color: var(--amber-bg);
+  display: grid;
+  place-items: center;
+}
+.pauseText { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.pauseLabel { color: var(--amber); font-size: 34px; font-weight: 600; }
+.pauseSummary { font-size: 56px; font-weight: 600; line-height: 1.1; letter-spacing: -0.015em; }
+.pauseReason { font-size: 32px; color: var(--amber); }
+
+/* ---------- placeholders ---------- */
+.placeholder { align-self: center; margin: auto 0; max-width: 1100px; display: flex; flex-direction: column; gap: 20px; }
+.placeholderTitle { font-size: 64px; font-weight: 600; letter-spacing: -0.02em; }
+.placeholderText { font-size: 36px; color: var(--muted); line-height: 1.35; }
+.skeletonRows { display: flex; flex-direction: column; gap: 28px; margin-top: 24px; }
+.offline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-size: 32px;
+  color: var(--muted);
+  background: var(--surface);
+  border: 2px solid var(--line);
+  padding: 8px 24px;
+  border-radius: var(--r-pill);
+}
+
+/* ---------- phone mirror ---------- */
+.phoneCol { display: flex; flex-direction: column; align-items: center; gap: 20px; min-height: 0; }
+.phone {
+  width: 440px;
+  flex: 1;
+  max-height: 820px;
+  border: 3px solid var(--ink);
+  border-radius: 64px;
+  padding: 14px;
+  background: var(--surface);
+}
+.phoneScreen {
+  height: 100%;
+  border-radius: 50px;
+  border: 2px solid var(--line);
+  background: var(--mist);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.phoneBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 36px 32px 12px;
+  font-size: 30px;
+  font-weight: 600;
+}
+.phoneBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 16px 28px 32px;
+  animation: enter 250ms var(--ease) both;
+}
+.phoneIdle { justify-content: center; }
+.phoneApproval {
+  background: var(--sand);
+  border-radius: var(--r-lg);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.phoneApprovalTitle { font-size: 38px; font-weight: 600; line-height: 1.15; }
+.phoneAmount { font-size: 64px; font-weight: 650; letter-spacing: -0.02em; line-height: 1.05; }
+.phoneMuted { font-size: 30px; color: var(--muted); }
+.phoneSmall {
+  font-size: 30px;
+  line-height: 1.3;
+  color: var(--ink);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.phoneButton {
+  margin-top: auto;
+  background: var(--pine);
+  color: var(--mist);
+  border-radius: var(--r-md);
+  text-align: center;
+  font-size: 30px;
+  font-weight: 600;
+  padding: 22px 16px;
+}
+.phoneLink { text-align: center; font-size: 28px; font-weight: 600; color: var(--pine); }
+.phoneDone { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; padding-top: 24px; }
+.phoneFact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 30px;
+  color: var(--muted);
+  border-top: 2px solid var(--line);
+  padding-top: 14px;
+}
+.phoneFact strong { font-size: 32px; color: var(--ink); font-weight: 600; }
+.phoneCaption { font-size: 32px; color: var(--muted); }
+
+/* ---------- finale: the claim is signed ---------- */
+.done {
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  align-items: center;
+  gap: 32px;
+  background: var(--pine);
+  color: var(--mist);
+  border-radius: var(--r-lg);
+  padding: 32px 48px 32px 40px;
+  animation: pause-in 300ms var(--ease) both;
+}
+.doneIcon {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: var(--mist);
+  color: var(--pine);
+  display: grid;
+  place-items: center;
+}
+.doneText { font-size: 52px; font-weight: 600; letter-spacing: -0.015em; line-height: 1.15; }
+.doneMuted { font-weight: 400; font-size: 36px; opacity: 0.9; }

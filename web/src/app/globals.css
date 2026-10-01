@@ -1,0 +1,82 @@
+/* Escudo · "A — Sereno". Tokens from src/brand/tokens.json. Light theme only, by design. */
+:root {
+  color-scheme: light;
+  --mist: #f3f6f4;      /* background */
+  --surface: #fcfdfc;   /* cards */
+  --ink: #14201c;       /* text: 15.4:1 on mist */
+  --muted: #4e5d57;     /* secondary text: 6.4:1 on mist */
+  --pine: #0f5c4d;      /* primary: 7.3:1 with mist text */
+  --pine-soft: #e3eeea; /* pine tint for chips and selection (ink 14:1) */
+  --sand: #e9dfc8;      /* tonal container: ink 12.7:1 */
+  --amber: #8a5200;     /* approval pauses only: 5.7:1 on amber-bg */
+  --amber-bg: #fff1d6;
+  --danger: #9b2c1f;    /* errors (7:1 on mist) — never used for approvals */
+  --line: #d9e1dd;      /* hairlines */
+
+  --r-sm: 8px;
+  --r-md: 16px;
+  --r-lg: 28px;
+  --r-pill: 999px;
+
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px; --s8: 72px; --s9: 112px;
+
+  /* Material 3 "emphasized decelerate" */
+  --ease: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --shadow: 0 1px 2px rgb(20 32 28 / 0.04), 0 8px 24px rgb(20 32 28 / 0.05);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--mist);
+  color: var(--ink);
+  font-family: var(--font-onest), system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+h1, h2, h3 { line-height: 1.15; margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+p { margin: 0; }
+a { color: var(--pine); text-underline-offset: 3px; }
+button, input, select { font: inherit; color: inherit; }
+
+:focus-visible { outline: 3px solid var(--pine); outline-offset: 3px; border-radius: var(--r-sm); }
+
+.brand { display: inline-flex; align-items: center; gap: 0.45em; font-weight: 650; color: var(--ink); text-decoration: none; }
+.brand-word { letter-spacing: -0.015em; }
+
+.visually-hidden {
+  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+.skip-link { position: absolute; left: var(--s4); top: -100px; background: var(--pine); color: var(--mist); padding: var(--s2) var(--s4); border-radius: var(--r-sm); z-index: 10; }
+.skip-link:focus { top: var(--s4); }
+
+/* Buttons: one primary per view, the rest quiet. */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+  min-height: 48px; padding: 0 var(--s5); border-radius: var(--r-pill);
+  border: 1px solid transparent; cursor: pointer; font-weight: 600; text-decoration: none;
+  transition: background-color 160ms var(--ease), transform 160ms var(--ease);
+}
+.btn:active { transform: scale(0.98); }
+.btn-primary { background: var(--pine); color: var(--mist); }
+.btn-primary:hover { background: #0c4e41; }
+.btn-quiet { background: transparent; color: var(--pine); border-color: var(--line); }
+.btn-quiet:hover { background: var(--pine-soft); }
+.btn[disabled] { opacity: 0.6; cursor: progress; }
+
+/* Loading placeholders */
+.skeleton {
+  background: linear-gradient(90deg, #e7ece9 0%, #eff3f1 40%, #e7ece9 80%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+  border-radius: var(--r-sm);
+}
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}

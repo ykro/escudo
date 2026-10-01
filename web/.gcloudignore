@@ -1,0 +1,8 @@
+# Cloud Build upload for escudo-web. Explicit so gcloud does not fall back to .gitignore,
+# which ignores .env* — the staged .env.production (public client config) must reach `next build`.
+node_modules/
+.next/
+.env.local
+test-results/
+playwright-report/
+e2e/screenshots/

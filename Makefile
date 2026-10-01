@@ -15,7 +15,7 @@ ADMIN_TOKEN_FILE := infra/.generated/admin_token
 LOCAL := $(filter http://127.0.0.1% http://localhost%,$(ESCUDO_BASE_URL))
 ENV_FILE := $(if $(wildcard .env),--env-file ../.env,)
 
-.PHONY: help up up-mock seed reset test scenario scenario-live deploy photos android-build android-test android-install android-emulator
+.PHONY: help up up-mock web seed reset test scenario scenario-live deploy deploy-api deploy-web photos android-build android-test android-install android-emulator
 
 help:
 	@echo "make up          API local (Firestore + Gemini, ADC) en :8080"
@@ -23,8 +23,9 @@ help:
 	@echo "make seed        póliza, talleres y grúas en Firestore + login del cliente en Firebase Auth (.env.local)"
 	@echo "make reset       vuelve al estado inicial (< 10 s) en ESCUDO_BASE_URL (CLOUD=1: el desplegado)"
 	@echo "make test        pruebas (backend; Android y web si existen)"
-	@echo "make scenario    escenario completo vía MCP, aprobaciones automáticas (modo prueba; CLOUD=1)"
-	@echo "make deploy      despliega escudo-api en Cloud Run"
+	@echo "make scenario    escenario completo vía MCP, aprobaciones automáticas (modo prueba; CLOUD=1, APPROVE_DELAY=4)"
+	@echo "make web         portal + /presenter local en :3217 (contra el API desplegado)"
+	@echo "make deploy      despliega escudo-api y escudo-web en Cloud Run (deploy-api / deploy-web)"
 	@echo "make android-build | android-test | android-install [FLAVOR=live|fake]"
 	@echo "make android-emulator   arranca el emulador de AppFunctions/FCM ($(ANDROID_AVD))"
 
@@ -33,6 +34,9 @@ up:
 
 up-mock:
 	cd $(BACKEND) && MOCK_AI=1 MOCK_AUTH=1 ADMIN_TOKEN=local-admin uv run uvicorn escudo.main:create_app --factory --host 0.0.0.0 --port 8080
+
+web:
+	cd web && npm run dev
 
 seed:
 	cd $(BACKEND) && uv run $(ENV_FILE) python -m escudo.admin seed
@@ -48,7 +52,7 @@ reset:
 test:
 	cd $(BACKEND) && MOCK_AI=1 MOCK_AUTH=1 uv run pytest -q
 	@if [ -f android/Makefile ]; then $(MAKE) -C android test; else echo "(android/: sin pruebas todavía)"; fi
-	@if [ -f web/package.json ]; then cd web && npm test --silent; else echo "(web/: sin pruebas todavía)"; fi
+	@if [ -f web/package.json ]; then cd web && npm test --silent; fi
 
 scenario:
 	cd $(BACKEND) && uv run $(ENV_FILE) python -m escudo.scenario --base-url $(ESCUDO_BASE_URL) --test-mode --auto-approve \
@@ -58,8 +62,13 @@ scenario:
 scenario-live:
 	cd $(BACKEND) && uv run $(ENV_FILE) python -m escudo.scenario --base-url $(ESCUDO_BASE_URL) $(if $(FIREBASE_WEB_API_KEY),--sign-in,)
 
-deploy:
+deploy: deploy-api deploy-web
+
+deploy-api:
 	bash infra/10-deploy-api.sh
+
+deploy-web:
+	bash infra/11-deploy-web.sh
 
 photos:
 	cd $(BACKEND) && uv run $(ENV_FILE) python scripts/generate_sample_photos.py
