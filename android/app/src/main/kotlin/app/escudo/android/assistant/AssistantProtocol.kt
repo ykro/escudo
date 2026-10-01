@@ -56,8 +56,10 @@ object AssistantProtocol {
   /**
    * Silence sent when the button is released. With automatic activity detection the model only
    * answers after it hears the end of speech, and a stream that just stops has no end.
+   * Measured against the deployed Live model: 800 ms gets no answer, 2 s always does.
    */
-  val TRAILING_SILENCE = ByteArray(INPUT_SAMPLE_RATE * 2 * 800 / 1000)
+  const val TRAILING_SILENCE_MS = 2_000
+  val TRAILING_SILENCE = ByteArray(INPUT_SAMPLE_RATE * 2 * TRAILING_SILENCE_MS / 1000)
 
   fun parse(text: String, base64Decoder: (String) -> ByteArray = ::decodeBase64): AssistantEvent? {
     val json = runCatching { EscudoJson.parseToJsonElement(text).jsonObject }.getOrNull() ?: return null

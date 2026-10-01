@@ -1,5 +1,6 @@
 package app.escudo.android.assistant
 
+import android.util.Log
 import app.escudo.android.data.auth.AuthTokenProvider
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineScope
@@ -72,6 +73,10 @@ class LiveAssistantSession(
     scope.cancel()
   }
 
+  private companion object {
+    const val TAG = "LiveAssistantSession"
+  }
+
   private inner class Listener : WebSocketListener() {
     // Connected is emitted on the server's `ready` message, not on open: the socket is accepted
     // before the Firebase ID token is verified.
@@ -84,11 +89,18 @@ class LiveAssistantSession(
       AssistantProtocol.parse(text)?.let { _events.tryEmit(it) }
     }
 
+    override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+      Log.i(TAG, "Server closing: $code $reason")
+      webSocket.close(code, null)
+    }
+
     override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+      Log.i(TAG, "Closed: $code $reason")
       _events.tryEmit(AssistantEvent.Disconnected(reason.ifBlank { null }))
     }
 
     override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+      Log.w(TAG, "Socket failure (HTTP ${response?.code})", t)
       // Transport failure: no server message to show; the UI uses its own "no connection" text.
       _events.tryEmit(AssistantEvent.Error(message = null))
       _events.tryEmit(AssistantEvent.Disconnected(t.message))

@@ -61,8 +61,8 @@ class AssistantProtocolTest {
     assertEquals("""{"type":"activity_start"}""", AssistantProtocol.ACTIVITY_START)
     assertEquals("""{"type":"activity_end"}""", AssistantProtocol.ACTIVITY_END)
     assertEquals("""{"type":"end"}""", AssistantProtocol.END)
-    // 800 ms of PCM16 mono at 16 kHz, all zeros.
-    assertEquals(25_600, AssistantProtocol.TRAILING_SILENCE.size)
+    // 2 s of PCM16 mono at 16 kHz, all zeros (enough for Live's automatic end-of-speech detection).
+    assertEquals(64_000, AssistantProtocol.TRAILING_SILENCE.size)
     assertTrue(AssistantProtocol.TRAILING_SILENCE.all { it == 0.toByte() })
   }
 }
