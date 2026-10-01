@@ -10,9 +10,12 @@ Two roles:
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
+import os
 import re
+import time
 from typing import TYPE_CHECKING, Any, Callable
 
 import httpx
@@ -41,7 +44,11 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 PREFIX = "/a2a/escudo"
-A2A_TIMEOUT_SECONDS = 25  # typical partner answer: 2-5 s; a stuck model call is abandoned and retried
+# Partners answer deterministically (no model on the critical path). Measured in Cloud Run, 2026-10-01:
+# A2A round trip p95 0.18 s (median 0.10 s); only the first call after a deploy took 3.3 s. 2x p95 would
+# be 0.36 s, so the timeout is floored at 2 s: a stuck call now costs 2 s (was 25 s) and the cold call
+# still succeeds on its retry. See backend/VERSIONS.md.
+A2A_TIMEOUT_SECONDS = float(os.environ.get("A2A_TIMEOUT_SECONDS", "2"))
 ACTOR_BY_SKILL = {tow_agent.SKILL_ID: "tow_agent", repair_agent.SKILL_ID: "repair_agent"}
 
 
@@ -56,6 +63,17 @@ class EscudoAgent:
         )
         self.peers = PeerDirectory(settings.a2a_peers, lambda: self.client_factory())
 
+    async def warm_up(self) -> None:
+        """Pay the one-time cost (card resolution, A2A client and runner setup: 3-7 s measured) at
+        startup instead of on the first claim. Read-only requests; no events are written."""
+        try:
+            for skill_id, payload in ((tow_agent.SKILL_ID, {"location": None}), (repair_agent.SKILL_ID, {"assessment": None})):
+                card = await self.peers.find(skill_id)
+                await asyncio.wait_for(self._send(card, json.dumps(payload)), 30)
+            log.info("a2a warm-up done")
+        except Exception as exc:  # warming is best effort
+            log.warning("a2a warm-up failed: %s", exc)
+
     # --- delegation -------------------------------------------------------------
     async def request_tow(self, claim: Claim, policy: Policy, caller: Caller) -> TowDispatch:
         payload = {
@@ -69,7 +87,7 @@ class EscudoAgent:
             tow = TowDispatch.model_validate(data.get("dispatch", data))
         except ValidationError as exc:
             raise PeerUnavailable("peer_bad_response", "El socio de grúas respondió algo que no entendimos.") from exc
-        await self._emit_response(tow_agent.SKILL_ID, claim, caller, f"{tow.provider}: llega en {tow.eta_minutes} min",
+        await self._emit_response(tow_agent.SKILL_ID, claim, caller, data.get("note") or f"{tow.provider}: llega en {tow.eta_minutes} min",
                                   {"provider": tow.provider, "eta_minutes": tow.eta_minutes})
         return tow
 
@@ -85,7 +103,7 @@ class EscudoAgent:
         except ValidationError as exc:
             raise PeerUnavailable("peer_bad_response", "La red de talleres respondió algo que no entendimos.") from exc
         cheapest = min((o.quote_usd for o in options), default=0)
-        await self._emit_response(repair_agent.SKILL_ID, claim, caller, f"{len(options)} talleres cotizados, desde USD {cheapest:,.0f}",
+        await self._emit_response(repair_agent.SKILL_ID, claim, caller, data.get("note") or f"{len(options)} talleres cotizados, desde USD {cheapest:,.0f}",
                                   {"shops": [o.name for o in options]})
         return options
 
@@ -99,19 +117,24 @@ class EscudoAgent:
             data={"peer": card.name, "partner": partner, "skill": skill_id, "rpc_url": url, "discovered_via": "agent_card"},
         )
         last_error: Exception | None = None
-        for _ in range(3):  # retries: a model call can (rarely) stall or answer with malformed JSON
+        for attempt in range(1, 4):  # retries: a partner can (rarely) stall or answer with malformed JSON
+            started = time.perf_counter()
             try:
-                text = await self._send(card, json.dumps(payload, ensure_ascii=False))
-                return _parse_json(text)
-            except (ValueError, httpx.HTTPError) as exc:
+                # Hard bound: RemoteA2aAgent has its own timeouts; this one is ours.
+                text = await asyncio.wait_for(self._send(card, json.dumps(payload, ensure_ascii=False)), A2A_TIMEOUT_SECONDS)
+                data = _parse_json(text)
+                log.info("a2a_timing peer=%s skill=%s attempt=%d seconds=%.2f", card.name, skill_id, attempt, time.perf_counter() - started)
+                return data
+            except (ValueError, httpx.HTTPError, TimeoutError) as exc:
                 last_error = exc
-                log.warning("A2A call to %s failed: %s", card.name, exc)
+                log.warning("a2a_timing peer=%s skill=%s attempt=%d seconds=%.2f failed: %s",
+                            card.name, skill_id, attempt, time.perf_counter() - started, exc)
         self.peers.forget()
         raise PeerUnavailable("peer_unavailable", f"{card.name} no respondió. Intenta de nuevo en un momento.") from last_error
 
     async def _send(self, card: AgentCard, text: str) -> str:
         async with self.client_factory() as client:
-            remote = RemoteA2aAgent(name=_identifier(card.name), agent_card=card, httpx_client=client)
+            remote = RemoteA2aAgent(name=_identifier(card.name), agent_card=card, httpx_client=client, timeout=A2A_TIMEOUT_SECONDS)
             runner = Runner(app_name="escudo_agent", agent=remote, session_service=InMemorySessionService(), auto_create_session=True)
             final = ""
             async for event in runner.run_async(

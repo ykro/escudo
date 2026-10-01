@@ -9,16 +9,13 @@ import math
 from typing import Any
 
 from a2a.types import AgentSkill
-from google.adk.agents import BaseAgent, LlmAgent
-from google.adk.tools import ToolContext
-from google.genai import types
+from google.adk.agents import BaseAgent
 
 
 from ..config import Settings
 from ..models import TowDispatch
 from ..repository import Repository
 from .hosting import build_card
-from .llm import gemini
 from .scripted import ScriptedAgent
 
 SKILL_ID = "tow_dispatch"
@@ -26,10 +23,6 @@ PREFIX = "/a2a/tow"
 DEFAULT_LOCATION = {"lat": 14.6349, "lng": -90.5069}  # Ciudad de Guatemala centro
 ROAD_FACTOR = 1.4  # streets are not straight lines
 
-INSTRUCTION = """Eres el agente de despacho de Grúas Aliadas, socio de la aseguradora Escudo.
-Recibes un JSON con claim_id y location {lat, lng, label} de un auto accidentado.
-1. Llama a find_nearest_tow con lat y lng (si no vienen, usa lat 14.6349, lng -90.5069).
-2. El resultado de la herramienta es la respuesta: no inventes datos."""
 
 
 def _km(a: dict[str, float], b: dict[str, float]) -> float:
@@ -39,16 +32,13 @@ def _km(a: dict[str, float], b: dict[str, float]) -> float:
 
 
 def make_tool(repo: Repository):  # noqa: ANN201
-    async def find_nearest_tow(lat: float, lng: float, tool_context: ToolContext | None = None) -> dict[str, Any]:
+    async def find_nearest_tow(lat: float, lng: float) -> dict[str, Any]:
         """Find the tow provider with the shortest ETA to a location in Guatemala City.
 
         Args:
             lat: Latitude of the vehicle.
             lng: Longitude of the vehicle.
         """
-        if tool_context is not None:
-            # The tool result *is* the answer: skip the second model call that would only restate it.
-            tool_context.actions.skip_summarization = True
         best: TowDispatch | None = None
         for p in await repo.list_tow_providers():
             minutes = p["dispatch_minutes"] + _km(p["base"], {"lat": lat, "lng": lng}) * ROAD_FACTOR / p["avg_speed_kmh"] * 60
@@ -63,27 +53,17 @@ def make_tool(repo: Repository):  # noqa: ANN201
 
 
 def build_agent(settings: Settings, repo: Repository) -> BaseAgent:
+    """A deterministic ADK agent: the answer is computed, never generated — fast (~0.1 s), testable and
+    the same on stage every time. A Gemini-written note was measured (2026-10-01): only 5 of 31 arrived
+    within a 1.5 s budget, so every call paid 1.5 s for a template; it was removed."""
     tool = make_tool(repo)
-    if settings.mock_ai:
 
-        async def handle(request: dict[str, Any]) -> Any:
-            loc = {**DEFAULT_LOCATION, **{k: v for k, v in (request.get("location") or {}).items() if v is not None}}
-            return await tool(float(loc["lat"]), float(loc["lng"]))
+    async def handle(request: dict[str, Any]) -> Any:
+        loc = {**DEFAULT_LOCATION, **{k: v for k, v in (request.get("location") or {}).items() if v is not None}}
+        result = await tool(float(loc["lat"]), float(loc["lng"]))
+        return result
 
-        return ScriptedAgent(name="tow_agent", description="Despacho de grúas (modo simulado)", handler=handle)
-
-    return LlmAgent(
-        name="tow_agent",
-        model=gemini(settings),
-        description="Despacha la grúa más cercana y estima su tiempo de llegada.",
-        instruction=INSTRUCTION,
-        tools=[tool],
-        # One model call picks the tool arguments; the tool's JSON goes back over A2A as is
-        # (skip_summarization). No output_schema: combined with tools it made the model loop.
-        generate_content_config=types.GenerateContentConfig(
-            thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW)
-        ),
-    )
+    return ScriptedAgent(name="tow_agent", description="Despacha la grúa más cercana y estima su tiempo de llegada.", handler=handle)
 
 
 def card(settings: Settings):  # noqa: ANN201

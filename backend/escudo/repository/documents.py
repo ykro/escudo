@@ -19,6 +19,7 @@ class DocumentStore(Protocol):
     async def where(self, collection: str, **equals: Any) -> list[Doc]: ...
     async def atomic_update(self, collection: str, doc_id: str, mutation: Mutation) -> Doc: ...
     async def clear(self, collection: str) -> None: ...
+    async def delete(self, collection: str, doc_id: str) -> None: ...
 
 
 class MemoryDocumentStore:
@@ -58,6 +59,9 @@ class MemoryDocumentStore:
 
     async def clear(self, collection: str) -> None:
         self._data.pop(collection, None)
+
+    async def delete(self, collection: str, doc_id: str) -> None:
+        self._data.get(collection, {}).pop(doc_id, None)
 
 
 class FirestoreDocumentStore:
@@ -100,3 +104,6 @@ class FirestoreDocumentStore:
 
     async def clear(self, collection: str) -> None:
         await self._db.recursive_delete(self._db.collection(collection))
+
+    async def delete(self, collection: str, doc_id: str) -> None:
+        await self._db.collection(collection).document(doc_id).delete()

@@ -76,3 +76,13 @@ def test_voice_accepts_header_or_first_auth_frame():
         with client.websocket_connect("/assistant/live") as ws:
             ws.send_json({"type": "auth", "token": "tok-andrea"})
             assert ws.receive_json()["type"] == "ready"
+
+
+async def test_reset_drops_keyless_devices_but_keeps_the_phone(http, services):
+    from escudo.repository.repository import DEVICES
+    from helpers import register_phone
+
+    await register_phone(http)  # a real, keyed device
+    await services.repo.register_device("probe", {"device_key": "probe", "customer_id": "cus_demo", "fcm_token": "x"})
+    assert (await http.post("/admin/reset", headers={"X-Admin-Token": "test-admin"})).status_code == 204
+    assert {d["device_key"] for d in await services.repo.store.where(DEVICES)} == {"test-phone"}

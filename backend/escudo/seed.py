@@ -12,7 +12,7 @@ import time
 from datetime import datetime, timedelta, timezone
 
 from .repository import Repository
-from .repository.repository import CUSTOMERS, POLICIES, RESETTABLE, SHOPS, TOW_PROVIDERS
+from .repository.repository import CUSTOMERS, DEVICES, POLICIES, RESETTABLE, SHOPS, TOW_PROVIDERS
 
 GT = timezone(timedelta(hours=-6))  # Guatemala, no DST
 ORIGIN = {"type": "synthetic", "generator": "backend/escudo/seed.py", "model": None, "prompt": None, "seed": 2027}
@@ -114,10 +114,18 @@ async def write_seed(repo: Repository) -> None:
     await asyncio.gather(*writes)
 
 
+async def drop_keyless_devices(repo: Repository) -> int:
+    """Devices registered without an approval key (escudo-approval:v1) can never approve and only make
+    pushes fail; reset removes them. Keyed devices (the phone, the scenario's test device) stay."""
+    stale = [d for d in await repo.store.where(DEVICES) if not d.get("public_key")]
+    await asyncio.gather(*(repo.store.delete(DEVICES, d.get("device_key") or d.get("device_id")) for d in stale))
+    return len(stale)
+
+
 async def reset(repo: Repository) -> float:
     """Clear claims/approvals/events and restore the seed (`make reset`). Returns seconds taken."""
     started = time.perf_counter()
-    await asyncio.gather(*(repo.store.clear(c) for c in RESETTABLE))
+    await asyncio.gather(*(repo.store.clear(c) for c in RESETTABLE), drop_keyless_devices(repo))
     await write_seed(repo)
     return time.perf_counter() - started
 

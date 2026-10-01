@@ -13,3 +13,4 @@ RETRY = types.HttpRetryOptions(attempts=3, initial_delay=1.0, max_delay=8.0, htt
 
 def gemini(settings: Settings) -> Gemini:
     return Gemini(model=settings.gemini_model, retry_options=RETRY)
+

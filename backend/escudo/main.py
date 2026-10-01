@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import logging
 import os
@@ -48,7 +49,17 @@ def create_app(services: Services | None = None) -> FastAPI:
         if await seed.seed_if_empty(services.repo):
             logging.getLogger(__name__).info("seeded an empty database")
         async with mcp.session_manager.run():  # a mounted app's own lifespan never runs
+            warm = None
+            if not settings.mock_ai:
+                # Partners are reached over HTTP on our own public URL: warm up once we are serving.
+                async def warm_partners() -> None:
+                    await asyncio.sleep(3)
+                    await services.escudo_agent.warm_up()
+
+                warm = asyncio.create_task(warm_partners())
             yield
+            if warm:
+                warm.cancel()
 
     app = FastAPI(
         title="Escudo API",

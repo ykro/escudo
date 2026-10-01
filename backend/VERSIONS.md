@@ -20,8 +20,16 @@ Preview-era APIs move fast; these are the versions the backend is built and test
 
 - A2A partners are mounted under a prefix (`/a2a/tow`), so their cards live at
   `/a2a/tow/.well-known/agent-card.json`; `A2A_PEERS` holds those base URLs.
-- ADK partner agents use a tool with `skip_summarization`: one model call chooses the arguments and the
-  tool's JSON travels back over A2A as a `function_response` data part. `output_schema` together with
-  tools made the model loop on repeated A2A calls, so it is not used.
+- Tow and Repair are deterministic ADK agents (`BaseAgent`, no model call): the quote and ETA are
+  computed. Measured in Cloud Run on 2026-10-01: an LLM tool-choice call cost 2-30 s with spikes past a
+  25 s timeout; a Gemini-written note within a 1.5 s budget arrived only 5 of 31 times. Deterministic:
+  A2A round trip median 0.10 s, p95 0.18 s; `list_repair_options` end to end p95 1.11 s.
+  `A2A_TIMEOUT_SECONDS` = 2 (2x p95 floored), enforced with `asyncio.wait_for`; the one-time cold path
+  (3-7 s) is paid by a warm-up request to each partner right after startup.
+- Damage assessment: photos downscaled to 1024 px, one multimodal call, `thinking_level=LOW`, hedged:
+  a new identical call starts every `ASSESS_HEDGE_SECONDS` (5 s) or on failure, up to
+  `ASSESS_HEDGE_ATTEMPTS` (4), each on its own connection; first answer wins; hard deadline `ASSESS_DEADLINE_SECONDS` (45 s). The model
+  is only served from `global`, so the backup cannot go to another region. Timings in the logs as
+  `assessment_timing`.
 - pytest runs async tests with the anyio plugin: MCP's task groups need fixture setup and teardown
   in the same task (pytest-asyncio splits them).

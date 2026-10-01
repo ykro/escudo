@@ -6,12 +6,16 @@ Gemini reads the photos and must answer with the `DamageAssessment` schema
 
 from __future__ import annotations
 
+import asyncio
 import io
 import logging
-from typing import Protocol
+import os
+import time
+from typing import Any, Awaitable, Callable, Protocol, TypeVar
 
 from PIL import Image, ImageOps
 
+from .errors import EscudoError
 from .models import DamageAssessment, DamagedPart
 
 log = logging.getLogger(__name__)
@@ -44,6 +48,62 @@ def for_assessment(data: bytes) -> bytes:
     return out.getvalue()
 
 
+# Normal answers take 5-10 s; rare ones took 16-115 s (2026-10-01, Vertex `global`, the only region that
+# serves the model). A new identical call starts every HEDGE_AFTER_SECONDS (or as soon as one fails), up
+# to HEDGE_ATTEMPTS; the first answer wins and the rest are cancelled.
+# Measured 2026-10-01 afternoon: ~30% of calls stalled past 60 s while the rest took 4-7 s, independent
+# of request size. Hence frequent, independent attempts (each on its own connection).
+HEDGE_AFTER_SECONDS = float(os.environ.get("ASSESS_HEDGE_SECONDS", "5"))
+HEDGE_ATTEMPTS = int(os.environ.get("ASSESS_HEDGE_ATTEMPTS", "4"))
+DEADLINE_SECONDS = float(os.environ.get("ASSESS_DEADLINE_SECONDS", "45"))
+
+T = TypeVar("T")
+
+
+async def hedged(
+    call: Callable[[], Awaitable[T]], hedge_after: float, deadline: float, attempts: int = HEDGE_ATTEMPTS
+) -> tuple[T, dict[str, Any]]:
+    """Run `call`; start another attempt every `hedge_after` s while none has answered (or right away
+    when one fails), up to `attempts`. First success wins, the others are cancelled; nothing after
+    `deadline` s. Returns (result, timing info)."""
+    started = time.perf_counter()
+    tasks: dict[asyncio.Task[T], int] = {}
+    launched = 0
+    next_launch = 0.0
+    last_error: BaseException | None = None
+
+    def launch() -> None:
+        nonlocal launched, next_launch
+        launched += 1
+        tasks[asyncio.ensure_future(call())] = launched
+        next_launch = (time.perf_counter() - started) + hedge_after
+
+    try:
+        launch()
+        while tasks:
+            elapsed = time.perf_counter() - started
+            if elapsed >= deadline:
+                break
+            wait_until = min(deadline, next_launch) if launched < attempts else deadline
+            done, _ = await asyncio.wait(tasks, timeout=max(wait_until - elapsed, 0), return_when=asyncio.FIRST_COMPLETED)
+            failed = False
+            for task in done:
+                attempt = tasks.pop(task)
+                if task.exception() is None:
+                    return task.result(), {"seconds": round(time.perf_counter() - started, 2), "hedged": launched > 1, "winner": attempt}
+                last_error, failed = task.exception(), True
+            if launched < attempts and (failed or time.perf_counter() - started >= next_launch):
+                launch()
+        raise TimeoutError(f"no answer in {deadline:.0f} s after {launched} attempts") from last_error
+    finally:
+        for task in tasks:
+            task.cancel()
+
+
+class AssessmentUnavailable(EscudoError):
+    status = 503
+
+
 class Assessor(Protocol):
     async def assess(self, photos: list[tuple[bytes, str]], vehicle: str, description: str) -> DamageAssessment: ...
 
@@ -69,12 +129,12 @@ class GeminiAssessor:
         from google import genai
 
         self._genai = genai
-        retry = genai.types.HttpRetryOptions(attempts=3, initial_delay=1.0, http_status_codes=[429, 500, 502, 503, 504])
-        # A stalled call is cut at 45 s and retried: on stage a retry beats an open-ended wait.
-        self._client = genai.Client(
-            vertexai=True, project=project, location=location,
-            http_options=genai.types.HttpOptions(retry_options=retry, timeout=45_000),
-        )
+        # Transient 429/5xx are retried inside each call; slowness is handled by `hedged`.
+        retry = genai.types.HttpRetryOptions(attempts=2, initial_delay=0.5, http_status_codes=[429, 500, 502, 503, 504])
+        options = genai.types.HttpOptions(retry_options=retry, timeout=int(DEADLINE_SECONDS * 1000))
+        # A small pool of clients = separate connections, so a stalled connection cannot stall the backups.
+        self._clients = [genai.Client(vertexai=True, project=project, location=location, http_options=options)
+                         for _ in range(HEDGE_ATTEMPTS)]
         self._model = model
 
     async def assess(self, photos: list[tuple[bytes, str]], vehicle: str, description: str) -> DamageAssessment:
@@ -82,18 +142,32 @@ class GeminiAssessor:
         # One multimodal call with every photo, each downscaled first.
         parts = [types.Part.from_bytes(data=for_assessment(data), mime_type="image/jpeg") for data, _ in photos]
         parts.append(types.Part.from_text(text=PROMPT.format(vehicle=vehicle, description=description)))
-        response = await self._client.aio.models.generate_content(
-            model=self._model,
-            contents=[types.Content(role="user", parts=parts)],
-            config=types.GenerateContentConfig(
+        config = types.GenerateContentConfig(
                 response_mime_type="application/json",
                 response_schema=DamageAssessment,
                 temperature=0.2,
                 # Measured: 3 photos took 11-30 s at LOW vs up to 100 s at the default level.
                 thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW),
                 media_resolution=types.MediaResolution.MEDIA_RESOLUTION_MEDIUM,
-            ),
         )
+
+        attempt = iter(self._clients)
+
+        def call():  # noqa: ANN202
+            client = next(attempt, self._clients[0])
+            return client.aio.models.generate_content(
+                model=self._model, contents=[types.Content(role="user", parts=parts)], config=config
+            )
+
+        try:
+            response, timing = await hedged(call, HEDGE_AFTER_SECONDS, DEADLINE_SECONDS)
+        except Exception as exc:
+            log.warning("assessment_timing photos=%d failed: %s", len(photos), exc)
+            raise AssessmentUnavailable(
+                "assessment_unavailable", "No pudimos evaluar las fotos en este momento. Intenta de nuevo."
+            ) from exc
+        log.info("assessment_timing photos=%d seconds=%.2f hedged=%s winner=%d",
+                 len(photos), timing["seconds"], timing["hedged"], timing["winner"])
         if isinstance(response.parsed, DamageAssessment):
             assessment = response.parsed
         else:
