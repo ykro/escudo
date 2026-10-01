@@ -118,14 +118,21 @@ report_accident() {
 }
 
 speak() { # <fixture> : play it and wait until the assistant is done answering
-  local idle voice
-  idle=$(count "assistant_idle"); voice=$(count "voice_end")
-  front
-  adb shell am start -n "$PKG/.MainActivity" --es voice_input_file "$1" >/dev/null 2>&1
-  wait_for "voice_end" "$voice" 60 || die "fixture $1 did not play"
-  say "spoke $1"
-  wait_for "assistant_idle" "$idle" "$TURN_TIMEOUT" || die "no answer to $1"
-  say "assistant answered (tools so far: $(grep -o 'tool_call [a-z_]*' "$LOG" | cut -d' ' -f2 | paste -sd, -))"
+  local idle voice drops attempt
+  for attempt in 1 2; do
+    idle=$(count "assistant_idle"); voice=$(count "voice_end"); drops=$(count "disconnected")
+    front
+    # If the session dropped, the app reconnects first and then plays the recording.
+    adb shell am start -n "$PKG/.MainActivity" --es voice_input_file "$1" >/dev/null 2>&1
+    wait_for "voice_end" "$voice" 60 || die "fixture $1 did not play"
+    say "spoke $1"
+    if wait_for "assistant_idle|disconnected" "$((idle + drops))" "$TURN_TIMEOUT" && [ "$(count "disconnected")" -eq "$drops" ]; then
+      say "assistant answered (tools so far: $(grep -o 'tool_call [a-z_]*' "$LOG" | cut -d' ' -f2 | paste -sd, -))"
+      return 0
+    fi
+    say "voice session dropped (attempt $attempt); speaking $1 again"
+  done
+  die "no answer to $1"
 }
 
 approved=0
