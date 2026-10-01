@@ -1,8 +1,9 @@
 """Customer identity: Firebase ID tokens (MOCK_AUTH=1 accepts anything, for local tests).
 
-Escudo is a one-customer demo. The seeded login (`make seed`) carries a
-`customer_id` custom claim; any other verified Firebase user (anonymous too)
-acts as the seeded policy holder (`DEMO_CUSTOMER_ID`). The token still matters — it is what makes
+Every surface acts as the customer named in the verified token: the seeded login
+(`make seed`) carries a `customer_id` custom claim; a user without that claim is
+their own customer (uid), so they see no policy and no claims. Only MOCK_AUTH=1
+(local tests) maps every caller to the demo customer. The token still matters — it is what makes
 an MCP client, the assistant or the app act *as the customer*.
 """
 
@@ -45,19 +46,20 @@ class Authenticator:
             raise Unauthorized("unauthenticated", "Inicia sesión en Escudo para continuar.")
         cached = self._cache.get(token)
         if not (cached and cached[0] > time.time()):
-            from firebase_admin import auth
-
             try:
-                claims = await asyncio.to_thread(auth.verify_id_token, token)
+                claims = await self._verified_claims(token)
             except Exception as exc:  # expired, revoked, wrong project, malformed...
                 raise Unauthorized("invalid_token", "Tu sesión expiró o no es válida. Vuelve a iniciar sesión.") from exc
             uid = claims["uid"]
-            # The seeded login carries a customer_id claim (make seed); any other user
-            # (e.g. anonymous, for the scenario runner) acts as the demo customer.
-            customer_id = claims.get("customer_id") or self._settings.demo_customer_id
+            customer_id = claims.get("customer_id") or uid
             self._cache[token] = (min(claims.get("exp", 0), time.time() + 300), f"{uid}|{customer_id}")
         uid, _, customer_id = self._cache[token][1].partition("|")
         return Identity(uid=uid, customer_id=customer_id)
+
+    async def _verified_claims(self, token: str) -> dict:
+        from firebase_admin import auth
+
+        return await asyncio.to_thread(auth.verify_id_token, token)
 
 
 def bearer(authorization: str | None) -> str | None:

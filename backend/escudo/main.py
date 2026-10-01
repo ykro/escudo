@@ -65,6 +65,7 @@ def create_app(services: Services | None = None) -> FastAPI:
 
     if settings.a2a_shared_secret:
         app.middleware("http")(partner_key_guard(settings.a2a_shared_secret))
+    app.add_middleware(EscudoAgentGuard, services=services)
 
     # A2A: three agents, each with its own Agent Card under its own prefix.
     app.router.routes.extend(a2a_routes(tow_agent.build_agent(settings, services.repo), tow_agent.card(settings), tow_agent.PREFIX))
@@ -95,3 +96,46 @@ def partner_key_guard(secret: str):  # noqa: ANN201
         return await call_next(request)
 
     return guard
+
+
+class EscudoAgentGuard:
+    """`/a2a/escudo` answers about a customer's claims, so it requires a credential:
+    a customer's Firebase ID token (acts as that customer), or the partner secret plus the
+    customer the partner acts for (`X-Escudo-Customer-Id`). The Agent Card stays public.
+    The customer becomes `scope["user"]`, which A2A hands to ADK as the session's user_id."""
+
+    def __init__(self, app, services: Services) -> None:  # noqa: ANN001
+        self.app = app
+        self.services = services
+
+    async def __call__(self, scope, receive, send):  # noqa: ANN001, ANN204
+        if scope["type"] != "http" or scope["method"] != "POST" or scope["path"].rstrip("/") != escudo_agent.PREFIX:
+            return await self.app(scope, receive, send)
+        import hmac
+
+        from fastapi.responses import JSONResponse
+        from starlette.authentication import SimpleUser
+        from starlette.datastructures import Headers
+
+        from .auth import bearer
+        from .errors import EscudoError
+
+        headers = Headers(scope=scope)
+        secret = self.services.settings.a2a_shared_secret
+        customer_id: str | None = None
+        partner_key = headers.get(PARTNER_KEY_HEADER, "")
+        if secret and partner_key and hmac.compare_digest(partner_key, secret):
+            customer_id = headers.get("x-escudo-customer-id")
+        elif token := bearer(headers.get("authorization")):
+            try:
+                customer_id = (await self.services.auth.verify(token)).customer_id
+            except EscudoError:
+                customer_id = None
+        if not customer_id:
+            response = JSONResponse(
+                {"error": "unauthenticated", "message": "El agente de Escudo necesita la sesión de la clienta o la clave de socio."},
+                status_code=401,
+            )
+            return await response(scope, receive, send)
+        scope["user"] = SimpleUser(customer_id)
+        return await self.app(scope, receive, send)

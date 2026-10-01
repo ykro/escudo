@@ -21,7 +21,9 @@ from google.adk.a2a.agent import RemoteA2aAgent
 from google.adk.agents import BaseAgent, LlmAgent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
+from google.adk.events import Event
 from google.genai import types
+from google.protobuf.json_format import ParseDict
 from pydantic import ValidationError
 
 from ..capabilities import Caller
@@ -33,7 +35,6 @@ from . import repair_agent, tow_agent
 from .hosting import PARTNER_KEY_HEADER, build_card
 from .llm import gemini
 from .peers import PeerDirectory, PeerUnavailable
-from .scripted import ScriptedAgent
 
 if TYPE_CHECKING:
     from ..services import Services
@@ -167,34 +168,32 @@ las acciones que comprometen a la clienta (deducible, taller, firma) solo las ap
 
 
 def build_a2a_agent(services: "Services") -> BaseAgent:
+    from google.adk.tools import ToolContext
+
     from ..gateway import call_capability
 
-    caller = Caller(customer_id=services.settings.demo_customer_id, uid="a2a", actor="escudo_agent", surface="a2a")
-
-    async def _call(name: str, **args: Any) -> dict[str, Any]:
+    async def _call(tool_context: ToolContext, name: str, **args: Any) -> dict[str, Any]:
+        # A2A_GUARD (main.py) authenticated the caller; A2A passes that customer to ADK as user_id.
+        caller = Caller(customer_id=tool_context.user_id, uid=tool_context.user_id, actor="escudo_agent", surface="a2a")
         try:
             return await call_capability(services, caller, name, args)
         except EscudoError as exc:
             return exc.to_dict()
 
-    async def check_coverage(incident_type: str) -> dict[str, Any]:
+    async def check_coverage(incident_type: str, tool_context: ToolContext) -> dict[str, Any]:
         """Check if an incident type (collision, theft, towing, rental_car, third_party) is covered."""
-        return await _call("check_coverage", incident_type=incident_type)
+        return await _call(tool_context, "check_coverage", incident_type=incident_type)
 
-    async def get_claim_status(claim_id: str | None = None) -> dict[str, Any]:
+    async def get_claim_status(tool_context: ToolContext, claim_id: str | None = None) -> dict[str, Any]:
         """Get a claim's status; the latest claim when claim_id is omitted."""
-        return await _call("get_claim_status", claim_id=claim_id)
+        return await _call(tool_context, "get_claim_status", claim_id=claim_id)
 
-    async def list_repair_options(claim_id: str) -> dict[str, Any]:
+    async def list_repair_options(claim_id: str, tool_context: ToolContext) -> dict[str, Any]:
         """List partner repair shops with slots and quotes for a claim."""
-        return await _call("list_repair_options", claim_id=claim_id)
+        return await _call(tool_context, "list_repair_options", claim_id=claim_id)
 
     if services.settings.mock_ai:
-
-        async def handle(request: dict[str, Any]) -> Any:
-            return {"message": "Soy el agente de Escudo (modo simulado). Puedo consultar coberturas, reclamos y talleres."}
-
-        return ScriptedAgent(name="escudo_agent", description="Agente de Escudo (modo simulado)", handler=handle)
+        return _ScriptedEscudoAgent(name="escudo_agent", description="Agente de Escudo (modo simulado)", services=services)
 
     return LlmAgent(
         name="escudo_agent",
@@ -205,8 +204,27 @@ def build_a2a_agent(services: "Services") -> BaseAgent:
     )
 
 
+class _ScriptedEscudoAgent(BaseAgent):
+    """MOCK_AI=1: answers with the authenticated customer's latest claim, no model involved."""
+
+    model_config = {"arbitrary_types_allowed": True}
+    services: Any
+
+    async def _run_async_impl(self, ctx):  # noqa: ANN001, ANN202
+        from ..gateway import call_capability
+
+        caller = Caller(customer_id=ctx.user_id, uid=ctx.user_id, actor="escudo_agent", surface="a2a")
+        try:
+            claim = await call_capability(self.services, caller, "get_claim_status", {})
+            answer = {"claim_id": claim["claim_id"], "status": claim["status"]}
+        except EscudoError as exc:
+            answer = exc.to_dict()
+        yield Event(author=self.name, invocation_id=ctx.invocation_id,
+                    content=types.Content(role="model", parts=[types.Part(text=json.dumps(answer, ensure_ascii=False))]))
+
+
 def card(settings: Settings) -> AgentCard:
-    return build_card(
+    card = build_card(
         name="escudo_agent",
         description="Escudo, aseguradora de autos: coberturas, estado de reclamos y talleres de la red. Las acciones que comprometen al cliente requieren su aprobación en la app.",
         url=f"{settings.public_base_url}{PREFIX}",
@@ -221,3 +239,13 @@ def card(settings: Settings) -> AgentCard:
             )
         ],
     )
+    # Declared so a caller learns from discovery how to authenticate (enforced by EscudoAgentGuard).
+    schemes: dict[str, Any] = {"customerToken": {"httpAuthSecurityScheme": {
+        "scheme": "bearer", "bearerFormat": "Firebase ID token", "description": "The customer's own session"}}}
+    requirements: list[dict[str, Any]] = [{"schemes": {"customerToken": {"list": []}}}]
+    if settings.a2a_shared_secret:
+        schemes["partnerKey"] = {"apiKeySecurityScheme": {"location": "header", "name": PARTNER_KEY_HEADER,
+                                 "description": "Partner secret; send X-Escudo-Customer-Id with the customer you act for"}}
+        requirements.append({"schemes": {"partnerKey": {"list": []}}})
+    ParseDict({"securitySchemes": schemes, "securityRequirements": requirements}, card)
+    return card

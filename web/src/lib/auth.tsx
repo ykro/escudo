@@ -2,7 +2,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
   onAuthStateChanged,
-  signInAnonymously,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   type User,
@@ -16,7 +15,6 @@ type AuthState =
 
 type AuthApi = AuthState & {
   signInWithEmail: (email: string, password: string) => Promise<void>;
-  signInDemo: () => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -38,11 +36,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ...state,
       signInWithEmail: async (email, password) => {
         await signInWithEmailAndPassword(firebaseAuth(), email, password);
-      },
-      // A one-tap demo session: the backend treats any Firebase user without a
-      // customer_id claim as the seeded policy holder (see backend/escudo/auth.py).
-      signInDemo: async () => {
-        await signInAnonymously(firebaseAuth());
       },
       signOut: () => firebaseSignOut(firebaseAuth()),
     }),

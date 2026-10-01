@@ -46,7 +46,10 @@ class FirebaseTokenVerifier:
             identity = await self._services.auth.verify(token)
         except EscudoError:
             return None
-        return AccessToken(token=token, client_id="escudo-customer", scopes=[], subject=identity.uid)
+        return AccessToken(
+            token=token, client_id="escudo-customer", scopes=[], subject=identity.uid,
+            claims={"customer_id": identity.customer_id},
+        )
 
 
 def build_mcp(services: Services) -> MCPServer:
@@ -66,10 +69,16 @@ def build_mcp(services: Services) -> MCPServer:
     def caller_for(ctx: Context) -> Caller:
         headers = {k.lower(): v for k, v in (ctx.headers or {}).items()}
         token = get_access_token()
-        uid = token.subject if token and token.subject else MOCK_UID
+        if token is not None:
+            # The verified Firebase token says who this is; the agent acts as that customer.
+            uid, customer_id = token.subject or "", (token.claims or {})["customer_id"]
+        elif settings.mock_auth:
+            uid, customer_id = MOCK_UID, settings.demo_customer_id
+        else:  # unreachable: without MOCK_AUTH the SDK's bearer middleware rejects the request first
+            raise ToolError("unauthenticated: inicia sesión en Escudo para continuar.")
         actor = headers.get("x-escudo-actor", "gemini")
         return Caller(
-            customer_id=settings.demo_customer_id,
+            customer_id=customer_id,
             uid=uid,
             actor=actor if actor in services.events.enum["actor"] else "gemini",
             surface="mcp",

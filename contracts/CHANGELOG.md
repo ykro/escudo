@@ -3,6 +3,18 @@
 Every change here is backward compatible: fields, headers and messages are added, nothing is
 removed or renamed.
 
+## 2026-10-01 — identity per customer, authenticated Escudo agent
+
+- Every surface acts as the `customer_id` of the verified Firebase token (custom claim set by
+  `make seed`); a user without the claim is their own customer and sees no policy or claims. Only
+  `MOCK_AUTH=1` maps callers to `DEMO_CUSTOMER_ID`. Anonymous sign-in is no longer used anywhere
+  (portal demo button and scenario fallback removed).
+- `/a2a/escudo` RPC requires `Authorization: Bearer <customer Firebase ID token>`, or the partner key
+  (`X-Escudo-A2A-Key`) plus `X-Escudo-Customer-Id`; otherwise `401`. Its Agent Card stays public and
+  declares `securitySchemes.customerToken` (HTTP bearer) and, when configured, `partnerKey`.
+- `attach_claim_photos` also returns `photos_assessed` and `assessment_seconds`; photos are downscaled
+  to 1024 px before the model (target < 15 s for 3 photos, measured ~5 s).
+
 ## 2026-09-30 — web, presenter and partner secret
 
 - Timeline: read-only capabilities (`get_policy`, `check_coverage`, `get_claim_status`) called with actor

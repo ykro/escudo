@@ -8,6 +8,8 @@ import path from "node:path";
  * profile's Local State. Needs the deployed API (the tools call it): E2E_WEBMCP=1 npm run e2e.
  */
 test.skip(!process.env.E2E_WEBMCP, "set E2E_WEBMCP=1 (uses the cloud API and a headed Chrome)");
+const EMAIL = process.env.ESCUDO_CUSTOMER_EMAIL ?? "";
+const PASSWORD = process.env.ESCUDO_CUSTOMER_PASSWORD ?? "";
 
 test("the portal registers exactly four WebMCP tools and they answer", async ({ baseURL }) => {
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), "escudo-webmcp-"));
@@ -19,7 +21,10 @@ test("the portal registers exactly four WebMCP tools and they answer", async ({ 
   try {
     const page = await context.newPage();
     await page.goto(`${baseURL}/entrar`);
-    await page.getByRole("button", { name: "Entrar con la cuenta de demostración" }).click();
+    // The seeded customer (make seed writes the login to escudo/.env.local).
+    await page.getByLabel("Correo").fill(EMAIL);
+    await page.getByLabel("Contraseña").fill(PASSWORD);
+    await page.getByRole("button", { name: "Entrar", exact: true }).click();
     await expect(page.getByText("WebMCP · 4 herramientas")).toBeVisible({ timeout: 30_000 });
 
     const result = await page.evaluate(async () => {

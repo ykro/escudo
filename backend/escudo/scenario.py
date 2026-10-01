@@ -175,14 +175,17 @@ def wait_for_phone_approver(http: httpx2.AsyncClient, timeout: float = 120) -> A
     return approve
 
 
-async def firebase_id_token(api_key: str, email: str | None = None, password: str | None = None) -> str:
-    """Firebase sign-in over REST: the seeded customer (make seed) if its login is known, else anonymous."""
-    base = "https://identitytoolkit.googleapis.com/v1/accounts"
+async def firebase_id_token(api_key: str, email: str | None, password: str | None) -> str:
+    """Firebase sign-in over REST as the seeded customer (`make seed` writes the login to .env.local).
+
+    Only a token carrying the customer's `customer_id` claim can see her policy and claims."""
+    if not (email and password):
+        raise SystemExit("Falta el login del cliente: corre `make seed` (escribe ESCUDO_CUSTOMER_EMAIL/PASSWORD en .env.local)")
     async with httpx2.AsyncClient(timeout=20) as client:
-        if email and password:
-            r = await client.post(f"{base}:signInWithPassword?key={api_key}", json={"email": email, "password": password, "returnSecureToken": True})
-        else:
-            r = await client.post(f"{base}:signUp?key={api_key}", json={"returnSecureToken": True})
+        r = await client.post(
+            f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={api_key}",
+            json={"email": email, "password": password, "returnSecureToken": True},
+        )
         r.raise_for_status()
         return r.json()["idToken"]
 
@@ -192,7 +195,7 @@ async def main() -> int:
     parser.add_argument("--base-url", default=os.environ.get("ESCUDO_BASE_URL", "http://127.0.0.1:8080"))
     parser.add_argument("--token", default=os.environ.get("ESCUDO_ID_TOKEN"), help="Firebase ID token of the customer")
     parser.add_argument("--sign-in", action="store_true",
-                        help="sign in with FIREBASE_WEB_API_KEY: as the seeded customer (ESCUDO_CUSTOMER_EMAIL/PASSWORD) or anonymously")
+                        help="sign in as the seeded customer (FIREBASE_WEB_API_KEY + ESCUDO_CUSTOMER_EMAIL/PASSWORD from .env.local)")
     parser.add_argument("--test-mode", action="store_true", help="rehearsal run (required for --auto-approve)")
     parser.add_argument("--auto-approve", action="store_true", help="approve through the human endpoint (test mode only)")
     parser.add_argument("--approve-delay", type=float, default=float(os.environ.get("APPROVE_DELAY", "0")),

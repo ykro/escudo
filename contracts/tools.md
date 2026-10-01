@@ -34,7 +34,7 @@ One domain function per capability lives in `backend/escudo/capabilities/`. Ever
 ## Surfaces
 
 - MCP: streamable HTTP at `/mcp`, bearer = customer Firebase ID token.
-- A2A: Escudo agent at `/a2a/escudo`, Tow at `/a2a/tow`, Repair at `/a2a/repair`, each with its Agent Card at the well-known path of the current A2A version. Escudo discovers peers from `A2A_PEERS` (base URLs only).
+- A2A: Escudo agent at `/a2a/escudo`, Tow at `/a2a/tow`, Repair at `/a2a/repair`, each with its Agent Card at the well-known path of the current A2A version. Escudo discovers peers from `A2A_PEERS` (base URLs only). Cards are public. Calling `/a2a/escudo` requires the customer's Firebase ID token (bearer) or the partner key `X-Escudo-A2A-Key` plus `X-Escudo-Customer-Id`; Tow and Repair require the partner key when `A2A_SHARED_SECRET` is set. Every surface acts as the `customer_id` of the verified token.
 - Voice: Escudo Assistant WebSocket at `/assistant/live` (PCM16 16 kHz in, 24 kHz out), ADK + Gemini Live, uses the MCP tools (loopback to `/mcp` with the customer's own token, header `X-Escudo-Actor: escudo_assistant`).
 - REST caller labels (optional headers on every REST call): `X-Escudo-Surface` (a `surface` value of
   events.schema.json, default `rest`), `X-Escudo-Actor` (an `actor` value, default `customer`),

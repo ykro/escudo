@@ -66,12 +66,9 @@ function SignInForm() {
             {busy ? "Entrando…" : "Entrar"}
           </button>
         </form>
-        <div className={styles.divider}>
-          <span>o</span>
-        </div>
-        <button type="button" className="btn btn-quiet" disabled={busy} onClick={() => run(auth.signInDemo)}>
-          Entrar con la cuenta de demostración
-        </button>
+        <p className={styles.signinHint}>
+          ¿Ensayando la charla? La cuenta de Andrea está en <code>.env.local</code> (la crea <code>make seed</code>).
+        </p>
       </div>
     </main>
   );

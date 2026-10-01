@@ -11,7 +11,8 @@ npm install
 npm run dev          # http://localhost:3217 (usa .env.local; ver .env.example)
 npm test             # unitarias (vitest)
 npm run e2e          # Playwright con Chrome: presentador en modo demo
-E2E_WEBMCP=1 npm run e2e   # + WebMCP real en Chrome (usa el API desplegado)
+set -a; source ../.env.local; set +a
+E2E_WEBMCP=1 npm run e2e   # + WebMCP real en Chrome, con la cuenta sembrada (usa el API desplegado)
 ```
 
 ## Herramientas WebMCP
@@ -23,7 +24,8 @@ llamada aparece en la línea de tiempo con su insignia. Ninguna aprueba: aprobar
 ### Verlas en el escenario (menos de un minuto)
 
 1. Una vez antes de la charla: en Chrome 150+ abre `chrome://flags/#enable-webmcp-testing`, **Enabled**, relanza.
-2. Abre el portal y entra con **Entrar con la cuenta de demostración**. El pie dice
+2. Abre el portal y entra con la cuenta de Andrea (correo y contraseña en `escudo/.env.local`, los crea
+   `make seed`; la sesión queda guardada en el navegador). El pie dice
    «WebMCP · 4 herramientas disponibles…».
 3. `⌥⌘I` → pestaña **Application** → **WebMCP**: aparecen las 4 herramientas con su descripción y
    esquema. Elige `getDeductible` → **Run tool** → respuesta `{"deductible_usd": 500, …}`, y la vista del
