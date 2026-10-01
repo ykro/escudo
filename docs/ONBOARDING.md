@@ -84,9 +84,9 @@ gcloud auth application-default set-quota-project ai-experiments-487722
 - `GOOGLE_CLOUD_QUOTA_PROJECT=ai-experiments-487722` (en `.env`) hace que las llamadas de administración
   de Firebase Auth de `make seed` se facturen al proyecto; con ADC de usuario sin proyecto de cuota fallan.
 - `infra/env.sh` exporta `CLOUDSDK_CORE_PROJECT`, así que los scripts no tocan tu configuración global de gcloud.
-- Secretos que se generan solos y viven en `infra/.generated/` (no se versiona): `admin_token`
-  (protege `POST /admin/reset`) y `a2a_secret` (Escudo ↔ socios). Los crea `infra/10-deploy-api.sh` la
-  primera vez.
+- Secretos en Secret Manager, montados por Cloud Run: `escudo-admin-token` (protege `POST /admin/reset`)
+  y `escudo-a2a-secret` (Escudo ↔ socios). Los crea `infra/06-secrets.sh` con un valor aleatorio;
+  `make reset CLOUD=1` lee el token de ahí. Nada de esto vive en el repo ni en variables de entorno.
 - `FIREBASE_WEB_API_KEY`: la llave web de Firebase (no es secreta, pero no se versiona). Hace falta para
   `make scenario` contra la nube y para `make deploy-web`:
 
@@ -132,7 +132,7 @@ El servicio desplegado además siembra una base vacía al arrancar (`seed.seed_i
 registrados se conservan para que el teléfono no tenga que volver a registrarse):
 
 ```bash
-make reset CLOUD=1    # servicio desplegado (usa infra/.generated/admin_token)
+make reset CLOUD=1    # servicio desplegado (lee escudo-admin-token de Secret Manager)
 make reset            # API local en ESCUDO_BASE_URL (con make up-mock el token es local-admin:
                       #   make reset ADMIN_TOKEN=local-admin si tu .env tiene otro)
 ```
@@ -142,7 +142,7 @@ make reset            # API local en ESCUDO_BASE_URL (con make up-mock el token 
 Proyecto `ai-experiments-487722`, región `us-central1`, repositorio de Artifact Registry `charlas2027`.
 Todos los scripts cargan `infra/env.sh` (que lee `infra/app.env`, `APP=escudo`) y son idempotentes.
 
-Desde un proyecto vacío, `make infra` corre los pasos 1 a 5 en orden; cada script crea lo que falta y
+Desde un proyecto vacío, `make infra` corre los pasos 1 a 6 en orden; cada script crea lo que falta y
 deja igual lo que ya existe. La app Android `app.escudo.android` y su `google-services.json` los maneja
 `android/` (`make -C android google-services`).
 
@@ -155,11 +155,12 @@ En orden:
 | 3 | `bash infra/03-firebase.sh` | Agrega Firebase al proyecto si falta y activa el proveedor de Auth correo/contraseña con la API de administración de Identity Toolkit (`PATCH admin/v2/projects/…/config`, solo ese campo: el proyecto se comparte con otras demos) |
 | 4 | `bash infra/04-service-account.sh` | Cuenta `escudo-api` con lo mínimo: `datastore.user` solo sobre la base `escudo` (condición IAM), `aiplatform.user`, `firebasecloudmessaging.admin` y `storage.objectUser` solo sobre el bucket de reclamos |
 | 5 | `bash infra/05-web-service-account.sh` | Cuenta `escudo-web`: `datastore.viewer` solo sobre la base `escudo` |
-| 6 | `make seed` | Datos y login de la clienta (sección 4) |
-| 7 | `make deploy-api` (`infra/10-deploy-api.sh`) | Prepara un contexto con `backend/` + `contracts/`, construye con Cloud Build y despliega `escudo-api`: `--min-instances=1 --max-instances=1 --concurrency=80 --cpu=1 --memory=1Gi --no-cpu-throttling --timeout=3600 --session-affinity`. Genera `ADMIN_TOKEN` y `A2A_SHARED_SECRET` en `infra/.generated/` y fija `PUBLIC_BASE_URL` y `A2A_PEERS` a la URL determinista del servicio |
-| 8 | `make deploy-web` (`infra/11-deploy-web.sh`) | Escribe `.env.production` con la configuración pública (`NEXT_PUBLIC_*`), construye y despliega `escudo-web` (`--min-instances=1 --max-instances=2`, 3600 s de timeout para el stream SSE) |
+| 6 | `bash infra/06-secrets.sh` | Secretos `escudo-admin-token` y `escudo-a2a-secret` en Secret Manager; `escudo-api` solo puede leer esos dos |
+| 7 | `make seed` | Datos y login de la clienta (sección 4) |
+| 8 | `make deploy-api` (`infra/10-deploy-api.sh`) | Prepara un contexto con `backend/` + `contracts/`, construye con Cloud Build y despliega `escudo-api`: `--min-instances=1 --max-instances=1 --concurrency=80 --cpu=1 --memory=1Gi --no-cpu-throttling --timeout=3600 --session-affinity`. Monta `ADMIN_TOKEN` y `A2A_SHARED_SECRET` desde Secret Manager (`--set-secrets`) y fija `PUBLIC_BASE_URL` y `A2A_PEERS` a la URL determinista del servicio |
+| 9 | `make deploy-web` (`infra/11-deploy-web.sh`) | Escribe `.env.production` con la configuración pública (`NEXT_PUBLIC_*`), construye y despliega `escudo-web` (`--min-instances=1 --max-instances=2`, 3600 s de timeout para el stream SSE) |
 
-`make deploy` corre los pasos 7 y 8. Los modelos y datos que se pasan al servicio salen de
+`make deploy` corre los pasos 8 y 9. Los modelos y datos que se pasan al servicio salen de
 `.env.example` y, encima, de `.env`.
 
 URLs resultantes: ver la tabla «URLs desplegadas» del README.
@@ -204,7 +205,7 @@ make test
 
 | Parte | Comando | Qué cubre |
 | --- | --- | --- |
-| Backend | `cd backend && MOCK_AI=1 MOCK_AUTH=1 uv run pytest -q` (38 pruebas) | Toda acción con aprobación es rechazada sin `approval_id` válido, por REST y MCP (`test_approvals.py`); aprobación de otra herramienta, otros argumentos, rechazada o ya usada; no existe herramienta de aprobar; la tabla de autonomía cubre exactamente el registro y coincide con el contrato (`test_autonomy.py`); Agent Cards en la ruta well-known, descubrimiento sin rutas escritas a mano y secreto de socios (`test_discovery.py`); eventos válidos contra el esquema y etiquetas de superficie (`test_events.py`); `make reset` y el protocolo de voz simulado (`test_reset_and_voice.py`); el escenario completo por MCP con 3 aprobaciones (`test_scenario.py`); MCP, REST y el agente Escudo actúan como el `customer_id` del token verificado, y `/a2a/escudo` rechaza llamadas anónimas (`test_identity.py`) |
+| Backend | `cd backend && MOCK_AI=1 MOCK_AUTH=1 uv run pytest -q` (45 pruebas) | Toda acción con aprobación es rechazada sin `approval_id` válido, por REST y MCP (`test_approvals.py`); aprobación de otra herramienta, otros argumentos, rechazada o ya usada; no existe herramienta de aprobar; la tabla de autonomía cubre exactamente el registro y coincide con el contrato (`test_autonomy.py`); Agent Cards en la ruta well-known, descubrimiento sin rutas escritas a mano y secreto de socios (`test_discovery.py`); eventos válidos contra el esquema y etiquetas de superficie (`test_events.py`); `make reset` y el protocolo de voz simulado (`test_reset_and_voice.py`); el escenario completo por MCP con 3 aprobaciones (`test_scenario.py`); MCP, REST y el agente Escudo actúan como el `customer_id` del token verificado, y `/a2a/escudo` rechaza llamadas anónimas (`test_identity.py`); aprobar exige firma del dispositivo registrado de la clienta: sin dispositivo, dispositivo ajeno o desconocido, firma mala o para otra aprobación → 403 sin cambios, repetir → rechazado; eventos de clientes solo `message` sobre reclamos propios; la voz no acepta el token en la URL (`test_device_approvals.py`, `test_reset_and_voice.py`) |
 | Android | `make android-test` (54 pruebas, sabores `fake` y `live`) | Mapeo de AppFunctions, `ApprovalFlow`, protocolo del asistente, lector WAV, repositorio, cliente HTTP, push, línea de tiempo, transcripción, mensajes de error |
 | Web | `cd web && npm test` (14 pruebas) | Línea de tiempo del presentador y herramientas WebMCP (exactamente cuatro, todas de solo lectura, ninguna aprueba) |
 | Web e2e | `cd web && npm run e2e` | Presentador en modo demo con Chrome: pausa en ámbar, 3 aprobaciones, el reloj se detiene al firmar |
@@ -407,8 +408,10 @@ segunda, tras la huella, se ejecuta.
 
 11. `ui/approvals/ApprovalsScreen.kt` → `approvals/ApprovalFlow.approve()` → `BiometricVerifier`
     (`BiometricPrompt`, biometría fuerte o PIN). Solo si pasa, `EscudoRepository.approve()` →
-    `POST /approvals/{id}/approve` con `{"device_id": …}`.
-12. `adapters/rest.py` `_decide()` → `approvals.decide()` cambia `pending → approved` (transacción de
+    firma con la llave del Keystore `escudo-approval:v1:{approval_id}:{args_hash}:approve` y llama
+    `POST /approvals/{id}/approve` con `{"device_id", "signature"}`.
+12. `adapters/rest.py` `_decide()` → `approvals.decide()`: `devices.check_decision()` verifica dueño,
+    dispositivo registrado y firma (si no, 403 sin cambios); luego cambia `pending → approved` (transacción de
     Firestore), escribe `approval_granted` y llama `AssistantHub.notify()`, que mete en la sesión de voz
     abierta: «[Aviso de Escudo] La clienta aprobó accept_deductible … approval_id=…».
 
@@ -436,7 +439,7 @@ el agente A2A (`agents/escudo_agent.build_a2a_agent`) o una AppFunction (que lla
 | --- | --- |
 | `RuntimeError: GEMINI_MODEL is not set (or run with MOCK_AI=1)` | Falta `.env` o la variable. `cp .env.example .env`, o usa `make up-mock` |
 | `make seed` falla con un error de cuota o de proyecto en Identity Toolkit | ADC de usuario sin proyecto de cuota: `gcloud auth application-default set-quota-project ai-experiments-487722` (o `GOOGLE_CLOUD_QUOTA_PROJECT` en `.env`) |
-| `make reset` → `reset falló: HTTP 401` | Token equivocado. Local con `make up-mock`: `make reset ADMIN_TOKEN=local-admin`. Nube: `make reset CLOUD=1` (lee `infra/.generated/admin_token`; si no existe, aún no despliegas desde esta máquina) |
+| `make reset` → `reset falló: HTTP 401` | Token equivocado. Local con `make up-mock`: `make reset ADMIN_TOKEN=local-admin`. Nube: `make reset CLOUD=1` (lee `escudo-admin-token` de Secret Manager con tu gcloud; corre `infra/06-secrets.sh` si no existe) |
 | `make reset` → `HTTP 000` | El API no está arriba en `ESCUDO_BASE_URL` |
 | `approval_invalid (wrong_args)` | El agente reintentó con otros argumentos (por ejemplo, otro horario). Hay que pedir una nueva aprobación; la anterior no se quemó |
 | `approval_invalid (not_approved)` | El agente reintentó antes de que la clienta aprobara. Esperar el aviso |
