@@ -8,6 +8,7 @@ Writes samples/photos/crash_{1,2,3}.jpg and samples/photos/prompts.json
 
 from __future__ import annotations
 
+import argparse
 import io
 import json
 import os
@@ -25,7 +26,9 @@ SCENE = (
     "licence plate 'P-512KLM'. No people, no readable brand logos, no text overlays."
 )
 PROMPTS = {
-    "crash_1": SCENE + " Wide shot of the rear of the car: the rear bumper is dented and scraped on the left side, parked at the curb on a street in zona 10.",
+    "crash_1": SCENE + " Wide shot of the rear of the car: the rear bumper is dented and scraped on the left side, parked at the curb"
+    " on a quiet residential street in zona 10 lined with trees and plain painted walls. No shops, no signs, no billboards,"
+    " no pedestrians: nothing with a name or a logo besides the car itself.",
     "crash_2": SCENE + " Close-up of the rear left corner: the tail light lens is cracked, the bumper paint is scraped showing black plastic, small fragments of red plastic on the asphalt.",
     "crash_3": SCENE + " Three-quarter view from the left rear: the trunk lid is intact, the bumper is pushed in a few centimetres, the car otherwise looks drivable.",
 }
@@ -48,6 +51,9 @@ def generate(client: genai.Client, model: str, prompt: str) -> types.GenerateCon
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--only", nargs="*", help="regenerate just these (e.g. crash_1); the others keep their files and prompts")
+    only = set(parser.parse_args().only or PROMPTS)
     model = os.environ["IMAGE_MODEL"]
     client = genai.Client(
         vertexai=True,
@@ -55,8 +61,13 @@ def main() -> None:
         location=os.environ.get("GOOGLE_CLOUD_LOCATION", "global"),
     )
     OUT.mkdir(parents=True, exist_ok=True)
+    manifest_path = OUT / "prompts.json"
+    previous = {m["file"]: m for m in json.loads(manifest_path.read_text())} if manifest_path.exists() else {}
     manifest = []
     for name, prompt in PROMPTS.items():
+        if name not in only and f"{name}.jpg" in previous:
+            manifest.append(previous[f"{name}.jpg"])
+            continue
         response = generate(client, model, prompt)
         image_bytes = next(
             p.inline_data.data for p in response.candidates[0].content.parts if p.inline_data and p.inline_data.data
@@ -67,7 +78,7 @@ def main() -> None:
         image.save(path, "JPEG", quality=85)
         manifest.append({"file": path.name, "origin": {"type": "synthetic", "model": model, "prompt": prompt, "seed": SEED}})
         print(f"wrote {path} ({path.stat().st_size // 1024} KB)")
-    (OUT / "prompts.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
+    manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
 
 
 if __name__ == "__main__":
