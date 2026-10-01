@@ -78,11 +78,16 @@
     <string name="approval_approve">Aprobar con huella</string>
     <string name="approval_reject">Rechazar</string>
     <string name="approval_prompt_title">Confirma que eres tú</string>
+    <string name="reject_prompt_title">Confirma que eres tú para rechazar</string>
     <string name="approval_biometric_unavailable">Configura una huella o un PIN en el teléfono para aprobar.</string>
     <string name="approval_done">Aprobado. Tu asistente continúa.</string>
     <string name="approval_rejected">Rechazado. Tu asistente no hará ese paso.</string>
     <string name="approval_cancelled">Aprobación cancelada.</string>
     <string name="approval_already_resolved">Esta solicitud ya fue resuelta.</string>
+    <string name="approval_refused_not_yours">Esta solicitud no pertenece a tu cuenta.</string>
+    <string name="approval_refused_unknown_device">Este teléfono no estaba registrado para aprobar. Ya lo registramos: intenta de nuevo.</string>
+    <string name="approval_refused_device_disabled">Este teléfono está desactivado para aprobaciones. Ábrelo de nuevo con conexión para reactivarlo.</string>
+    <string name="approval_refused_bad_signature">No pudimos verificar la firma de este teléfono. Ya lo registramos de nuevo: intenta otra vez.</string>
     <string name="approval_failed">No se pudo registrar tu decisión. Intenta de nuevo.</string>
     <string name="tool_accept_deductible">Aceptar deducible</string>
     <string name="tool_select_repair_shop">Reservar taller</string>

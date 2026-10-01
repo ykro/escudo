@@ -28,10 +28,11 @@ interface EscudoApi {
 
   /** Human-only surface: never exposed to agents. */
   suspend fun listPendingApprovals(): List<Approval>
-  suspend fun approve(approvalId: String, deviceId: String)
-  suspend fun reject(approvalId: String)
+  /** [signature]: base64 DER ECDSA over `escudo-approval:v1:{id}:{args_hash}:approve`. */
+  suspend fun approve(approvalId: String, deviceId: String, signature: String)
+  suspend fun reject(approvalId: String, deviceId: String, signature: String)
 
-  suspend fun registerDevice(fcmToken: String, deviceId: String)
+  suspend fun registerDevice(fcmToken: String, deviceId: String, publicKey: String)
   suspend fun postEvent(event: EscudoEvent)
 }
 

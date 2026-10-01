@@ -8,6 +8,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import app.escudo.android.R
 import app.escudo.android.data.model.Approval
+import java.security.Signature
 import kotlin.coroutines.resume
 import kotlinx.coroutines.suspendCancellableCoroutine
 
@@ -19,14 +20,14 @@ import kotlinx.coroutines.suspendCancellableCoroutine
  */
 class BiometricVerifier(private val activity: FragmentActivity) : UserVerifier {
 
-  override suspend fun verify(approval: Approval): VerificationResult {
+  override suspend fun verify(approval: Approval, decision: Decision, signature: Signature): VerificationResult {
     val authenticators = BIOMETRIC_STRONG or DEVICE_CREDENTIAL
     val canAuth = BiometricManager.from(activity).canAuthenticate(authenticators)
     if (canAuth != BiometricManager.BIOMETRIC_SUCCESS) {
       return VerificationResult.Unavailable(activity.getString(R.string.approval_biometric_unavailable))
     }
     val info = BiometricPrompt.PromptInfo.Builder()
-      .setTitle(activity.getString(R.string.approval_prompt_title))
+      .setTitle(activity.getString(if (decision == Decision.APPROVE) R.string.approval_prompt_title else R.string.reject_prompt_title))
       .setSubtitle(approval.summary ?: approval.reason)
       .setAllowedAuthenticators(authenticators)
       .setConfirmationRequired(true)
@@ -38,7 +39,9 @@ class BiometricVerifier(private val activity: FragmentActivity) : UserVerifier {
         ContextCompat.getMainExecutor(activity),
         object : BiometricPrompt.AuthenticationCallback() {
           override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-            if (cont.isActive) cont.resume(VerificationResult.Verified)
+            if (!cont.isActive) return
+            val unlocked = result.cryptoObject?.signature
+            cont.resume(unlocked?.let { VerificationResult.Verified(it) } ?: VerificationResult.Unavailable(activity.getString(R.string.approval_failed)))
           }
 
           override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
@@ -51,7 +54,8 @@ class BiometricVerifier(private val activity: FragmentActivity) : UserVerifier {
           // onAuthenticationFailed = one bad finger; the prompt stays open for another try.
         },
       )
-      prompt.authenticate(info)
+      // The signature is the CryptoObject: only this authentication can unlock the device key.
+      prompt.authenticate(info, BiometricPrompt.CryptoObject(signature))
       cont.invokeOnCancellation { prompt.cancelAuthentication() }
     }
   }

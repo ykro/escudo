@@ -24,10 +24,28 @@ class ApprovalFlowTest {
     reason = "Firmar requiere tu aprobación",
     summary = "Firmar y enviar el reclamo",
     status = "pending",
+    argsHash = "sha256:abc",
   )
+  private val signer = JvmApprovalSigner()
 
-  private fun flow(result: VerificationResult, calls: MutableList<String> = mutableListOf()) =
-    ApprovalFlow(repository, { calls += it.approvalId; result }, { "device-123" }, events)
+  /** Registers this test device's key with the fake server, which then verifies every decision. */
+  private suspend fun registerDevice(deviceId: String = "device-123") = api.registerDevice("fcm", deviceId, signer.publicKeyBase64())
+
+  private enum class Mode { VERIFIED, CANCELLED, UNAVAILABLE }
+
+  private fun flow(mode: Mode, calls: MutableList<String> = mutableListOf(), deviceId: String = "device-123") =
+    ApprovalFlow(
+      repository,
+      { a, _, signature ->
+        calls += a.approvalId
+        when (mode) {
+          Mode.VERIFIED -> VerificationResult.Verified(signature)
+          Mode.CANCELLED -> VerificationResult.Cancelled
+          Mode.UNAVAILABLE -> VerificationResult.Unavailable("sin huella")
+        }
+      },
+      signer, { deviceId }, events,
+    )
 
   private suspend fun pendingIds() = repository.pendingApprovals().map { it.approvalId }
 
@@ -36,7 +54,7 @@ class ApprovalFlowTest {
     api.seedApproval(approval)
     val verifierCalls = mutableListOf<String>()
 
-    val outcome = flow(VerificationResult.Verified, verifierCalls).approve(approval)
+    val outcome = flow(Mode.VERIFIED, verifierCalls).approve(approval)
 
     assertEquals(ApprovalOutcome.Approved, outcome)
     assertEquals(listOf("apr_sign"), verifierCalls)
@@ -47,7 +65,7 @@ class ApprovalFlowTest {
   fun `cancelling the biometric prompt leaves the request pending`() = runTest {
     api.seedApproval(approval)
 
-    val outcome = flow(VerificationResult.Cancelled).approve(approval)
+    val outcome = flow(Mode.CANCELLED).approve(approval)
 
     assertEquals(ApprovalOutcome.Cancelled, outcome)
     assertEquals(listOf("apr_sign"), pendingIds())
@@ -57,7 +75,7 @@ class ApprovalFlowTest {
   fun `no biometrics or PIN on the device means no approval`() = runTest {
     api.seedApproval(approval)
 
-    val outcome = flow(VerificationResult.Unavailable("sin huella")).approve(approval)
+    val outcome = flow(Mode.UNAVAILABLE).approve(approval)
 
     assertEquals(ApprovalOutcome.Failed("sin huella"), outcome)
     assertEquals(listOf("apr_sign"), pendingIds())
@@ -66,7 +84,7 @@ class ApprovalFlowTest {
   @Test
   fun `an approval is single use`() = runTest {
     api.seedApproval(approval)
-    val flow = flow(VerificationResult.Verified)
+    val flow = flow(Mode.VERIFIED)
 
     assertEquals(ApprovalOutcome.Approved, flow.approve(approval))
     assertEquals(ApprovalOutcome.AlreadyResolved, flow.approve(approval))
@@ -74,26 +92,56 @@ class ApprovalFlowTest {
 
   @Test
   fun `unknown approval is reported as already resolved`() = runTest {
-    assertEquals(ApprovalOutcome.AlreadyResolved, flow(VerificationResult.Verified).approve(approval))
+    assertEquals(ApprovalOutcome.AlreadyResolved, flow(Mode.VERIFIED).approve(approval))
   }
 
   @Test
-  fun `rejecting needs no biometrics`() = runTest {
+  fun `rejecting is signed after the person authenticates too`() = runTest {
     api.seedApproval(approval)
+    registerDevice()
     val verifierCalls = mutableListOf<String>()
 
-    val outcome = flow(VerificationResult.Verified, verifierCalls).reject(approval)
+    val outcome = flow(Mode.VERIFIED, verifierCalls).reject(approval)
 
     assertEquals(ApprovalOutcome.Rejected, outcome)
-    assertTrue(verifierCalls.isEmpty())
+    assertEquals(listOf("apr_sign"), verifierCalls)
     assertTrue(pendingIds().isEmpty())
+  }
+
+  @Test
+  fun `server accepts the signature of the registered device key`() = runTest {
+    api.seedApproval(approval)
+    registerDevice()
+
+    assertEquals(ApprovalOutcome.Approved, flow(Mode.VERIFIED).approve(approval))
+  }
+
+  @Test
+  fun `a different device or key cannot approve`() = runTest {
+    api.seedApproval(approval)
+    registerDevice("device-123")
+
+    // Same token, other device id: rejected by the server.
+    assertEquals(ApprovalOutcome.Refused(Refusal.UNKNOWN_DEVICE), flow(Mode.VERIFIED, deviceId = "other-device").approve(approval))
+    // Same device id, but the key changed without re-registering: bad signature.
+    signer.reset()
+    assertEquals(ApprovalOutcome.Refused(Refusal.BAD_SIGNATURE), flow(Mode.VERIFIED).approve(approval))
+    assertEquals(listOf("apr_sign"), pendingIds())
+  }
+
+  @Test
+  fun `approval without args_hash cannot be signed`() = runTest {
+    val unsigned = approval.copy(argsHash = null)
+    api.seedApproval(unsigned)
+
+    assertEquals(ApprovalOutcome.Failed(null), flow(Mode.VERIFIED).approve(unsigned))
   }
 
   @Test
   fun `a verified approval is visible on the presenter timeline`() = runTest {
     api.seedApproval(approval)
 
-    flow(VerificationResult.Verified).approve(approval)
+    flow(Mode.VERIFIED).approve(approval)
 
     val event = api.events.single()
     assertEquals("android", event.surface)

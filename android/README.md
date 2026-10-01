@@ -18,8 +18,14 @@ vectores, con versión monocromática.
 - **Funciones, no pantallas**: pantallas y AppFunctions llaman al mismo `EscudoRepository`.
   Cada llamada viaja con `X-Escudo-Surface` / `X-Escudo-Actor` (`android`/`customer` o
   `appfunctions`/`gemini`) para que la línea de tiempo del presentador muestre quién actuó.
-- **Aprobar es humano**: `ApprovalFlow` pide BiometricPrompt (con PIN de respaldo) antes de
-  `POST /approvals/{id}/approve`. Aprobar nunca es una AppFunction.
+- **Aprobar es humano, y desde este teléfono** (`escudo-approval:v1`, ver `contracts/tools.md`): en el
+  primer arranque la app crea una llave EC P-256 en el Android Keystore (`escudo-approval`), que solo se
+  usa tras una huella o el PIN en ese momento (`setUserAuthenticationParameters(0, …)`), y registra su
+  llave pública en `POST /devices` (`{device_id, fcm_token, platform, public_key}`). Para aprobar o
+  rechazar, `ApprovalFlow` pasa una `Signature("SHA256withECDSA")` a BiometricPrompt como `CryptoObject`,
+  firma `escudo-approval:v1:{approval_id}:{args_hash}:approve|reject` y envía `{device_id, signature}`.
+  Un agente con el token del cliente no puede aprobar: no tiene la llave del teléfono (el servidor
+  responde `403 approval_forbidden`). Aprobar nunca es una AppFunction.
 
 ## Configuración (una vez, antes de la charla)
 
@@ -104,6 +110,8 @@ fragmentos de 40 ms → WebSocket → Gemini Live → herramientas MCP → voz d
   marcadores `EscudoScenario` de logcat (`voice_end`, `assistant_idle`, `approval_required`,
   `approval_outcome`, `report_done`). Antes: `make reset CLOUD=1` en la raíz. Medido el
   2026-09-30: **168 s** de punta a punta (41 s son automatización de la UI del reporte), 3 aprobaciones.
+- Las aprobaciones del escenario se firman con la llave del dispositivo: la huella virtual desbloquea
+  la llave a través de BiometricPrompt (`CryptoObject`), igual que en un teléfono real.
 - Preparar la huella del emulador (una vez): PIN `adb shell locksettings set-pin 1234`, luego
   Ajustes → Seguridad → Huella (`adb shell am start -a android.settings.FINGERPRINT_ENROLL`) y tocar
   el sensor con `adb emu finger touch 1` hasta «Fingerprint added».

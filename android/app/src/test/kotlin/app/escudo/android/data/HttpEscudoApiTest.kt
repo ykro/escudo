@@ -88,18 +88,18 @@ class HttpEscudoApiTest {
   }
 
   @Test
-  fun `approve sends the device id and surfaces 409 as ApiException`() = runTest {
+  fun `approve sends device id and signature and surfaces 409 as ApiException`() = runTest {
     server.enqueue(MockResponse.Builder().code(409).body("not pending").build())
 
     try {
-      api.approve("apr_1", "device-9")
+      api.approve("apr_1", "device-9", "MEUCIQ==")
       fail("expected ApiException")
     } catch (e: ApiException) {
       assertEquals(409, e.code)
     }
     val request = server.takeRequest()
     assertEquals("/approvals/apr_1/approve", request.url.encodedPath)
-    assertEquals("""{"device_id":"device-9"}""", request.body!!.utf8())
+    assertEquals("""{"device_id":"device-9","signature":"MEUCIQ=="}""", request.body!!.utf8())
   }
 
   @Test

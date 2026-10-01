@@ -47,9 +47,10 @@ class EscudoRepository(private val api: EscudoApi) {
 
   suspend fun pendingApprovals(): List<Approval> = api.listPendingApprovals().filter { it.status == "pending" }
 
-  suspend fun approve(approvalId: String, deviceId: String) = api.approve(approvalId, deviceId)
+  suspend fun approve(approvalId: String, deviceId: String, signature: String) = api.approve(approvalId, deviceId, signature)
 
-  suspend fun reject(approvalId: String) = api.reject(approvalId)
+  suspend fun reject(approvalId: String, deviceId: String, signature: String) = api.reject(approvalId, deviceId, signature)
 
-  suspend fun registerDevice(fcmToken: String, deviceId: String) = api.registerDevice(fcmToken, deviceId)
+  suspend fun registerDevice(fcmToken: String, deviceId: String, publicKey: String) =
+    api.registerDevice(fcmToken, deviceId, publicKey)
 }

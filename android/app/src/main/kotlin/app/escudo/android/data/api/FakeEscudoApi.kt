@@ -12,7 +12,14 @@ import app.escudo.android.data.model.OpenClaimRequest
 import app.escudo.android.data.model.PhotoUpload
 import app.escudo.android.data.model.Policy
 import app.escudo.android.data.model.Vehicle
+import app.escudo.android.approvals.ApprovalMessage
+import app.escudo.android.approvals.Decision
+import java.security.KeyFactory
+import java.security.PublicKey
+import java.security.Signature
+import java.security.spec.X509EncodedKeySpec
 import java.time.Clock
+import java.util.Base64
 import java.time.Instant
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
@@ -35,6 +42,9 @@ class FakeEscudoApi(
 
   val events = mutableListOf<EscudoEvent>()
   val deviceTokens = mutableListOf<String>()
+
+  /** Registered approval keys by device id, as the server keeps them (escudo-approval:v1). */
+  private val publicKeys = mutableMapOf<String, PublicKey>()
 
   val policy = Policy(
     policyId = "POL-GT-2027-0042",
@@ -93,6 +103,8 @@ class FakeEscudoApi(
       amountUsd = policy.deductibleUsd,
       status = "pending",
       createdAt = Instant.now(clock).toString(),
+      claimId = claimId,
+      argsHash = "sha256:fake-$approvalId",
     )
     assessment
   }
@@ -107,9 +119,8 @@ class FakeEscudoApi(
     approvals.values.filter { it.status == "pending" }
   }
 
-  override suspend fun approve(approvalId: String, deviceId: String) = simulate {
-    val approval = approvals[approvalId] ?: throw ApiException(404, "Unknown approval")
-    if (approval.status != "pending") throw ApiException(409, "Approval is ${approval.status}")
+  override suspend fun approve(approvalId: String, deviceId: String, signature: String) = simulate {
+    val approval = checkDecision(approvalId, deviceId, signature, Decision.APPROVE)
     approvals[approvalId] = approval.copy(status = "approved")
     if (approval.tool == "accept_deductible") {
       claims.entries.lastOrNull()?.let { (id, claim) ->
@@ -118,12 +129,38 @@ class FakeEscudoApi(
     }
   }
 
-  override suspend fun reject(approvalId: String) = simulate {
-    val approval = approvals[approvalId] ?: throw ApiException(404, "Unknown approval")
+  override suspend fun reject(approvalId: String, deviceId: String, signature: String) = simulate {
+    val approval = checkDecision(approvalId, deviceId, signature, Decision.REJECT)
     approvals[approvalId] = approval.copy(status = "rejected")
   }
 
-  override suspend fun registerDevice(fcmToken: String, deviceId: String) = simulate { deviceTokens += fcmToken; Unit }
+  override suspend fun registerDevice(fcmToken: String, deviceId: String, publicKey: String) = simulate {
+    deviceTokens += fcmToken
+    publicKeys[deviceId] = KeyFactory.getInstance("EC").generatePublic(X509EncodedKeySpec(Base64.getDecoder().decode(publicKey)))
+    Unit
+  }
+
+  /**
+   * Same checks as the server: pending, and — once this device registered a key — a valid
+   * ECDSA signature over `escudo-approval:v1:{id}:{args_hash}:{decision}`. (Without any key, as
+   * in the fake flavor without FCM, the signature is not checked.)
+   */
+  private fun checkDecision(approvalId: String, deviceId: String, signature: String, decision: Decision): Approval {
+    val approval = approvals[approvalId] ?: throw ApiException(404, "Unknown approval")
+    if (approval.status != "pending") throw ApiException(409, "Approval is ${approval.status}")
+    if (publicKeys.isNotEmpty()) {
+      val key = publicKeys[deviceId] ?: throw ApiException(403, """{"error":"approval_forbidden","detail":"unknown_device"}""")
+      val valid = runCatching {
+        Signature.getInstance(ApprovalMessage.ALGORITHM).run {
+          initVerify(key)
+          update(ApprovalMessage.bytes(approvalId, approval.argsHash.orEmpty(), decision))
+          verify(Base64.getDecoder().decode(signature))
+        }
+      }.getOrDefault(false)
+      if (!valid) throw ApiException(403, """{"error":"approval_forbidden","detail":"bad_signature"}""")
+    }
+    return approval
+  }
 
   override suspend fun postEvent(event: EscudoEvent) = mutex.withLock { events += event; Unit }
 

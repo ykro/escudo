@@ -40,7 +40,9 @@ import app.escudo.android.ScenarioLog
 import app.escudo.android.approvals.ApprovalFlow
 import app.escudo.android.approvals.ApprovalOutcome
 import app.escudo.android.approvals.BiometricVerifier
+import app.escudo.android.approvals.Refusal
 import app.escudo.android.approvals.UserVerifier
+import app.escudo.android.push.DeviceRegistration
 import app.escudo.android.data.model.Approval
 import app.escudo.android.ui.components.LoadState
 import app.escudo.android.ui.components.LoadStateContent
@@ -91,7 +93,10 @@ class ApprovalsViewModel(private val container: AppContainer) : ViewModel() {
     if (_busy.value != null) return
     _busy.value = approval.approvalId
     viewModelScope.launch {
-      val flow = ApprovalFlow(container.repository, verifier, { container.deviceId }, container.events)
+      val flow = ApprovalFlow(
+        container.repository, verifier, container.approvalSigner, { container.deviceId }, container.events,
+        onKeyReset = { DeviceRegistration.registerCurrentToken(container) },
+      )
       val outcome = action(flow)
       ScenarioLog.mark("approval_outcome", "${outcome.javaClass.simpleName} ${approval.tool}")
       _outcomes.emit(outcome)
@@ -125,6 +130,14 @@ fun ApprovalsScreen(container: AppContainer, highlightId: String?, snackbar: Sna
         ApprovalOutcome.Cancelled -> context.getString(R.string.approval_cancelled)
         ApprovalOutcome.AlreadyResolved -> context.getString(R.string.approval_already_resolved)
         is ApprovalOutcome.Failed -> outcome.message ?: context.getString(R.string.approval_failed)
+        is ApprovalOutcome.Refused -> context.getString(
+          when (outcome.reason) {
+            Refusal.NOT_YOUR_APPROVAL -> R.string.approval_refused_not_yours
+            Refusal.NO_DEVICE, Refusal.UNKNOWN_DEVICE -> R.string.approval_refused_unknown_device
+            Refusal.DEVICE_DISABLED -> R.string.approval_refused_device_disabled
+            Refusal.BAD_SIGNATURE -> R.string.approval_refused_bad_signature
+          },
+        )
       }
       snackbar.showSnackbar(text)
     }

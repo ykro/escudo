@@ -1,6 +1,8 @@
 package app.escudo.android
 
 import android.content.Context
+import app.escudo.android.approvals.ApprovalSigner
+import app.escudo.android.approvals.KeystoreApprovalSigner
 import app.escudo.android.assistant.AssistantSessionFactory
 import app.escudo.android.assistant.FakeAssistantSession
 import app.escudo.android.assistant.LiveAssistantSession
@@ -48,6 +50,9 @@ class AppContainer(private val context: Context) {
   val events = TimelineEvents(api, appScope)
   val repository = EscudoRepository(api)
   val photos = PhotoLoader(context)
+
+  /** Device-bound approval key (escudo-approval:v1), EC P-256 in the Android Keystore. */
+  val approvalSigner: ApprovalSigner = KeystoreApprovalSigner()
 
   val assistant = AssistantSessionFactory {
     if (config.useFakeApi) FakeAssistantSession() else LiveAssistantSession(config.assistantUrl, tokens)

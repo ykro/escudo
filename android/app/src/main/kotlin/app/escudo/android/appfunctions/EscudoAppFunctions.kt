@@ -123,7 +123,8 @@ abstract class BaseEscudoAppFunctionService : AppFunctionService() {
   } catch (e: AppFunctionElementNotFoundException) {
     throw e
   } catch (e: Exception) {
-    events.post(Surface.APP_FUNCTIONS, TimelineEvents.Kind.ERROR, "Error en $tool vía AppFunctions: ${e.message}", tool = tool)
+    // /events accepts only `message` from clients (tools.md); the backend records capability errors itself.
+    events.post(Surface.APP_FUNCTIONS, TimelineEvents.Kind.MESSAGE, "No se pudo completar $tool vía AppFunctions", tool = tool)
     throw AppFunctionAppUnknownException("Escudo could not complete $tool: ${e.message}")
   }
 }

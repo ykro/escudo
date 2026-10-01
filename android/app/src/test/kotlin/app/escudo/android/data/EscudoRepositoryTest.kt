@@ -62,7 +62,7 @@ class EscudoRepositoryTest {
     val pending = repository.pendingApprovals()
     assertEquals(1, pending.size)
 
-    repository.approve(pending.single().approvalId, deviceId = "device-1")
+    repository.approve(pending.single().approvalId, deviceId = "device-1", signature = "unchecked-without-registered-key")
 
     assertTrue(repository.pendingApprovals().isEmpty())
   }

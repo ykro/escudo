@@ -3,7 +3,7 @@ package app.escudo.android.data.api
 import app.escudo.android.data.auth.AuthTokenProvider
 import app.escudo.android.data.events.Surface
 import app.escudo.android.data.model.Approval
-import app.escudo.android.data.model.ApproveRequest
+import app.escudo.android.data.model.DecisionRequest
 import app.escudo.android.data.model.Claim
 import app.escudo.android.data.model.CoverageCheck
 import app.escudo.android.data.model.DamageAssessment
@@ -65,17 +65,21 @@ class HttpEscudoApi(
 
   override suspend fun listPendingApprovals(): List<Approval> = get("approvals")
 
-  override suspend fun approve(approvalId: String, deviceId: String) {
-    send("approvals/$approvalId/approve", EscudoJson.encodeToString(ApproveRequest.serializer(), ApproveRequest(deviceId)).asJson())
+  override suspend fun approve(approvalId: String, deviceId: String, signature: String) {
+    send("approvals/$approvalId/approve", decision(deviceId, signature))
   }
 
-  override suspend fun reject(approvalId: String) {
-    send("approvals/$approvalId/reject", "{}".asJson())
+  override suspend fun reject(approvalId: String, deviceId: String, signature: String) {
+    send("approvals/$approvalId/reject", decision(deviceId, signature))
   }
 
-  override suspend fun registerDevice(fcmToken: String, deviceId: String) {
-    send("devices", EscudoJson.encodeToString(RegisterDeviceRequest.serializer(), RegisterDeviceRequest(fcmToken, deviceId = deviceId)).asJson())
+  override suspend fun registerDevice(fcmToken: String, deviceId: String, publicKey: String) {
+    val body = RegisterDeviceRequest(deviceId = deviceId, fcmToken = fcmToken, publicKey = publicKey)
+    send("devices", EscudoJson.encodeToString(RegisterDeviceRequest.serializer(), body).asJson())
   }
+
+  private fun decision(deviceId: String, signature: String): RequestBody =
+    EscudoJson.encodeToString(DecisionRequest.serializer(), DecisionRequest(deviceId, signature)).asJson()
 
   override suspend fun postEvent(event: EscudoEvent) {
     send("events", EscudoJson.encodeToString(EscudoEvent.serializer(), event).asJson())

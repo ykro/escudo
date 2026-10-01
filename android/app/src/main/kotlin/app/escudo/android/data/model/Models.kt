@@ -129,19 +129,25 @@ data class Approval(
   val status: String = "pending",
   @SerialName("created_at") val createdAt: String? = null,
   @SerialName("claim_id") val claimId: String? = null,
+  /** Hash of the gated tool's arguments; part of the signed message (escudo-approval:v1). */
+  @SerialName("args_hash") val argsHash: String? = null,
 )
 
+/** Body of POST /approvals/{id}/approve and /reject: the device and its signature (base64 DER). */
 @Serializable
-data class ApproveRequest(
+data class DecisionRequest(
   @SerialName("device_id") val deviceId: String,
+  val signature: String,
 )
 
 @Serializable
 data class RegisterDeviceRequest(
+  /** Stable per-install id: re-registering after a token refresh replaces this phone's entry. */
+  @SerialName("device_id") val deviceId: String,
   @SerialName("fcm_token") val fcmToken: String,
   val platform: String = "android",
-  /** Stable per-install id: re-registering after a token refresh replaces this phone's entry. */
-  @SerialName("device_id") val deviceId: String? = null,
+  /** base64 DER SubjectPublicKeyInfo of the device approval key (escudo-approval:v1). */
+  @SerialName("public_key") val publicKey: String,
 )
 
 /** One step in the presenter timeline (contracts/events.schema.json). */

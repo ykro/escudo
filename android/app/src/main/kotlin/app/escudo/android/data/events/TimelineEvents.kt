@@ -65,7 +65,7 @@ class TimelineEvents(
   }
 
   object Kind {
+    /** The only kind clients may post (contracts/tools.md); capability events come from the backend. */
     const val MESSAGE = "message"
-    const val ERROR = "error"
   }
 }
