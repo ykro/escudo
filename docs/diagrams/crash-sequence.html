@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Escudo · escenario del choque</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;
+      --color-ink:     #2d3142;
+      --color-muted:   #4f5d75;
+      --color-accent:  #0F5C4D;   /* Escudo pine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+    body { font-family: var(--font-sans); background: var(--color-paper); color: var(--color-ink);
+      min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 3rem 2rem; }
+    .frame { max-width: 1200px; width: 100%; }
+    .eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; }
+    h1 { font-family: var(--font-serif); font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem); font-weight: 400;
+      letter-spacing: -0.02em; line-height: 1.15; color: var(--color-ink); margin-bottom: 1.5rem; }
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Secuencia · Escudo</p>
+    <h1>«Tuve un choque menor»: tres pausas, tres huellas</h1>
+
+    <svg viewBox="0 0 1000 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="crash-sequence-title crash-sequence-desc">
+      <title id="crash-sequence-title">Escenario del choque con tres aprobaciones</title>
+      <desc id="crash-sequence-desc">Secuencia del escenario del choque: Andrea reporta con fotos y pide ayuda por voz, el Asistente Escudo usa las herramientas MCP automáticas y el API delega grúa y talleres por A2A; luego, tres veces, una herramienta con aprobación devuelve pending_approval, llega un push, Andrea aprueba con su huella y el asistente repite la llamada con el approval_id.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#0F5C4D"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+        <marker id="arrow-open" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polyline points="0 0, 8 3, 0 6" fill="none" stroke="#4f5d75" stroke-width="1.2"/></marker>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+
+      <!-- LOOP FRAME (×3 approval pauses) — spans Andrea, Asistente and API only -->
+      <rect x="96" y="324" width="568" height="304" rx="4" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.22)" stroke-width="1"/>
+      <rect x="96" y="324" width="40" height="16" rx="2" fill="#f5f5f5" stroke="rgba(45,49,66,0.22)" stroke-width="1"/>
+      <text x="116" y="336" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">LOOP</text>
+      <text x="148" y="336" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.04em">[×3: taller → deducible → firma]</text>
+
+      <!-- LIFELINES -->
+      <line x1="120" y1="88" x2="120" y2="648" stroke="rgba(45,49,66,0.22)" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="380" y1="88" x2="380" y2="648" stroke="rgba(45,49,66,0.22)" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="640" y1="88" x2="640" y2="648" stroke="rgba(45,49,66,0.22)" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="880" y1="88" x2="880" y2="648" stroke="rgba(45,49,66,0.22)" stroke-width="1" stroke-dasharray="3,3"/>
+
+      <!-- ACTIVATION BARS -->
+      <rect x="376" y="172" width="8" height="440" fill="rgba(45,49,66,0.06)" stroke="#4f5d75" stroke-width="0.8"/>
+      <rect x="636" y="128" width="8" height="484" fill="rgba(45,49,66,0.06)" stroke="#4f5d75" stroke-width="0.8"/>
+      <rect x="876" y="256" width="8" height="24" fill="rgba(45,49,66,0.06)" stroke="#4f5d75" stroke-width="0.8"/>
+
+      <!-- MESSAGES -->
+      <!-- M1 Andrea -> API: report with photos (REST from the app) -->
+      <line x1="120" y1="128" x2="636" y2="128" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <!-- M2 Andrea -> Asistente: voice -->
+      <line x1="120" y1="172" x2="376" y2="172" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- M3 Asistente -> API: automatic tools over MCP -->
+      <line x1="384" y1="216" x2="636" y2="216" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- M4 API -> partners over A2A -->
+      <line x1="644" y1="256" x2="876" y2="256" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <!-- M5 API -> Asistente: return -->
+      <line x1="636" y1="296" x2="384" y2="296" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+      <!-- M6 Asistente -> API: gated tool, no approval_id -->
+      <line x1="384" y1="368" x2="636" y2="368" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- M7 API -> Asistente: pending_approval (nothing changed) -->
+      <line x1="636" y1="408" x2="384" y2="408" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+      <!-- M8 API -> Andrea: FCM push (async) -->
+      <line x1="636" y1="448" x2="120" y2="448" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow-open)"/>
+      <!-- M9 Andrea -> API: approve after BiometricPrompt (focal) -->
+      <line x1="120" y1="488" x2="636" y2="488" stroke="#0F5C4D" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <!-- M10 API -> Asistente: nudge (async) -->
+      <line x1="636" y1="528" x2="384" y2="528" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow-open)"/>
+      <!-- M11 Asistente -> API: same tool + approval_id -->
+      <line x1="384" y1="568" x2="636" y2="568" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- M12 API -> Asistente: done, approval marked used -->
+      <line x1="636" y1="608" x2="384" y2="608" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+
+      <!-- MESSAGE LABELS (mask 6px above each stroke) -->
+      <rect x="464" y="108" width="88" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="508" y="117" fill="#2e5aa8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">REPORTE+FOTOS</text>
+      <rect x="196" y="152" width="104" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="248" y="161" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">VOZ · «AYÚDAME»</text>
+      <rect x="456" y="196" width="104" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="508" y="205" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">MCP · AUTOMÁTICAS</text>
+      <rect x="720" y="236" width="80" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="760" y="245" fill="#2e5aa8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">A2A · CARD</text>
+      <rect x="452" y="276" width="112" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="508" y="285" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">GRÚA · TALLERES</text>
+      <rect x="456" y="348" width="104" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="508" y="357" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SIN APPROVAL_ID</text>
+      <rect x="452" y="388" width="112" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="508" y="397" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PENDING_APPROVAL</text>
+      <rect x="208" y="428" width="80" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="248" y="437" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PUSH FCM</text>
+      <rect x="456" y="468" width="104" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="508" y="477" fill="#0F5C4D" font-size="8" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">HUELLA · APPROVE</text>
+      <rect x="468" y="508" width="80" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="508" y="517" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">AVISO</text>
+      <rect x="456" y="548" width="104" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="508" y="557" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">+ APPROVAL_ID</text>
+      <rect x="456" y="588" width="104" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="508" y="597" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">HECHO · USED</text>
+
+      <!-- ACTORS (drawn last) -->
+      <!-- Andrea (input) -->
+      <rect x="48" y="32" width="144" height="56" rx="6" fill="#f5f5f5"/>
+      <rect x="48" y="32" width="144" height="56" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+      <rect x="56" y="38" width="28" height="12" rx="2" fill="transparent" stroke="rgba(122,131,153,0.40)" stroke-width="0.8"/>
+      <text x="70" y="47" fill="#7a8399" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">APP</text>
+      <text x="120" y="64" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Andrea</text>
+      <text x="120" y="79" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">app Android</text>
+
+      <!-- Escudo Assistant (backend) -->
+      <rect x="300" y="32" width="160" height="56" rx="6" fill="#f5f5f5"/>
+      <rect x="300" y="32" width="160" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="308" y="38" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="322" y="47" fill="rgba(45,49,66,0.80)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ADK</text>
+      <text x="380" y="64" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Asistente Escudo</text>
+      <text x="380" y="79" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Gemini Live</text>
+
+      <!-- Escudo API (focal: the server enforces) -->
+      <rect x="560" y="32" width="160" height="56" rx="6" fill="#f5f5f5"/>
+      <rect x="560" y="32" width="160" height="56" rx="6" fill="rgba(15,92,77,0.08)" stroke="#0F5C4D" stroke-width="1.2"/>
+      <rect x="568" y="38" width="28" height="12" rx="2" fill="transparent" stroke="rgba(15,92,77,0.50)" stroke-width="0.8"/>
+      <text x="582" y="47" fill="#0F5C4D" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">API</text>
+      <text x="640" y="64" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Escudo API</text>
+      <text x="640" y="79" fill="#0F5C4D" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">gateway · autonomy</text>
+
+      <!-- Tow + Repair partners (external) -->
+      <rect x="808" y="32" width="144" height="56" rx="6" fill="#f5f5f5"/>
+      <rect x="808" y="32" width="144" height="56" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+      <rect x="816" y="38" width="32" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.22)" stroke-width="0.8"/>
+      <text x="832" y="47" fill="#7a8399" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SOCIO</text>
+      <text x="880" y="64" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Grúa · Talleres</text>
+      <text x="880" y="79" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">agentes A2A</text>
+
+      <!-- LEGEND -->
+      <line x1="30" y1="668" x2="970" y2="668" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <text x="30" y="692" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+      <line x1="100" y1="688" x2="128" y2="688" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <text x="136" y="692" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">llamada</text>
+      <line x1="216" y1="688" x2="244" y2="688" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <text x="252" y="692" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">HTTP / A2A</text>
+      <line x1="352" y1="688" x2="380" y2="688" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+      <text x="388" y="692" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">respuesta</text>
+      <line x1="476" y1="688" x2="504" y2="688" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow-open)"/>
+      <text x="512" y="692" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">asíncrono</text>
+      <line x1="600" y1="688" x2="628" y2="688" stroke="#0F5C4D" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <text x="636" y="692" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">decisión humana</text>
+      <rect x="760" y="682" width="14" height="12" rx="2" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.22)" stroke-width="1"/>
+      <text x="780" y="692" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">se repite 3 veces</text>
+    </svg>
+  </div>
+</body>
+</html>
