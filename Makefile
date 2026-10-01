@@ -15,7 +15,7 @@ ADMIN_TOKEN_FILE := infra/.generated/admin_token
 LOCAL := $(filter http://127.0.0.1% http://localhost%,$(ESCUDO_BASE_URL))
 ENV_FILE := $(if $(wildcard .env),--env-file ../.env,)
 
-.PHONY: help up up-mock web seed reset test scenario scenario-live deploy deploy-api deploy-web photos android-build android-test android-install android-emulator
+.PHONY: help up up-mock web seed reset test scenario scenario-live deploy deploy-api deploy-web photos android-build android-test android-install android-emulator voice-scenario
 
 help:
 	@echo "make up          API local (Firestore + Gemini, ADC) en :8080"
@@ -83,3 +83,6 @@ android-install: ; $(MAKE) -C android install FLAVOR=$(or $(FLAVOR),live)
 
 android-emulator:
 	$${ANDROID_HOME:-$$HOME/Library/Android/sdk}/emulator/emulator -avd $(ANDROID_AVD) -no-snapshot-save >/dev/null 2>&1 &
+
+voice-scenario: ## Voice-driven scenario on emulator-5556 (3 approvals, fingerprint)
+	$(MAKE) -C android voice-scenario
