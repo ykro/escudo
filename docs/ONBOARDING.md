@@ -100,7 +100,7 @@ Escudo usa el proyecto de Firebase `ai-experiments-487722` solo como SDKs:
 
 | Servicio | Uso |
 | --- | --- |
-| Auth | Correo y contraseña (la clienta sembrada, en la app Android y el portal) y **anónimo** (botón «Entrar con la cuenta de demostración» del portal y `make scenario` cuando no hay credenciales). Ambos proveedores deben estar activos en la consola de Firebase |
+| Auth | Correo y contraseña: la clienta sembrada, en la app Android, el portal y `make scenario`. `infra/03-firebase.sh` activa el proveedor por la API de administración de Identity Toolkit |
 | Firestore | Base con nombre `escudo` (modo nativo, `nam5`). Colecciones: `customers`, `policies`, `repair_shops`, `tow_providers`, `claims`, `approvals`, `events`, `devices` |
 | Cloud Storage | Bucket `ai-experiments-487722-escudo-claims` (`us-central1`): fotos en `claims/{claim_id}/{n}.jpg` |
 | FCM | Push de aprobación al canal `approvals` de la app |
@@ -122,8 +122,9 @@ make seed
    *custom claim* `customer_id=cus_demo`, y escribe correo y contraseña en `.env.local`. La contraseña se
    conserva entre corridas para que la app instalada siga funcionando.
 
-Cualquier otro usuario verificado de Firebase (por ejemplo, uno anónimo) actúa como la misma clienta
-(`DEMO_CUSTOMER_ID`, ver `backend/escudo/auth.py`): Escudo es una demo de una sola clienta.
+Cada superficie (REST, MCP, voz y el agente A2A de Escudo) actúa como la clienta que dice el token
+verificado (`customer_id`, ver `backend/escudo/auth.py`). Un usuario sin ese claim es su propio cliente:
+no ve póliza ni reclamos. Solo con `MOCK_AUTH=1` (pruebas locales) todo llamador es `DEMO_CUSTOMER_ID`.
 
 El servicio desplegado además siembra una base vacía al arrancar (`seed.seed_if_empty`).
 
@@ -141,29 +142,24 @@ make reset            # API local en ESCUDO_BASE_URL (con make up-mock el token 
 Proyecto `ai-experiments-487722`, región `us-central1`, repositorio de Artifact Registry `charlas2027`.
 Todos los scripts cargan `infra/env.sh` (que lee `infra/app.env`, `APP=escudo`) y son idempotentes.
 
-Recursos que los scripts usan y que se crean una sola vez a mano (ya existen en el proyecto):
-
-```bash
-gcloud firestore databases create --database=escudo --location=nam5 --type=firestore-native --project ai-experiments-487722
-gcloud storage buckets create gs://ai-experiments-487722-escudo-claims --location=us-central1 --project ai-experiments-487722
-gcloud artifacts repositories create charlas2027 --repository-format=docker --location=us-central1 --project ai-experiments-487722
-```
-
-Además, en la consola de Firebase: proveedores de Auth *Correo/contraseña* y *Anónimo*, y la app Android
-`app.escudo.android` registrada.
+Desde un proyecto vacío, `make infra` corre los pasos 1 a 5 en orden; cada script crea lo que falta y
+deja igual lo que ya existe. La app Android `app.escudo.android` y su `google-services.json` los maneja
+`android/` (`make -C android google-services`).
 
 En orden:
 
 | Paso | Script | Qué hace |
 | --- | --- | --- |
-| 1 | `bash infra/01-apis.sh` | Activa Cloud Run, Cloud Build, Artifact Registry, Vertex AI, Firestore, Storage, FCM, Identity Toolkit e IAM |
-| 2 | `bash infra/02-service-account.sh` | Cuenta `escudo-api` con lo mínimo: `datastore.user` solo sobre la base `escudo` (condición IAM), `aiplatform.user`, `firebasecloudmessaging.admin` y `storage.objectUser` solo sobre el bucket de reclamos |
-| 3 | `bash infra/03-web-service-account.sh` | Cuenta `escudo-web`: `datastore.viewer` solo sobre la base `escudo` |
-| 4 | `make seed` | Datos y login de la clienta (sección 4) |
-| 5 | `make deploy-api` (`infra/10-deploy-api.sh`) | Prepara un contexto con `backend/` + `contracts/`, construye con Cloud Build y despliega `escudo-api`: `--min-instances=1 --max-instances=1 --concurrency=80 --cpu=1 --memory=1Gi --no-cpu-throttling --timeout=3600 --session-affinity`. Genera `ADMIN_TOKEN` y `A2A_SHARED_SECRET` en `infra/.generated/` y fija `PUBLIC_BASE_URL` y `A2A_PEERS` a la URL determinista del servicio |
-| 6 | `make deploy-web` (`infra/11-deploy-web.sh`) | Escribe `.env.production` con la configuración pública (`NEXT_PUBLIC_*`), construye y despliega `escudo-web` (`--min-instances=1 --max-instances=2`, 3600 s de timeout para el stream SSE) |
+| 1 | `bash infra/01-apis.sh` | Activa Cloud Run, Cloud Build, Artifact Registry, Vertex AI, Firestore, Storage, FCM, Identity Toolkit, Firebase e IAM |
+| 2 | `bash infra/02-data.sh` | Crea si faltan la base Firestore `escudo` (nativa, `nam5`), el bucket privado `ai-experiments-487722-escudo-claims` y el repositorio de Artifact Registry `charlas2027` |
+| 3 | `bash infra/03-firebase.sh` | Agrega Firebase al proyecto si falta y activa el proveedor de Auth correo/contraseña con la API de administración de Identity Toolkit (`PATCH admin/v2/projects/…/config`, solo ese campo: el proyecto se comparte con otras demos) |
+| 4 | `bash infra/04-service-account.sh` | Cuenta `escudo-api` con lo mínimo: `datastore.user` solo sobre la base `escudo` (condición IAM), `aiplatform.user`, `firebasecloudmessaging.admin` y `storage.objectUser` solo sobre el bucket de reclamos |
+| 5 | `bash infra/05-web-service-account.sh` | Cuenta `escudo-web`: `datastore.viewer` solo sobre la base `escudo` |
+| 6 | `make seed` | Datos y login de la clienta (sección 4) |
+| 7 | `make deploy-api` (`infra/10-deploy-api.sh`) | Prepara un contexto con `backend/` + `contracts/`, construye con Cloud Build y despliega `escudo-api`: `--min-instances=1 --max-instances=1 --concurrency=80 --cpu=1 --memory=1Gi --no-cpu-throttling --timeout=3600 --session-affinity`. Genera `ADMIN_TOKEN` y `A2A_SHARED_SECRET` en `infra/.generated/` y fija `PUBLIC_BASE_URL` y `A2A_PEERS` a la URL determinista del servicio |
+| 8 | `make deploy-web` (`infra/11-deploy-web.sh`) | Escribe `.env.production` con la configuración pública (`NEXT_PUBLIC_*`), construye y despliega `escudo-web` (`--min-instances=1 --max-instances=2`, 3600 s de timeout para el stream SSE) |
 
-`make deploy` corre los pasos 5 y 6. Los modelos y datos que se pasan al servicio salen de
+`make deploy` corre los pasos 7 y 8. Los modelos y datos que se pasan al servicio salen de
 `.env.example` y, encima, de `.env`.
 
 URLs resultantes: ver la tabla «URLs desplegadas» del README.
@@ -183,8 +179,8 @@ Notas:
 - Con `make up`, `PUBLIC_BASE_URL` y `A2A_PEERS` apuntan a `127.0.0.1:8080`, así que el agente Escudo
   descubre a sus socios en tu propio proceso, por HTTP, igual que en la nube.
 - `make scenario` usa `ESCUDO_BASE_URL` (por defecto local; `CLOUD=1` para el desplegado). Con
-  `FIREBASE_WEB_API_KEY` en `.env` inicia sesión como la clienta sembrada (o anónima si no hay
-  credenciales en `.env.local`). `--auto-approve` solo se acepta junto con `--test-mode`: en una corrida
+  `FIREBASE_WEB_API_KEY` en `.env` inicia sesión como la clienta sembrada (credenciales de `.env.local`,
+  las escribe `make seed`). `--auto-approve` solo se acepta junto con `--test-mode`: en una corrida
   real aprueba la clienta. `APPROVE_DELAY=4` deja la pausa en pantalla 4 s.
 - `make scenario-live` es el mismo guion, pero espera a que apruebes en el teléfono (sondea `GET /approvals`).
 - Web local: `make web` levanta el portal en `http://localhost:3217`. `/presenter` lee Firestore en el
@@ -208,7 +204,7 @@ make test
 
 | Parte | Comando | Qué cubre |
 | --- | --- | --- |
-| Backend | `cd backend && MOCK_AI=1 MOCK_AUTH=1 uv run pytest -q` (33 pruebas) | Toda acción con aprobación es rechazada sin `approval_id` válido, por REST y MCP (`test_approvals.py`); aprobación de otra herramienta, otros argumentos, rechazada o ya usada; no existe herramienta de aprobar; la tabla de autonomía cubre exactamente el registro y coincide con el contrato (`test_autonomy.py`); Agent Cards en la ruta well-known, descubrimiento sin rutas escritas a mano y secreto de socios (`test_discovery.py`); eventos válidos contra el esquema y etiquetas de superficie (`test_events.py`); `make reset` y el protocolo de voz simulado (`test_reset_and_voice.py`); el escenario completo por MCP con 3 aprobaciones (`test_scenario.py`) |
+| Backend | `cd backend && MOCK_AI=1 MOCK_AUTH=1 uv run pytest -q` (38 pruebas) | Toda acción con aprobación es rechazada sin `approval_id` válido, por REST y MCP (`test_approvals.py`); aprobación de otra herramienta, otros argumentos, rechazada o ya usada; no existe herramienta de aprobar; la tabla de autonomía cubre exactamente el registro y coincide con el contrato (`test_autonomy.py`); Agent Cards en la ruta well-known, descubrimiento sin rutas escritas a mano y secreto de socios (`test_discovery.py`); eventos válidos contra el esquema y etiquetas de superficie (`test_events.py`); `make reset` y el protocolo de voz simulado (`test_reset_and_voice.py`); el escenario completo por MCP con 3 aprobaciones (`test_scenario.py`); MCP, REST y el agente Escudo actúan como el `customer_id` del token verificado, y `/a2a/escudo` rechaza llamadas anónimas (`test_identity.py`) |
 | Android | `make android-test` (54 pruebas, sabores `fake` y `live`) | Mapeo de AppFunctions, `ApprovalFlow`, protocolo del asistente, lector WAV, repositorio, cliente HTTP, push, línea de tiempo, transcripción, mensajes de error |
 | Web | `cd web && npm test` (14 pruebas) | Línea de tiempo del presentador y herramientas WebMCP (exactamente cuatro, todas de solo lectura, ninguna aprueba) |
 | Web e2e | `cd web && npm run e2e` | Presentador en modo demo con Chrome: pausa en ámbar, 3 aprobaciones, el reloj se detiene al firmar |
@@ -233,14 +229,13 @@ Hace falta la imagen 36.1 (Android 16 QPR2): en 36.0 el servicio de AppFunctions
 
 ### 8.2 Arrancarlo
 
-`make voice-scenario` habla con `emulator-5556` por defecto (`ANDROID_SERIAL`). Arranca el emulador en ese puerto:
-
 ```bash
-$ANDROID_HOME/emulator/emulator -avd Pixel_9_API_36_1 -port 5556 -no-snapshot-save &
+make android-emulator     # arranca Pixel_9_API_36_1 (o reutiliza el que ya corre) y muestra su serial
 ```
 
-`make android-emulator` también lo arranca, en el primer puerto libre (`emulator-5554` si es el único);
-en ese caso corre `ANDROID_SERIAL=emulator-5554 make voice-scenario`. Para usar el micrófono de la laptop
+Todos los comandos de Android (`android-install`, `voice-scenario`, `make -C android live-test`, …)
+buscan el serial del emulador `Pixel_9_API_36_1` en ejecución (`android/scripts/emulator_serial.sh`), así
+que da igual en qué puerto arrancó. `make android-serial` lo muestra; `ANDROID_SERIAL=…` lo fuerza. Para usar el micrófono de la laptop
 agrega `-allow-host-audio` (capta muy poco; para ensayar usa las grabaciones).
 
 ### 8.3 PIN y huella (una vez)
@@ -301,7 +296,7 @@ adb shell content call --uri content://media --method scan_volume --arg external
 
 ```bash
 make reset CLOUD=1
-make voice-scenario            # o ANDROID_SERIAL=emulator-5554 make voice-scenario
+make voice-scenario            # usa el emulador Pixel_9_API_36_1 que esté corriendo
 ```
 
 `android/scripts/voice_scenario.sh`:
@@ -356,8 +351,9 @@ Para mostrar que una función se puede apagar:
 ### WebMCP en Chrome
 
 1. Una vez: `chrome://flags/#enable-webmcp-testing` → **Enabled** → relanzar Chrome (150 o más).
-2. Abrir https://escudo-web-611681112050.us-central1.run.app/entrar y pulsar **Entrar con la cuenta de
-   demostración**. El pie del portal dice «WebMCP · 4 herramientas disponibles…».
+2. Abrir https://escudo-web-611681112050.us-central1.run.app/entrar y entrar con la cuenta de Andrea
+   (correo y contraseña en `.env.local`; la sesión queda guardada en el navegador, hazlo antes de la
+   charla). El pie del portal dice «WebMCP · 4 herramientas disponibles…».
 3. DevTools (`⌥⌘I`) → **Application** → **WebMCP**: aparecen `getCoverage`, `getDeductible`,
    `findRepairShops` y `getClaimStatus` con su descripción y esquema. Elegir `getDeductible` → **Run tool**
    → `{"deductible_usd": 500, …}`; `/presenter` muestra el paso con la insignia **WebMCP**.
@@ -450,7 +446,7 @@ el agente A2A (`agents/escudo_agent.build_a2a_agent`) o una AppFunction (que lla
 | «Ningún socio disponible ofrece ese servicio» (`peer_unavailable`) | `A2A_PEERS` no apunta a las Agent Cards (`{base}/.well-known/agent-card.json`) o el secreto `X-Escudo-A2A-Key` no coincide |
 | `adb shell cmd app_function` → `No shell command implementation.` | Imagen API 36.0. Usa `Pixel_9_API_36_1` (36.1) |
 | `reportAccident` por AppFunction: «Escudo cannot read the gallery yet» | `adb shell pm grant app.escudo.android android.permission.READ_MEDIA_IMAGES` |
-| `make voice-scenario` → «not on screen» o no encuentra el dispositivo | El emulador no está en `emulator-5556`: `ANDROID_SERIAL=emulator-5554 make voice-scenario`. Revisa también que haya tres fotos en la galería y que la app esté instalada con sesión iniciada |
+| `make voice-scenario` → «No running emulator for AVD Pixel_9_API_36_1» o «not on screen» | Arranca el emulador con `make android-emulator` (otro AVD no cuenta). Revisa también que haya tres fotos en la galería y que la app esté instalada con sesión iniciada |
 | `make voice-scenario` → «no biometric prompt» o «approval not granted» | No hay huella registrada (sección 8.3) |
 | El portal dice «WebMCP no está activo en este navegador» | Activa `chrome://flags/#enable-webmcp-testing` y relanza Chrome 150+ |
 | `/presenter` vacío en local | `make web` lee Firestore con tu ADC; usa `/presenter?demo=1` sin nube |

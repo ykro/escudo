@@ -80,7 +80,7 @@ make scenario CLOUD=1 APPROVE_DELAY=4
 
 ## `make` commands
 
-From the repo root (`make help` lists the main ones):
+From the repo root (`make help` lists them all):
 
 | Command | What it does |
 | --- | --- |
@@ -92,14 +92,18 @@ From the repo root (`make help` lists the main ones):
 | `make test` | Backend `pytest` with `MOCK_AI=1 MOCK_AUTH=1`, Android unit tests and web `vitest` |
 | `make scenario` | Full scenario over MCP in test mode (`--test-mode --auto-approve`); `CLOUD=1`, `APPROVE_DELAY=4` |
 | `make scenario-live` | The same scenario, but it waits for the customer to approve each step on the phone |
+| `make infra` | Creates or verifies everything in GCP from an empty project: `infra/01..05` (APIs, `escudo` database, bucket, Artifact Registry, Firebase Auth via API, service accounts) |
 | `make deploy` | `deploy-api` + `deploy-web` |
 | `make deploy-api` | `infra/10-deploy-api.sh`: builds and deploys `escudo-api` |
 | `make deploy-web` | `infra/11-deploy-web.sh`: builds and deploys `escudo-web` |
 | `make photos` | Regenerates the rehearsal crash photos with `IMAGE_MODEL` |
+| `make voices` | Regenerates the test voice recordings (macOS `say` + ffmpeg) |
+| `make brand` | Regenerates the "A · Sereno" logo and mockups with `IMAGE_MODEL` from `brand/prompts/` (`ARGS="--force logo"`) |
 | `make android-build` | `./gradlew assembleDebug` (`live` and `fake` flavors) |
 | `make android-test` | Android unit tests (both flavors) |
 | `make android-install` | Installs and opens the app (`FLAVOR=live` by default, `FLAVOR=fake` for no network) |
-| `make android-emulator` | Starts the `Pixel_9_API_36_1` AVD (Android 16 QPR2, needed for `cmd app_function`) |
+| `make android-emulator` | Starts (or reuses) the `Pixel_9_API_36_1` AVD (Android 16 QPR2, needed for `cmd app_function`) and prints its serial |
+| `make android-serial` | adb serial of that emulator; every Android target detects it on its own |
 | `make voice-scenario` | Full **voice** scenario on the emulator, with a virtual fingerprint, timed |
 
 `android/Makefile` adds `make -C android live-test` (instrumented voice test against the cloud),
@@ -138,7 +142,9 @@ android/                  Kotlin + Compose + Material 3 (see android/README.md)
 web/                      Next.js 16 (see web/README.md)
   src/lib/webmcp.ts       WebMCP tools
   src/app/presenter/      presenter view (1920×1080)
-infra/                    numbered gcloud scripts (APIs, service accounts, deploys)
+infra/                    numbered, idempotent scripts: 01-05 build the project from scratch, 10-11 deploy
+brand/                    prompts and generator for the "A · Sereno" logo and mockups (make brand)
+data/                     SOURCES.md (origin of every data file and asset) and DATASHEET.md
 docs/                     ONBOARDING.md, diagrams and screenshots
 ```
 
@@ -149,7 +155,7 @@ docs/                     ONBOARDING.md, diagrams and screenshots
 | **One Cloud Run service with Tow and Repair inside it, but A2A only.** The three agents are mounted in `escudo-api` under `/a2a/escudo`, `/a2a/tow` and `/a2a/repair`, each with its own Agent Card. | One deploy, one cold start and one service account. The Escudo agent only knows base URLs (`A2A_PEERS`), reads the Agent Card, indexes by skill and calls the RPC URL the card declares (`agents/peers.py`); it never imports partner code. `tests/test_discovery.py` checks this, including that `escudo_agent.py` contains no partner paths. | Three separate services (more deploys and cold starts without teaching anything new). Calling the partners' functions directly (it would hide the A2A lesson). |
 | **A single instance (`--min-instances=1 --max-instances=1`).** | The "the customer approved" nudge travels from `POST /approvals/{id}/approve` to the open voice session through an in-memory `AssistantHub`; both must live in the same process. ADK sessions and the A2A task store are in memory too. `min-instances=1` avoids a cold start on stage; `--no-cpu-throttling`, `--timeout=3600` and `--session-affinity` keep the voice WebSocket alive. One presenter, one customer: one instance is plenty. | A cross-instance channel (Pub/Sub or a Firestore listener) to fan out nudges: more parts that can fail on stage. |
 | **Approval bound to tool + arguments hash, single use.** | `approvals.args_hash` is the SHA-256 of the canonical JSON `{tool, args}` (without `approval_id` or nulls). `redeem` checks customer, tool, hash and status inside one atomic update and marks the approval `used`. An approval for "Taller Carrocería Diez on Tuesday" does not work for another shop, another slot, or twice. Before asking, the server runs the precheck so a customer is never asked to approve something that would fail. A misused approval (other tool or other data) is not burned. | Telling the model in the prompt to "ask first" (a prompt is not a control). Exposing `approve` as a tool (the agent would approve itself). A generic "yes" token not bound to the action shown. |
-| **Optional A2A shared secret (`A2A_SHARED_SECRET`).** | Tow and Repair only answer RPC carrying `X-Escudo-A2A-Key` (compared with `hmac.compare_digest` in `main.partner_key_guard`). Their Agent Cards stay public — discovery must work — and declare the `securitySchemes.partnerKey` scheme, so a caller learns *how* to authenticate from the card. The Escudo agent (`/a2a/escudo`) stays open because customers' agents are meant to reach it. `make deploy` generates the secret into `infra/.generated/a2a_secret`; empty locally and in tests. | OAuth or mTLS between partners: right between real companies, out of proportion for partners living in the same service. |
+| **Optional A2A shared secret (`A2A_SHARED_SECRET`).** | Tow and Repair only answer RPC carrying `X-Escudo-A2A-Key` (compared with `hmac.compare_digest` in `main.partner_key_guard`). Their Agent Cards stay public — discovery must work — and declare the `securitySchemes.partnerKey` scheme, so a caller learns *how* to authenticate from the card. The Escudo agent (`/a2a/escudo`) answers about a customer's claims, so it requires a credential: the customer's Firebase token (acts as her) or the partner key plus `X-Escudo-Customer-Id` (`main.EscudoAgentGuard`); its card declares both schemes. Like REST, MCP and voice, it acts as the verified token's `customer_id`, never as a fixed customer. `make deploy` generates the secret into `infra/.generated/a2a_secret`; empty locally and in tests. | OAuth or mTLS between partners: right between real companies, out of proportion for partners living in the same service. |
 | **Phone mirror drawn from backend state.** | The right panel of `/presenter` (`web/src/components/presenter/PhoneMirror.tsx`) shows what the app shows — pending approval first, then the claim — from the same Firestore data. It does not depend on USB, the emulator or a capture process, and it always matches the timeline. | Screen capture with `scrcpy` as the main source (kept as an option for pixel-exact mirroring: a `scrcpy` window over the panel). A custom stream from the app. |
 | **Recorded voice for rehearsals on the emulator.** | The assistant listens through a `VoiceSource`: `MicrophoneSource` in production or `FileSource`, which plays a PCM16 16 kHz mono WAV in real time through the same path (40 ms chunks → WebSocket → Gemini Live → MCP). With `-allow-host-audio` the laptop microphone reached the emulator at a 0.013 peak, too low; the recordings (`android/testdata/voice/`, made with `say -v Paulina` + ffmpeg) make rehearsals repeatable, and `make voice-scenario` times them (168 s end to end on 2026-09-30). Only debug builds contain them. Releasing the button sends 2 s of silence: with 800 ms Gemini Live never closed the turn. | Rehearsing by speaking to the laptop microphone (not repeatable). Manual end-of-turn signals (`activity_start`/`activity_end` are accepted but ignored: turns come from automatic VAD). |
 | **Photo downscaling in two places.** | On the phone, `PhotoLoader` keeps each photo at ≤ 1600 px, JPEG 80 (uploading raw 12 MP photos took ~40 s). On the backend, `damage_assessor.for_assessment` takes them to 1024 px, JPEG 80, for the model only: three photos took 86–90 s and dropped to 6–10 s with the same verdict. The received originals are stored in Cloud Storage in parallel with the assessment. The assessor also uses `thinking_level=LOW` and `MEDIA_RESOLUTION_MEDIUM`. | Sending full-resolution photos (slow, no better result). |
@@ -206,9 +212,10 @@ Checked on 2026-09-30. Details in [`backend/VERSIONS.md`](backend/VERSIONS.md),
 - **Seed data** (customer Andrea Morales, policy `POL-GT-2027-0042`, shops, tow providers): fictional,
   written by `backend/escudo/seed.py`; every record carries `origin` (`synthetic`, seed 2027).
 - **Visual identity** "A · Sereno": tokens in `android/design/a-sereno/tokens.json` and
-  `web/src/brand/tokens.json`, vector mark `android/design/a-sereno/mark.svg`; logo and mockup
-  references in `android/design/a-sereno/` and `web/public/brand/`.
+  `web/src/brand/tokens.json`, vector mark `android/design/a-sereno/mark.svg`; synthetic logo and
+  mockups (`IMAGE_MODEL`) with their prompts and generator in `brand/` (`make brand`).
 - **Typeface**: Onest (SIL OFL 1.1, `android/design/a-sereno/Onest-OFL.txt`).
 - **Diagrams** (`docs/diagrams/`): made with the `diagram-design` skill (light editorial skin, pine accent `#0F5C4D`).
 
-All companies, people, plates and addresses are fictional.
+All companies, people, plates and addresses are fictional. Full inventory of data and generated assets
+in [`data/SOURCES.md`](data/SOURCES.md); datasheet in [`data/DATASHEET.md`](data/DATASHEET.md).

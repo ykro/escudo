@@ -80,7 +80,7 @@ make scenario CLOUD=1 APPROVE_DELAY=4
 
 ## Comandos `make`
 
-Desde la raíz del repo (`make help` muestra los principales):
+Desde la raíz del repo (`make help` los lista todos):
 
 | Comando | Qué hace |
 | --- | --- |
@@ -92,14 +92,18 @@ Desde la raíz del repo (`make help` muestra los principales):
 | `make test` | `pytest` del backend con `MOCK_AI=1 MOCK_AUTH=1`, unitarias de Android y `vitest` de la web |
 | `make scenario` | Escenario completo por MCP en modo prueba (`--test-mode --auto-approve`); `CLOUD=1`, `APPROVE_DELAY=4` |
 | `make scenario-live` | El mismo escenario, pero espera a que la clienta apruebe cada paso en el teléfono |
+| `make infra` | Crea o verifica todo en GCP desde un proyecto vacío: `infra/01..05` (APIs, base `escudo`, bucket, Artifact Registry, Firebase Auth por API, cuentas de servicio) |
 | `make deploy` | `deploy-api` + `deploy-web` |
 | `make deploy-api` | `infra/10-deploy-api.sh`: construye y despliega `escudo-api` |
 | `make deploy-web` | `infra/11-deploy-web.sh`: construye y despliega `escudo-web` |
 | `make photos` | Regenera las fotos de ensayo del choque con `IMAGE_MODEL` |
+| `make voices` | Regenera las grabaciones de voz de prueba (macOS `say` + ffmpeg) |
+| `make brand` | Regenera logo y maquetas «A · Sereno» con `IMAGE_MODEL` desde `brand/prompts/` (`ARGS="--force logo"`) |
 | `make android-build` | `./gradlew assembleDebug` (sabores `live` y `fake`) |
 | `make android-test` | Pruebas unitarias de Android (ambos sabores) |
 | `make android-install` | Instala y abre la app (`FLAVOR=live` por defecto, `FLAVOR=fake` sin red) |
-| `make android-emulator` | Arranca el AVD `Pixel_9_API_36_1` (Android 16 QPR2, necesario para `cmd app_function`) |
+| `make android-emulator` | Arranca (o reutiliza) el AVD `Pixel_9_API_36_1` (Android 16 QPR2, necesario para `cmd app_function`) y muestra su serial |
+| `make android-serial` | Serial adb de ese emulador; todos los comandos de Android lo detectan solos |
 | `make voice-scenario` | Escenario completo **por voz** en el emulador, con huella virtual y cronometrado |
 
 `android/Makefile` agrega `make -C android live-test` (prueba instrumentada de voz contra la nube),
@@ -138,7 +142,9 @@ android/                  Kotlin + Compose + Material 3 (ver android/README.md)
 web/                      Next.js 16 (ver web/README.md)
   src/lib/webmcp.ts       herramientas WebMCP
   src/app/presenter/      vista del presentador (1920×1080)
-infra/                    scripts gcloud numerados (APIs, cuentas de servicio, despliegues)
+infra/                    scripts numerados e idempotentes: 01-05 crean el proyecto desde cero, 10-11 despliegan
+brand/                    prompts y generador del logo y las maquetas «A · Sereno» (make brand)
+data/                     SOURCES.md (procedencia de cada dato y recurso) y DATASHEET.md
 docs/                     ONBOARDING.md, diagramas y capturas
 ```
 
@@ -149,7 +155,7 @@ docs/                     ONBOARDING.md, diagramas y capturas
 | **Un solo servicio de Cloud Run con Grúa y Talleres adentro, pero solo por A2A.** Los tres agentes están montados en `escudo-api` bajo `/a2a/escudo`, `/a2a/tow` y `/a2a/repair`, cada uno con su Agent Card. | Un despliegue, un arranque en frío y una cuenta de servicio. El agente Escudo solo conoce URLs base (`A2A_PEERS`), lee la Agent Card, indexa por *skill* y llama la URL RPC que declara la tarjeta (`agents/peers.py`); nunca importa código del socio. `tests/test_discovery.py` lo verifica, incluido que no haya rutas de socios escritas en `escudo_agent.py`. | Tres servicios separados (más despliegues y arranques en frío sin enseñar nada nuevo). Llamar las funciones de los socios directamente (escondería la lección de A2A). |
 | **Una sola instancia (`--min-instances=1 --max-instances=1`).** | El aviso «la clienta aprobó» viaja de `POST /approvals/{id}/approve` a la sesión de voz abierta por un `AssistantHub` en memoria; ambos deben vivir en el mismo proceso. También las sesiones ADK y la tienda de tareas A2A están en memoria. `min-instances=1` evita el arranque en frío en el escenario; `--no-cpu-throttling`, `--timeout=3600` y `--session-affinity` mantienen vivo el WebSocket de voz. Una presentadora, una clienta: una instancia sobra. | Un canal entre instancias (Pub/Sub o un listener de Firestore) para repartir avisos: más piezas que pueden fallar en el escenario. |
 | **Aprobación atada a herramienta + hash de argumentos, de un solo uso.** | `approvals.args_hash` es SHA-256 del JSON canónico `{tool, args}` (sin `approval_id` ni nulos). `redeem` comprueba, dentro de una actualización atómica, cliente, herramienta, hash y estado, y marca la aprobación `used`. Una aprobación para «Taller Carrocería Diez el martes» no sirve para otro taller ni otro horario ni dos veces. Antes de pedirla, el servidor corre el *precheck* para no pedir aprobación de algo que fallaría. Una aprobación mal usada (otra herramienta u otros datos) no se quema. | Pedirle al modelo en el prompt que «pregunte antes» (un prompt no es un control). Exponer `approve` como herramienta (el agente se aprobaría a sí mismo). Un token genérico de «sí» sin atar a la acción mostrada. |
-| **Secreto compartido opcional para A2A (`A2A_SHARED_SECRET`).** | Grúa y Talleres solo responden RPC con la cabecera `X-Escudo-A2A-Key` (comparada con `hmac.compare_digest` en `main.partner_key_guard`). Sus Agent Cards siguen públicas —el descubrimiento debe funcionar— y declaran el esquema `securitySchemes.partnerKey`, así el llamador aprende *cómo* autenticarse desde la tarjeta. El agente Escudo (`/a2a/escudo`) queda abierto porque los agentes de los clientes deben poder llegar a él. `make deploy` genera el secreto en `infra/.generated/a2a_secret`; vacío en local y en pruebas. | OAuth o mTLS entre socios: correcto entre empresas reales, desproporcionado para socios que viven en el mismo servicio. |
+| **Secreto compartido opcional para A2A (`A2A_SHARED_SECRET`).** | Grúa y Talleres solo responden RPC con la cabecera `X-Escudo-A2A-Key` (comparada con `hmac.compare_digest` en `main.partner_key_guard`). Sus Agent Cards siguen públicas —el descubrimiento debe funcionar— y declaran el esquema `securitySchemes.partnerKey`, así el llamador aprende *cómo* autenticarse desde la tarjeta. El agente Escudo (`/a2a/escudo`) responde sobre los reclamos de una clienta, así que exige credencial: el token de Firebase de la clienta (actúa como ella) o la clave de socio más `X-Escudo-Customer-Id` (`main.EscudoAgentGuard`); su tarjeta declara ambos esquemas. Igual que REST, MCP y voz, actúa como el `customer_id` del token verificado, nunca como una clienta fija. `make deploy` genera el secreto en `infra/.generated/a2a_secret`; vacío en local y en pruebas. | OAuth o mTLS entre socios: correcto entre empresas reales, desproporcionado para socios que viven en el mismo servicio. |
 | **Espejo del teléfono dibujado desde el estado del backend.** | El panel derecho de `/presenter` (`web/src/components/presenter/PhoneMirror.tsx`) muestra lo que la app enseña —aprobación pendiente primero, luego el reclamo— a partir de los mismos datos de Firestore. No depende de USB, del emulador ni de un proceso de captura, y siempre coincide con la línea de tiempo. | Captura de pantalla con `scrcpy` como fuente principal (queda como opción para el píxel exacto: una ventana `scrcpy` encima del panel). Un stream propio desde la app. |
 | **Grabaciones de voz para ensayar en el emulador.** | El asistente escucha a través de una `VoiceSource`: `MicrophoneSource` en producción o `FileSource`, que reproduce un WAV PCM16 16 kHz mono en tiempo real por el mismo camino (fragmentos de 40 ms → WebSocket → Gemini Live → MCP). Con `-allow-host-audio` el micrófono de la laptop llegó al emulador con un pico de 0.013, demasiado bajo; las grabaciones (`android/testdata/voice/`, generadas con `say -v Paulina` + ffmpeg) hacen el ensayo repetible y `make voice-scenario` lo cronometra (168 s de punta a punta el 2026-09-30). Solo las versiones debug las incluyen. Al soltar el botón se envían 2 s de silencio: con 800 ms Gemini Live nunca cerraba el turno. | Ensayar hablando al micrófono de la laptop (no reproducible). Señales manuales de fin de turno (`activity_start`/`activity_end` se aceptan pero se ignoran: los turnos los detecta la VAD automática). |
 | **Reducción de fotos en dos lugares.** | En el teléfono, `PhotoLoader` deja cada foto en ≤ 1600 px, JPEG 80 (subir fotos crudas de 12 MP tardaba ~40 s). En el backend, `damage_assessor.for_assessment` las lleva a 1024 px, JPEG 80, solo para el modelo: tres fotos tardaban 86–90 s y bajaron a 6–10 s con el mismo veredicto. Los originales recibidos se guardan en Cloud Storage en paralelo con la evaluación. El perito además usa `thinking_level=LOW` y `MEDIA_RESOLUTION_MEDIUM`. | Mandar las fotos a resolución completa (lento y sin mejor resultado). |
@@ -206,9 +212,10 @@ Verificadas el 2026-09-30. El detalle está en [`backend/VERSIONS.md`](backend/V
 - **Datos semilla** (clienta Andrea Morales, póliza `POL-GT-2027-0042`, talleres, grúas): ficticios,
   escritos por `backend/escudo/seed.py`; cada registro lleva `origin` (`synthetic`, semilla 2027).
 - **Identidad visual** «A · Sereno»: tokens en `android/design/a-sereno/tokens.json` y
-  `web/src/brand/tokens.json`, marca vectorial `android/design/a-sereno/mark.svg`; referencias de
-  logo y maqueta en `android/design/a-sereno/` y `web/public/brand/`.
+  `web/src/brand/tokens.json`, marca vectorial `android/design/a-sereno/mark.svg`; logo y maquetas
+  sintéticos (`IMAGE_MODEL`) con sus prompts y generador en `brand/` (`make brand`).
 - **Tipografía**: Onest (SIL OFL 1.1, `android/design/a-sereno/Onest-OFL.txt`).
 - **Diagramas** (`docs/diagrams/`): hechos con la skill `diagram-design` (piel editorial clara, acento pino `#0F5C4D`).
 
-Todas las empresas, personas, placas y direcciones son ficticias.
+Todas las empresas, personas, placas y direcciones son ficticias. Inventario completo de datos y
+recursos generados en [`data/SOURCES.md`](data/SOURCES.md); hoja de datos en [`data/DATASHEET.md`](data/DATASHEET.md).
