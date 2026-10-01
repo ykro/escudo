@@ -8,6 +8,7 @@ import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.provider.MediaStore
+import android.util.Log
 import androidx.core.content.ContextCompat
 import app.escudo.android.data.model.PhotoUpload
 import java.io.ByteArrayOutputStream
@@ -15,13 +16,18 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Turns gallery images into upload-ready JPEGs. Photos are downscaled so an upload over stage
- * Wi-Fi stays small; the damage assessor does not need 12 MP.
+ * Turns gallery images into upload-ready JPEGs: longest side ≤ 1600 px, JPEG quality 80, EXIF
+ * orientation applied (ImageDecoder rotates on decode). Raw 12 MP photos took ~40 s to upload
+ * over the stage network; the damage assessor does not need them. Used by the report screen and
+ * the reportAccident AppFunction alike.
  */
 class PhotoLoader(private val context: Context) {
 
   suspend fun load(uris: List<Uri>): List<PhotoUpload> = withContext(Dispatchers.IO) {
-    uris.mapIndexed { index, uri -> PhotoUpload("photo_${index + 1}.jpg", encode(uri)) }
+    val started = System.nanoTime()
+    uris.mapIndexed { index, uri -> PhotoUpload("photo_${index + 1}.jpg", encode(uri)) }.also { photos ->
+      Log.i(TAG, "Encoded ${photos.size} photo(s): ${photos.sumOf { it.bytes.size } / 1024} KB in ${(System.nanoTime() - started) / 1_000_000} ms")
+    }
   }
 
   /**
@@ -63,6 +69,7 @@ class PhotoLoader(private val context: Context) {
 
   private companion object {
     const val MAX_EDGE = 1600
-    const val JPEG_QUALITY = 85
+    const val JPEG_QUALITY = 80
+    const val TAG = "PhotoLoader"
   }
 }

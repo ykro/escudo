@@ -65,23 +65,50 @@ make build                 # ./gradlew assembleDebug (ambos sabores)
 make test                  # ./gradlew testDebugUnitTest (ambos sabores)
 make install               # instala live y abre la app; FLAVOR=fake para la API falsa
 make appfunctions          # lista las AppFunctions de Escudo en el dispositivo (API 36.1+)
+make live-test             # prueba de voz instrumentada en el emulador contra la nube
 ```
 
 Ensayo de aprobación sin backend: sabor `fake`, reportar un accidente con foto crea una
 aprobación pendiente; `adb shell am start -d escudo://approvals/<id>` abre la pantalla como lo
 hace la notificación. En el emulador, PIN con `adb shell locksettings set-pin 1234`.
 
+## Voz en el emulador (sin teléfono)
+
+El asistente escucha a través de una `VoiceSource`: `MicrophoneSource` (AudioRecord, producción) o
+`FileSource`, que reproduce un WAV PCM16 16 kHz mono **en tiempo real** por el mismo camino:
+fragmentos de 40 ms → WebSocket → Gemini Live → herramientas MCP → voz de respuesta.
+
+- Grabaciones de prueba en español: `testdata/voice/*.wav` (generadas con `generate.sh`, origen en
+  `SOURCES.md`). Solo las versiones debug las incluyen.
+- Hacer que el asistente "escuche" una grabación (solo debug):
+
+  ```bash
+  adb shell am start -n app.escudo.android/.MainActivity --es voice_input_file 01_choque
+  adb shell am start -n app.escudo.android/.MainActivity --es voice_input_file 02_taller
+  # o un archivo propio (debug pide READ_MEDIA_AUDIO):
+  adb shell pm grant app.escudo.android android.permission.READ_MEDIA_AUDIO
+  adb shell am start -n app.escudo.android/.MainActivity --es voice_input_file /sdcard/Download/mi_voz.wav
+  ```
+
+  También hay un atajo oculto: mantener presionado el título «Asistente Escudo» abre la lista de grabaciones.
+- Prueba automática contra la nube: `make live-test` (instrumentada, `LIVE_TESTS=1`): reproduce
+  `01_choque.wav` y verifica que el servidor la transcribe, que llega una llamada a herramienta y
+  que el asistente responde con audio. `make test` no la ejecuta (sigue sin red).
+- En el escenario el presentador habla al micrófono de la laptop: el emulador lo usa si se inicia con
+  `emulator -avd Pixel_9_API_36_1 -allow-host-audio`. Probado con `say` por los parlantes: el
+  micrófono de la laptop capta muy poco (pico 0.013), así que el camino probado y para ensayos es
+  `FileSource`; la voz real requiere hablar cerca del micrófono.
+- Al soltar el botón se envían 2 s de silencio: con 800 ms Live no detecta el fin del turno.
+
 ## Protocolos con el backend
 
 - REST: `contracts/openapi.yaml`.
 - Voz (`/assistant/live`): audio binario PCM16 16 kHz de subida y 24 kHz de bajada; mensajes
   JSON `ready`, `transcript`, `tool_call`, `approval_required`, `interrupted`, `turn_complete`,
-  `error`. El botón es push-to-talk; al soltarlo se envían 800 ms de silencio para que la
+  `error`. El botón es push-to-talk; al soltarlo se envían 2 s de silencio para que la
   detección automática de actividad cierre el turno. Ver `assistant/AssistantProtocol.kt`.
 - El asistente también acepta texto (ícono de teclado junto al micrófono): útil en lugares ruidosos
   y para ensayar sin micrófono. Usa el mismo socket (`{"type":"text"}`).
-- Emulador: el micrófono virtual solo recibe audio del host si el emulador se inicia con
-  `-allow-host-audio`.
 - Push de aprobación: notificación + datos `{"type": "approval_request", "approval_id", …}`,
   canal `approvals`; al tocarla abre `escudo://approvals/<id>`.
 

@@ -1,5 +1,6 @@
 package app.escudo.android.data
 
+import android.util.Log
 import app.escudo.android.data.api.EscudoApi
 import app.escudo.android.data.model.AccidentReport
 import app.escudo.android.data.model.Approval
@@ -37,7 +38,9 @@ class EscudoRepository(private val api: EscudoApi) {
     require(description.isNotBlank()) { "description must not be blank" }
     val claim = api.openClaim(OpenClaimRequest(description.trim(), location, occurredAt))
     if (photos.isEmpty()) return AccidentReport(claim, assessment = null)
+    val started = System.nanoTime()
     val assessment = api.attachClaimPhotos(claim.claimId, photos)
+    Log.i("EscudoRepository", "Uploaded ${photos.size} photo(s), ${photos.sumOf { it.bytes.size } / 1024} KB, assessed in ${(System.nanoTime() - started) / 1_000_000} ms")
     val updated = runCatching { api.getClaim(claim.claimId) }.getOrDefault(claim.copy(assessment = assessment))
     return AccidentReport(updated, assessment)
   }
