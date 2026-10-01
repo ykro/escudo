@@ -44,7 +44,7 @@ async def call_capability(
         raise InvalidInput("invalid_arguments", f"Dato inválido en {field}: {first['msg']}") from exc
 
     ctx = Context(services=services, caller=caller)
-    events = services.events
+    events = services.events if _worth_a_timeline_entry(name, caller) else _SILENT
     claim_id = getattr(inp, "claim_id", None)
     run_id = caller.run_id or claim_id or "demo"
     common = {"actor": caller.actor, "surface": caller.surface, "run_id": run_id, "claim_id": claim_id, "tool": name}
@@ -90,6 +90,23 @@ async def call_capability(
         **{**common, "claim_id": result_claim, "run_id": caller.run_id or result_claim or "demo"},
     )
     return result
+
+
+# Screens poll these to stay fresh; the presenter timeline shows what agents do and every
+# human decision, not an app refreshing itself. Agents' reads are still recorded.
+_UI_READS = {"get_policy", "check_coverage", "get_claim_status"}
+
+
+def _worth_a_timeline_entry(name: str, caller: Caller) -> bool:
+    return not (name in _UI_READS and caller.actor == "customer")
+
+
+class _Silent:
+    async def emit(self, **_: Any) -> None:
+        return None
+
+
+_SILENT = _Silent()
 
 
 def _call_summary(name: str, approval_id: str | None) -> str:

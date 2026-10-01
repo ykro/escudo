@@ -273,6 +273,7 @@ dependencies = [
     { name = "httpx" },
     { name = "jsonschema" },
     { name = "mcp" },
+    { name = "pillow" },
     { name = "python-dotenv" },
     { name = "python-multipart" },
     { name = "uvicorn", extra = ["standard"] },
@@ -280,7 +281,6 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "pillow" },
     { name = "pytest" },
     { name = "websockets" },
 ]
@@ -297,6 +297,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.28" },
     { name = "jsonschema", specifier = ">=4.26" },
     { name = "mcp", specifier = ">=2.2" },
+    { name = "pillow", specifier = ">=11" },
     { name = "python-dotenv", specifier = ">=1.1" },
     { name = "python-multipart", specifier = ">=0.0.20" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.40" },
@@ -304,7 +305,6 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "pillow", specifier = ">=12.3.0" },
     { name = "pytest", specifier = ">=8" },
     { name = "websockets", specifier = ">=15" },
 ]

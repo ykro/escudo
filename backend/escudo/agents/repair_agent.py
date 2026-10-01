@@ -95,6 +95,7 @@ def card(settings: Settings):  # noqa: ANN201
         name="repair_agent",
         description="Red de Talleres: cotiza reparaciones de carrocería y ofrece horarios en talleres de Ciudad de Guatemala.",
         url=f"{settings.public_base_url}{PREFIX}",
+        requires_partner_key=bool(settings.a2a_shared_secret),
         organization="Red de Talleres (ficticio)",
         skills=[
             AgentSkill(

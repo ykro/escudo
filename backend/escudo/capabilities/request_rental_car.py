@@ -50,7 +50,7 @@ async def run(inp: Input, ctx: Context) -> dict[str, Any]:
 
 def summarize(result: dict[str, Any]) -> str:
     cost = "sin costo" if result["covered"] else usd(result["cost_usd"])
-    return f"Auto de reemplazo por {result['days']} días ({cost}), recógelo en {result['pickup']}"
+    return f"Auto de reemplazo reservado: {result['days']} días, {cost}"
 
 
 CAPABILITY = Capability(

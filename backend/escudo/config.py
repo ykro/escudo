@@ -43,6 +43,7 @@ class Settings:
     public_base_url: str = "http://127.0.0.1:8080"
     a2a_peers: tuple[str, ...] = ()
     demo_customer_id: str = "cus_demo"
+    a2a_shared_secret: str = ""  # optional: partners require it in X-Escudo-A2A-Key
     port: int = 8080
     contracts_dir: Path = field(default_factory=_find_contracts_dir)
 
@@ -66,6 +67,7 @@ class Settings:
             public_base_url=public,
             a2a_peers=tuple(p.strip().rstrip("/") for p in peers_raw.split(",") if p.strip()),
             demo_customer_id=os.environ.get("DEMO_CUSTOMER_ID", cls.demo_customer_id),
+            a2a_shared_secret=os.environ.get("A2A_SHARED_SECRET", ""),
             port=int(os.environ.get("PORT", "8080")),
         )
 

@@ -91,6 +91,7 @@ def card(settings: Settings):  # noqa: ANN201
         name="tow_agent",
         description="Grúas Aliadas: despacha la grúa más cercana en Ciudad de Guatemala y devuelve proveedor y ETA.",
         url=f"{settings.public_base_url}{PREFIX}",
+        requires_partner_key=bool(settings.a2a_shared_secret),
         organization="Grúas Aliadas (ficticio)",
         skills=[
             AgentSkill(

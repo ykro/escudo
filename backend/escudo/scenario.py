@@ -29,6 +29,7 @@ from mcp.client.streamable_http import streamable_http_client
 
 PHOTOS_DIR = Path(__file__).resolve().parents[1] / "samples" / "photos"
 BUDGET_SECONDS = 180
+ASSESS_TARGET_SECONDS = 15
 EXPECTED_APPROVALS = 3
 LOCATION = {"lat": 14.5995, "lng": -90.5102, "label": "Av. La Reforma y 12 calle, zona 10"}
 DESCRIPTION = "Tuve un choque menor: me pegaron atrás en un semáforo. Nadie salió herido."
@@ -38,6 +39,7 @@ DESCRIPTION = "Tuve un choque menor: me pegaron atrás en un semáforo. Nadie sa
 class Report:
     steps: list[tuple[str, float, str]] = field(default_factory=list)
     approvals: list[str] = field(default_factory=list)
+    assessment_seconds: float | None = None
     started: float = field(default_factory=time.perf_counter)
 
     @property
@@ -50,6 +52,9 @@ class Report:
         for name, seconds, note in self.steps:
             print(f"  {name:<28}{seconds:>6.1f}  {note[:60]}", file=out)
         print("  " + "-" * 76, file=out)
+        if self.assessment_seconds is not None:
+            mark = "OK" if self.assessment_seconds < ASSESS_TARGET_SECONDS else "LENTO"
+            print(f"  evaluación de fotos {self.assessment_seconds:.1f} s (meta < {ASSESS_TARGET_SECONDS} s) · {mark}", file=out)
         verdict = "OK" if self.total < BUDGET_SECONDS and len(self.approvals) == EXPECTED_APPROVALS else "FALLA"
         print(f"  total {self.total:.1f} s (límite {BUDGET_SECONDS} s) · aprobaciones: {len(self.approvals)} (esperadas {EXPECTED_APPROVALS}) · {verdict}\n", file=out)
 
@@ -99,7 +104,8 @@ async def run_scenario(mcp_client: Client, approve: Approver, photos: list[str],
     await step("check_coverage", "check_coverage", {"incident_type": "collision"})
     claim = await step("open_claim", "open_claim", {"description": DESCRIPTION, "location": LOCATION})
     claim_id = claim["claim_id"]
-    await step("attach_claim_photos", "attach_claim_photos", {"claim_id": claim_id, "photos": photos})
+    assessed = await step("attach_claim_photos", "attach_claim_photos", {"claim_id": claim_id, "photos": photos})
+    report.assessment_seconds = assessed.get("assessment_seconds")
     await step("request_tow (A2A)", "request_tow", {"claim_id": claim_id})
     options = (await step("list_repair_options (A2A)", "list_repair_options", {"claim_id": claim_id}))["options"]
     # What a sensible agent would pick: best rated shop, earliest slot.
@@ -123,7 +129,8 @@ def _note(tool: str, data: dict[str, Any]) -> str:
         case "open_claim":
             return data["claim_id"]
         case "attach_claim_photos":
-            return f"{data['severity']}, USD {data['cost_range_usd'][0]:.0f}-{data['cost_range_usd'][1]:.0f}"
+            return (f"{data.get('photos_assessed', '?')} fotos en {data.get('assessment_seconds', '?')} s · "
+                    f"{data['severity']}, USD {data['cost_range_usd'][0]:.0f}-{data['cost_range_usd'][1]:.0f}")
         case "request_tow":
             return f"{data['provider']} en {data['eta_minutes']} min"
         case "list_repair_options":
@@ -139,10 +146,11 @@ def _note(tool: str, data: dict[str, Any]) -> str:
     return "ok"
 
 
-def human_endpoint_approver(http: httpx2.AsyncClient) -> Approver:
-    """Test mode only: plays the customer by calling the human endpoint."""
+def human_endpoint_approver(http: httpx2.AsyncClient, delay: float = 0.0) -> Approver:
+    """Test mode only: plays the customer by calling the human endpoint (after `delay` s of "reaching for the phone")."""
 
     async def approve(approval_id: str) -> None:
+        await asyncio.sleep(delay)
         r = await http.post(f"/approvals/{approval_id}/approve", json={"device_id": "scenario-runner"},
                             headers={"X-Escudo-Surface": "android"})
         r.raise_for_status()
@@ -187,6 +195,8 @@ async def main() -> int:
                         help="sign in with FIREBASE_WEB_API_KEY: as the seeded customer (ESCUDO_CUSTOMER_EMAIL/PASSWORD) or anonymously")
     parser.add_argument("--test-mode", action="store_true", help="rehearsal run (required for --auto-approve)")
     parser.add_argument("--auto-approve", action="store_true", help="approve through the human endpoint (test mode only)")
+    parser.add_argument("--approve-delay", type=float, default=float(os.environ.get("APPROVE_DELAY", "0")),
+                        help="seconds the simulated customer takes to approve (rehearsals; keeps the pause on screen)")
     args = parser.parse_args()
     if args.auto_approve and not args.test_mode:
         parser.error("--auto-approve is only allowed with --test-mode: in a real run the customer approves on the phone")
@@ -203,7 +213,7 @@ async def main() -> int:
     base = args.base_url.rstrip("/")
     print(f"\nEscudo · escenario vía MCP contra {base}\n")
     async with httpx2.AsyncClient(base_url=base, headers=headers, timeout=120) as http:
-        approver = human_endpoint_approver(http) if args.auto_approve else wait_for_phone_approver(http)
+        approver = human_endpoint_approver(http, args.approve_delay) if args.auto_approve else wait_for_phone_approver(http)
         mcp_http = httpx2.AsyncClient(headers=headers, timeout=httpx2.Timeout(120, read=180))
         async with Client(streamable_http_client(f"{base}/mcp", http_client=mcp_http)) as mcp_client:
             report = await run_scenario(mcp_client, approver, load_sample_photos())

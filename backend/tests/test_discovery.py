@@ -117,3 +117,22 @@ def test_escudo_agent_has_no_hard_coded_partner_paths():
     source = (Path(__file__).resolve().parents[1] / "escudo" / "agents" / "escudo_agent.py").read_text()
     for path in (tow_agent.PREFIX, repair_agent.PREFIX, "agent-card.json", "http://", "https://"):
         assert path not in source, path
+
+
+async def test_partners_can_require_a_shared_secret():
+    """A2A_SHARED_SECRET: partner RPC refuses strangers; cards stay public and declare the scheme."""
+    from escudo.main import create_app
+    from escudo.services import build_services
+
+    services = build_services(make_settings(a2a_shared_secret="s3cret"))
+    app = create_app(services)
+    services.escudo_agent.client_factory = lambda: httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url=BASE, headers={"X-Escudo-A2A-Key": "s3cret"}, timeout=30
+    )
+    async with app.router.lifespan_context(app), httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=BASE) as http:
+        card = (await http.get(f"/a2a/tow{AGENT_CARD_WELL_KNOWN_PATH}")).json()
+        assert card["securitySchemes"]["partnerKey"]["apiKeySecurityScheme"]["name"] == "X-Escudo-A2A-Key"
+        stranger = await http.post("/a2a/tow", json={"jsonrpc": "2.0", "id": "1", "method": "SendMessage", "params": {}})
+        assert stranger.status_code == 401
+        claim = await ready_claim(http)  # repair quotes went through with the key
+        assert (await http.post(f"/claims/{claim['claim_id']}/tow")).status_code == 200

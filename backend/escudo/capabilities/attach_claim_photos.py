@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import binascii
+import time
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -58,13 +60,19 @@ async def run(inp: Input, ctx: Context) -> dict[str, Any]:
             raise InvalidInput("photo_too_large", "Cada foto debe pesar menos de 8 MB.")
         loaded.append((data, sniff_mime(data)))
 
-    uris = list(claim.photos)
-    for data, mime in loaded:
-        ext = mime.split("/")[1].replace("jpeg", "jpg")
-        uris.append(await ctx.services.blobs.put(f"claims/{claim.claim_id}/{len(uris) + 1}.{ext}", data, mime))
-
+    first = len(claim.photos) + 1
+    uploads = [
+        ctx.services.blobs.put(f"claims/{claim.claim_id}/{first + i}.{mime.split('/')[1].replace('jpeg', 'jpg')}", data, mime)
+        for i, (data, mime) in enumerate(loaded)
+    ]
     v = policy.vehicle
-    assessment = await ctx.services.assessor.assess(loaded, f"{v.make} {v.model} {v.year}", claim.description)
+    started = time.perf_counter()
+    # Storing the originals and assessing run side by side; the assessor downscales for the model.
+    *stored, assessment = await asyncio.gather(
+        *uploads, ctx.services.assessor.assess(loaded, f"{v.make} {v.model} {v.year}", claim.description)
+    )
+    seconds = round(time.perf_counter() - started, 1)
+    uris = [*claim.photos, *stored]
     await ctx.repo.update_claim(
         claim.claim_id,
         {"photos": uris, "assessment": assessment.model_dump(mode="json"), "status": advance(claim.status, "assessed")},
@@ -74,13 +82,14 @@ async def run(inp: Input, ctx: Context) -> dict[str, Any]:
         actor="damage_assessor",
         surface=ctx.caller.surface,
         kind="message",
-        summary=f"Daño {_SEVERITY[assessment.severity]}: {', '.join(p.name for p in assessment.parts)} ({usd(low)}–{usd(high)})",
+        summary=f"Daño {_SEVERITY[assessment.severity]} en {' y '.join(p.name for p in assessment.parts[:2])} · {usd(low)}–{usd(high)}",
         run_id=ctx.caller.run_id or claim.claim_id,
         claim_id=claim.claim_id,
         tool="attach_claim_photos",
-        data={"severity": assessment.severity, "cost_range_usd": [low, high], "drivable": assessment.drivable, "photos": len(uris)},
+        data={"severity": assessment.severity, "cost_range_usd": [low, high], "drivable": assessment.drivable,
+              "photos": len(loaded), "assessment_seconds": seconds},
     )
-    return assessment.model_dump(mode="json")
+    return {**assessment.model_dump(mode="json"), "photos_assessed": len(loaded), "assessment_seconds": seconds}
 
 
 def summarize(result: dict[str, Any]) -> str:

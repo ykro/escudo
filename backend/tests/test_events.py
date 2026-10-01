@@ -55,12 +55,33 @@ async def test_caller_headers_label_the_timeline(http, services):
     """Android sends X-Escudo-Surface/Actor instead of posting duplicate tool events."""
     headers = {"X-Escudo-Surface": "appfunctions", "X-Escudo-Actor": "gemini", "X-Escudo-Run-Id": "run-42"}
     claim = (await http.post("/claims", json={"description": "Choque menor"}, headers=headers)).json()
-    await http.get(f"/claims/{claim['claim_id']}", headers={"X-Escudo-Surface": "fax", "X-Escudo-Actor": "robot"})
+    await http.post(f"/claims/{claim['claim_id']}/rental", headers={"X-Escudo-Surface": "fax", "X-Escudo-Actor": "robot"})
     events = await services.repo.store.where(EVENTS)
     opened = [e for e in events if e["tool"] == "open_claim"]
     assert {(e["kind"], e["surface"], e["actor"], e["run_id"]) for e in opened} == {
         ("tool_call", "appfunctions", "gemini", "run-42"),
         ("tool_result", "appfunctions", "gemini", "run-42"),
     }
-    status = [e for e in events if e["tool"] == "get_claim_status"]
-    assert status and all(e["surface"] == "rest" and e["actor"] == "customer" for e in status)  # unknown labels fall back
+    rental = [e for e in events if e["tool"] == "request_rental_car"]
+    assert rental and all(e["surface"] == "rest" and e["actor"] == "customer" for e in rental)  # unknown labels fall back
+
+
+async def test_screens_polling_reads_do_not_flood_the_timeline(http, services):
+    await http.get("/policy")  # the app refreshing itself: actor customer
+    await http.get("/policy", headers={"X-Escudo-Surface": "appfunctions", "X-Escudo-Actor": "gemini"})  # an agent
+    events = await services.repo.store.where(EVENTS)
+    assert {(e["actor"], e["surface"]) for e in events if e["tool"] == "get_policy"} == {("gemini", "appfunctions")}
+
+
+def test_photos_are_downscaled_before_the_model_sees_them():
+    """Phone-size photos made the assessment take 60-90 s; the model gets <= 1024 px JPEGs."""
+    import io
+
+    from PIL import Image
+
+    from escudo.damage_assessor import ASSESS_MAX_PX, for_assessment
+
+    big = io.BytesIO()
+    Image.new("RGB", (4000, 3000), (200, 200, 205)).save(big, "PNG")
+    small = Image.open(io.BytesIO(for_assessment(big.getvalue())))
+    assert small.format == "JPEG" and max(small.size) == ASSESS_MAX_PX

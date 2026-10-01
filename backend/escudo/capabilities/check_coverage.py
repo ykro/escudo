@@ -63,7 +63,8 @@ async def run(inp: Input, ctx: Context) -> dict[str, Any]:
 
 
 def summarize(result: dict[str, Any]) -> str:
-    return ("Cubierto: " if result["covered"] else "No cubierto: ") + result["notes"]
+    label = _LABELS.get(result["coverage"] or "", result["incident_type"])
+    return f"Cubierto por {label}" if result["covered"] else f"No cubierto: {label}"
 
 
 CAPABILITY = Capability(

@@ -30,7 +30,7 @@ from ..errors import EscudoError
 from ..events import EventWriter
 from ..models import Claim, Policy, RepairOption, TowDispatch
 from . import repair_agent, tow_agent
-from .hosting import build_card
+from .hosting import PARTNER_KEY_HEADER, build_card
 from .llm import gemini
 from .peers import PeerDirectory, PeerUnavailable
 from .scripted import ScriptedAgent
@@ -49,7 +49,10 @@ class EscudoAgent:
         self._settings = settings
         self._events = events
         # Replaceable so tests can route A2A calls to the in-process app.
-        self.client_factory: Callable[[], httpx.AsyncClient] = lambda: httpx.AsyncClient(timeout=A2A_TIMEOUT_SECONDS)
+        headers = {PARTNER_KEY_HEADER: settings.a2a_shared_secret} if settings.a2a_shared_secret else {}
+        self.client_factory: Callable[[], httpx.AsyncClient] = lambda: httpx.AsyncClient(
+            timeout=A2A_TIMEOUT_SECONDS, headers=headers
+        )
         self.peers = PeerDirectory(settings.a2a_peers, lambda: self.client_factory())
 
     # --- delegation -------------------------------------------------------------
@@ -60,7 +63,7 @@ class EscudoAgent:
             "vehicle": policy.vehicle.model_dump(),
             "drivable": claim.assessment.drivable if claim.assessment else None,
         }
-        data = await self._ask(tow_agent.SKILL_ID, payload, claim, caller, "Escudo pide una grúa")
+        data = await self._ask(tow_agent.SKILL_ID, payload, claim, caller, "Pide una grúa")
         try:
             tow = TowDispatch.model_validate(data.get("dispatch", data))
         except ValidationError as exc:
@@ -75,7 +78,7 @@ class EscudoAgent:
             "vehicle": policy.vehicle.model_dump(),
             "assessment": claim.assessment.model_dump(mode="json") if claim.assessment else None,
         }
-        data = await self._ask(repair_agent.SKILL_ID, payload, claim, caller, "Escudo pide cotizaciones de taller")
+        data = await self._ask(repair_agent.SKILL_ID, payload, claim, caller, "Pide cotizaciones")
         try:
             options = [RepairOption.model_validate(o) for o in data.get("options", [])]
         except ValidationError as exc:
@@ -88,10 +91,11 @@ class EscudoAgent:
     async def _ask(self, skill_id: str, payload: dict[str, Any], claim: Claim, caller: Caller, summary: str) -> dict[str, Any]:
         card = await self.peers.find(skill_id)
         url = card.supported_interfaces[0].url if card.supported_interfaces else ""
+        partner = _partner_name(card)
         await self._events.emit(
             actor="escudo_agent", surface="a2a", kind="a2a_request", tool=_tool_for(skill_id),
-            summary=f"{summary} a {card.name} vía A2A", run_id=caller.run_id or claim.claim_id, claim_id=claim.claim_id,
-            data={"peer": card.name, "skill": skill_id, "rpc_url": url, "discovered_via": "agent_card"},
+            summary=f"{summary} a {partner} (vía su Agent Card)", run_id=caller.run_id or claim.claim_id, claim_id=claim.claim_id,
+            data={"peer": card.name, "partner": partner, "skill": skill_id, "rpc_url": url, "discovered_via": "agent_card"},
         )
         last_error: Exception | None = None
         for _ in range(3):  # retries: a model call can (rarely) stall or answer with malformed JSON
@@ -136,6 +140,12 @@ def _tool_for(skill_id: str) -> str:
     return "request_tow" if skill_id == tow_agent.SKILL_ID else "list_repair_options"
 
 
+def _partner_name(card: AgentCard) -> str:
+    """The company behind the card, for humans: 'Grúas Aliadas (ficticio)' -> 'Grúas Aliadas'."""
+    organization = card.provider.organization if card.HasField("provider") else ""
+    return re.sub(r"\s*\(.*\)$", "", organization) or card.name
+
+
 def _identifier(name: str) -> str:
     return re.sub(r"\W", "_", name) or "peer"
 
@@ -150,7 +160,8 @@ def _parse_json(text: str) -> dict[str, Any]:
 # --- the Escudo agent as an A2A server ------------------------------------------
 
 INSTRUCTION = """Eres el agente de Escudo, una aseguradora de autos en Guatemala. Hablas con otros agentes
-que actúan en nombre de la clienta. Responde en español, breve y preciso.
+que actúan en nombre de la clienta. Responde en español, breve y preciso; cuando escribas algo
+para ella, trátala de tú (nunca de usted).
 Puedes consultar coberturas, el estado del reclamo y opciones de taller. Nunca apruebes nada:
 las acciones que comprometen a la clienta (deducible, taller, firma) solo las aprueba ella en su teléfono."""
 

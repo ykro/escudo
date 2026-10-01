@@ -17,11 +17,11 @@ dependencies = [
     "httpx>=0.28",
     "python-multipart>=0.0.20",
     "python-dotenv>=1.1",
+    "pillow>=11",
 ]
 
 [dependency-groups]
 dev = [
-    "pillow>=12.3.0",
     "pytest>=8",
     "websockets>=15",
 ]

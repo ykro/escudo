@@ -15,7 +15,11 @@ from google.adk.a2a.executor.a2a_agent_executor import A2aAgentExecutor
 from google.adk.agents import BaseAgent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
+from google.protobuf.json_format import ParseDict
 from starlette.routing import BaseRoute
+
+# Optional shared secret between Escudo and its partners (A2A_SHARED_SECRET).
+PARTNER_KEY_HEADER = "X-Escudo-A2A-Key"
 
 
 def build_card(
@@ -26,8 +30,9 @@ def build_card(
     organization: str,
     skills: list[AgentSkill],
     version: str = "1.0.0",
+    requires_partner_key: bool = False,
 ) -> AgentCard:
-    return AgentCard(
+    card = AgentCard(
         name=name,
         description=description,
         version=version,
@@ -40,6 +45,24 @@ def build_card(
         default_output_modes=["application/json"],
         skills=skills,
     )
+    if requires_partner_key:
+        # Declared in the card, so a caller learns *how* to authenticate from discovery alone.
+        ParseDict(
+            {
+                "securitySchemes": {
+                    "partnerKey": {
+                        "apiKeySecurityScheme": {
+                            "location": "header",
+                            "name": PARTNER_KEY_HEADER,
+                            "description": "Shared secret agreed between Escudo and its partners",
+                        }
+                    }
+                },
+                "securityRequirements": [{"schemes": {"partnerKey": {"list": []}}}],
+            },
+            card,
+        )
+    return card
 
 
 def a2a_routes(agent: BaseAgent, card: AgentCard, prefix: str) -> list[BaseRoute]:

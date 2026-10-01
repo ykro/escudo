@@ -3,6 +3,17 @@
 Every change here is backward compatible: fields, headers and messages are added, nothing is
 removed or renamed.
 
+## 2026-09-30 — web, presenter and partner secret
+
+- Timeline: read-only capabilities (`get_policy`, `check_coverage`, `get_claim_status`) called with actor
+  `customer` (screens refreshing themselves) no longer write events; agents' reads still do.
+- `a2a_request` summaries name the partner company from its Agent Card (`Pide una grúa a Grúas Aliadas…`);
+  `data.partner` added.
+- Optional `A2A_SHARED_SECRET`: Tow/Repair RPC require `X-Escudo-A2A-Key`; their Agent Cards declare it as
+  `securitySchemes.partnerKey` (apiKey in header). Cards stay public. Enabled on Cloud Run.
+- The web registers the WebMCP tools `getCoverage`, `getDeductible`, `findRepairShops`, `getClaimStatus`
+  (as in `tools.md`), calling REST with `X-Escudo-Surface: webmcp`, `X-Escudo-Actor: gemini`.
+
 ## 2026-09-30 — backend 1.0 deployed; wire details written down (accepted)
 
 Proposed by Android, accepted and implemented by the backend. These write down what both sides
