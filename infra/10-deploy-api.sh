@@ -17,12 +17,9 @@ source "$ROOT/.env.example"
 [ -f "$ROOT/.env" ] && source "$ROOT/.env"
 set +a
 
-# Admin token for POST /admin/reset: generated once, kept out of git.
-[ -s "$GEN/admin_token" ] || openssl rand -hex 24 > "$GEN/admin_token"
-ADMIN_TOKEN_VALUE="$(cat "$GEN/admin_token")"
-# Shared secret between the Escudo agent and its Tow/Repair partners (X-Escudo-A2A-Key).
-[ -s "$GEN/a2a_secret" ] || openssl rand -hex 24 > "$GEN/a2a_secret"
-A2A_SECRET_VALUE="$(cat "$GEN/a2a_secret")"
+# ADMIN_TOKEN and A2A_SHARED_SECRET come from Secret Manager (infra/06-secrets.sh), mounted below.
+exists gcloud secrets describe escudo-admin-token && exists gcloud secrets describe escudo-a2a-secret \
+  || { echo "Run infra/06-secrets.sh first (make infra)"; exit 1; }
 
 say "Staging build context"
 STAGE="$GEN/build-api"
@@ -34,7 +31,7 @@ mkdir -p "$STAGE/contracts" && cp "$ROOT/contracts/"*.json "$ROOT/contracts/"*.m
 ENV_VARS="GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION},GOOGLE_GENAI_USE_ENTERPRISE=true"
 ENV_VARS+=",GEMINI_MODEL=${GEMINI_MODEL},GEMINI_LIVE_MODEL=${GEMINI_LIVE_MODEL},GEMINI_LIVE_LOCATION=${GEMINI_LIVE_LOCATION}"
 ENV_VARS+=",FIRESTORE_DATABASE=${FIRESTORE_DATABASE},CLAIMS_BUCKET=${CLAIMS_BUCKET},DEMO_CUSTOMER_ID=${DEMO_CUSTOMER_ID}"
-ENV_VARS+=",PUBLIC_BASE_URL=${URL},A2A_PEERS=${URL}/a2a/tow;${URL}/a2a/repair,MOCK_AI=0,MOCK_AUTH=0,ADMIN_TOKEN=${ADMIN_TOKEN_VALUE},A2A_SHARED_SECRET=${A2A_SECRET_VALUE}"
+ENV_VARS+=",PUBLIC_BASE_URL=${URL},A2A_PEERS=${URL}/a2a/tow;${URL}/a2a/repair,MOCK_AI=0,MOCK_AUTH=0"
 
 # min-instances=1: no cold start on stage. max-instances=1: the voice session and the approval that
 #   nudges it live in the same process. no-cpu-throttling + 1 h timeout: WebSocket voice sessions.
@@ -43,10 +40,11 @@ deploy_run "$SERVICE" "$STAGE" \
   --allow-unauthenticated \
   --min-instances=1 --max-instances=1 --concurrency=80 \
   --cpu=1 --memory=1Gi --no-cpu-throttling --timeout=3600 --session-affinity \
-  --set-env-vars="^@^$(echo "$ENV_VARS" | tr ',' '@' | tr ';' ',')"
+  --set-env-vars="^@^$(echo "$ENV_VARS" | tr ',' '@' | tr ';' ',')" \
+  --set-secrets="ADMIN_TOKEN=escudo-admin-token:latest,A2A_SHARED_SECRET=escudo-a2a-secret:latest"
 
 say "Deployed: $URL"
 echo "  MCP:         $URL/mcp"
 echo "  Agent Cards: $URL/a2a/{escudo,tow,repair}/.well-known/agent-card.json"
 echo "  Voice:       ${URL/https/wss}/assistant/live"
-echo "  ADMIN_TOKEN: $GEN/admin_token"
+echo "  ADMIN_TOKEN: gcloud secrets versions access latest --secret=escudo-admin-token"

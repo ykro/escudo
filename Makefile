@@ -11,7 +11,6 @@ ESCUDO_BASE_URL ?= http://127.0.0.1:8080
 ifeq ($(CLOUD),1)
 ESCUDO_BASE_URL := $(DEPLOYED_URL)
 endif
-ADMIN_TOKEN_FILE := infra/.generated/admin_token
 LOCAL := $(filter http://127.0.0.1% http://localhost%,$(ESCUDO_BASE_URL))
 ENV_FILE := $(if $(wildcard .env),--env-file ../.env,)
 
@@ -42,7 +41,7 @@ seed: ## Póliza, talleres y grúas en Firestore + login del cliente en Firebase
 
 reset: ## Estado inicial en < 10 s en ESCUDO_BASE_URL (CLOUD=1: el desplegado)
 	@token="$${ADMIN_TOKEN}"; \
-	if [ -z "$(LOCAL)" ] && [ -f $(ADMIN_TOKEN_FILE) ]; then token=$$(cat $(ADMIN_TOKEN_FILE)); fi; \
+	if [ -z "$(LOCAL)" ]; then token=$$(gcloud secrets versions access latest --secret=escudo-admin-token --project=ai-experiments-487722); fi; \
 	out=$$(curl -s -o /dev/null -w '%{http_code} %{time_total}' -X POST -H "X-Admin-Token: $$token" $(ESCUDO_BASE_URL)/admin/reset); \
 	code=$${out% *}; secs=$${out#* }; \
 	if [ "$$code" = "204" ]; then echo "reset OK en $$secs s ($(ESCUDO_BASE_URL))"; \
@@ -71,7 +70,7 @@ scenario-live: ## Mismo escenario, pero espera a que apruebes cada paso en el te
 	cd $(BACKEND) && uv run $(ENV_FILE) python -m escudo.scenario --base-url $(ESCUDO_BASE_URL) $(if $(FIREBASE_WEB_API_KEY),--sign-in,)
 
 # --- cloud ------------------------------------------------------------------------
-infra: ## Crea o verifica todo en GCP desde cero (infra/01..05, idempotente)
+infra: ## Crea o verifica todo en GCP desde cero (infra/01..06, idempotente)
 	@for s in infra/0[1-9]-*.sh; do bash "$$s" || exit 1; done
 
 deploy: deploy-api deploy-web ## Despliega escudo-api y escudo-web en Cloud Run

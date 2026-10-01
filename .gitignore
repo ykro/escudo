@@ -14,3 +14,9 @@ build/
 .gradle/
 local.properties
 *.db-journal
+
+# keys and credentials never belong in git
+*.jks
+*.keystore
+*.pem
+*service-account*.json
