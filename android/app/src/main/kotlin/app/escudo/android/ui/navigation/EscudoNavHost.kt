@@ -125,7 +125,7 @@ fun EscudoNavHost(
     snackbarHost = { SnackbarHost(snackbar) },
     topBar = {
       CenterAlignedTopAppBar(
-        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
         title = { TopBarTitle(destination) },
         navigationIcon = {
           if (onReport) {

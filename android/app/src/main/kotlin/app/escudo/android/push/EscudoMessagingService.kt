@@ -12,7 +12,8 @@ import kotlinx.coroutines.launch
  */
 class EscudoMessagingService : FirebaseMessagingService() {
 
-  override fun onNewToken(token: String) {
+  // FCM 25 delivers the registration token here after register() (onNewToken is deprecated).
+  override fun onRegistered(token: String) {
     container.appScope.launch { DeviceRegistration.register(container, token) }
   }
 

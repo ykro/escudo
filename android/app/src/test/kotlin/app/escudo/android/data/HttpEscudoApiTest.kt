@@ -64,7 +64,7 @@ class HttpEscudoApiTest {
     assertEquals("customer", fromScreen.headers["X-Escudo-Actor"])
     val fromAgent = server.takeRequest()
     assertEquals("appfunctions", fromAgent.headers["X-Escudo-Surface"])
-    assertEquals("gemini", fromAgent.headers["X-Escudo-Actor"])
+    assertEquals("external_agent", fromAgent.headers["X-Escudo-Actor"])
   }
 
   @Test

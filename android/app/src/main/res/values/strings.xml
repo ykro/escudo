@@ -28,7 +28,7 @@
     <string name="error_server">Escudo no responde en este momento. Intenta de nuevo en unos segundos.</string>
     <string name="error_not_found">No encontramos esa información.</string>
     <string name="error_generic">Algo salió mal. Intenta de nuevo.</string>
-    <string name="amount_usd">%1$s USD</string>
+    <string name="amount_usd">USD %1$s</string>
 
     <!-- Approval pause: the only amber in the app -->
     <string name="pause_waiting">Esperando tu aprobación</string>
@@ -63,7 +63,7 @@
     <string name="claim_step_signed">Reclamo firmado y enviado</string>
     <string name="claim_step_pending">Pendiente</string>
     <string name="claim_severity">Daño %1$s</string>
-    <string name="claim_cost_range">%1$s – %2$s USD</string>
+    <string name="claim_cost_range">USD %1$s – %2$s</string>
     <string name="claim_tow_detail">%1$s · llega en %2$d min</string>
     <string name="claim_rental_detail">%1$d días</string>
     <string name="severity_minor">leve</string>

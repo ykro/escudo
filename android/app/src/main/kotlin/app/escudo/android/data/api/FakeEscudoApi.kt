@@ -62,7 +62,7 @@ class FakeEscudoApi(
     val covered = incidentType.lowercase() in COVERED_INCIDENTS
     CoverageCheck(
       covered = covered,
-      notes = if (covered) "Cubierto por daños propios; deducible de 500 USD." else "No incluido en la póliza.",
+      notes = if (covered) "Cubierto por daños propios; deducible de USD 500." else "No incluido en la póliza.",
     )
   }
 
@@ -99,7 +99,7 @@ class FakeEscudoApi(
       approvalId = approvalId,
       tool = "accept_deductible",
       reason = "Aceptar el deducible requiere tu aprobación.",
-      summary = "Pagar el deducible de 500 USD para el reclamo $claimId.",
+      summary = "Pagar el deducible de USD 500 para el reclamo $claimId.",
       amountUsd = policy.deductibleUsd,
       status = "pending",
       createdAt = Instant.now(clock).toString(),

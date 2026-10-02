@@ -11,7 +11,9 @@ import kotlinx.coroutines.withContext
  * for each capability say where the call came from. Same functions, different caller.
  */
 class CallerSurface(val surface: Surface) : AbstractCoroutineContextElement(Key) {
-  val actor: String get() = if (surface == Surface.APP_FUNCTIONS) "gemini" else "customer"
+  // An AppFunction can be invoked by Gemini, by another agent or from `adb shell cmd app_function`;
+  // the app cannot tell which, so the timeline says "Agente externo" rather than guessing "Gemini".
+  val actor: String get() = if (surface == Surface.APP_FUNCTIONS) "external_agent" else "customer"
 
   companion object Key : CoroutineContext.Key<CallerSurface>
 }

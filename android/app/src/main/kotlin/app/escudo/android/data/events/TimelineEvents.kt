@@ -48,7 +48,7 @@ class TimelineEvents(
       runId = claimId ?: sessionRunId,
       claimId = claimId,
       // Screens are driven by the customer; AppFunctions are driven by the system agent (Gemini on stage).
-      actor = if (surface == Surface.APP_FUNCTIONS) "gemini" else "customer",
+      actor = if (surface == Surface.APP_FUNCTIONS) "external_agent" else "customer",
       surface = surface.wire,
       kind = kind,
       tool = tool,

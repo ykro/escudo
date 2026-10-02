@@ -3,7 +3,8 @@ package app.escudo.android.push
 import android.util.Log
 import app.escudo.android.AppContainer
 import app.escudo.android.BuildConfig
-import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.Firebase
+import com.google.firebase.messaging.messaging
 import kotlinx.coroutines.tasks.await
 
 /**
@@ -18,9 +19,10 @@ object DeviceRegistration {
       Log.i(TAG, "No google-services.json: skipping FCM registration")
       return
     }
-    runCatching { FirebaseMessaging.getInstance().token.await() }
-      .onSuccess { register(container, it) }
-      .onFailure { Log.w(TAG, "Could not get FCM token", it) }
+    // FCM 25: register() replaces getToken(); the token arrives in EscudoMessagingService.onRegistered,
+    // which posts it to POST /devices (with this install's approval key).
+    runCatching { Firebase.messaging.register().await() }
+      .onFailure { Log.w(TAG, "Could not register with FCM", it) }
   }
 
   suspend fun register(container: AppContainer, token: String) {

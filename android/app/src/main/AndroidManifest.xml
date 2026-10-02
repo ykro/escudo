@@ -20,6 +20,12 @@
         appfn:description="@string/appfunctions_app_description"
         appfn:displayDescription="@string/appfunctions_app_display_description">
 
+        <!-- FCM 25: installation-ID registration (register() + onRegistered); replaces the deprecated
+             getToken()/onNewToken() pair. -->
+        <meta-data
+            android:name="firebase_messaging_installation_id_enabled"
+            android:value="true" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -126,7 +126,7 @@ class ChatStateTest {
   fun `the retry may start before approval_resolved arrives`() {
     val s = ready.on(
       ChatEvent.ToolCall("accept_deductible"), ChatEvent.ToolResult("accept_deductible"),
-      ChatEvent.ApprovalRequired("apr_3", "accept_deductible", "Pagar 500 USD", null, "h"), ChatEvent.TurnComplete,
+      ChatEvent.ApprovalRequired("apr_3", "accept_deductible", "Pagar USD 500", null, "h"), ChatEvent.TurnComplete,
       ChatEvent.ToolCall("accept_deductible"), ChatEvent.ToolResult("accept_deductible"),
       ChatEvent.ApprovalResolved("apr_3", "accept_deductible", "approved"),
     )
