@@ -94,21 +94,22 @@
     <string name="tool_sign_claim">Firmar reclamo</string>
     <string name="tool_request_rental_car">Auto de reemplazo</string>
 
-    <!-- Assistant -->
-    <string name="assistant_hint">Mantén presionado para hablar</string>
-    <string name="assistant_listening">Te escucho… suelta para enviar</string>
-    <string name="assistant_connecting">Conectando con tu asistente…</string>
-    <string name="assistant_unavailable_title">El asistente no está disponible</string>
-    <string name="assistant_unavailable_body">Se perdió la conexión con tu asistente.</string>
-    <string name="assistant_reconnect">Reconectar</string>
-    <string name="assistant_talk">Hablar con el asistente</string>
-    <string name="assistant_empty_title">¿En qué te ayudo?</string>
-    <string name="assistant_empty_body">Cuéntame qué pasó. Reviso tu póliza, abro el reclamo y pido la grúa por ti.</string>
-    <string name="assistant_type">Escribir en vez de hablar</string>
-    <string name="assistant_type_placeholder">Escribe tu mensaje</string>
-    <string name="assistant_send">Enviar</string>
-    <string name="assistant_back_to_voice">Volver a hablar</string>
-    <string name="assistant_approval_needed">Tu asistente espera tu aprobación</string>
+    <!-- Assistant (typed chat) -->
+    <string name="chat_connecting">Conectando con tu asistente…</string>
+    <string name="chat_unavailable_title">El asistente no está disponible</string>
+    <string name="chat_unavailable_body">No pudimos conectar con tu asistente.</string>
+    <string name="chat_reconnect">Reconectar</string>
+    <string name="chat_disconnected">Se perdió la conexión con tu asistente.</string>
+    <string name="chat_empty_title">¿En qué te ayudo?</string>
+    <string name="chat_empty_body">Cuéntame qué pasó. Reviso tu póliza, abro el reclamo, pido la grúa y te consigo taller.</string>
+    <string name="chat_suggestion_crash">Tuve un choque, ayúdame con todo</string>
+    <string name="chat_suggestion_coverage">¿Qué cubre mi póliza?</string>
+    <string name="chat_suggestion_claim">¿Cómo va mi reclamo?</string>
+    <string name="chat_placeholder">Escribe tu mensaje</string>
+    <string name="chat_send">Enviar</string>
+    <string name="chat_review_approval">Revisar y aprobar</string>
+    <string name="chat_approval_approved">Aprobado por ti</string>
+    <string name="chat_approval_rejected">Rechazado por ti</string>
     <string name="activity_get_policy">Revisando tu póliza</string>
     <string name="activity_check_coverage">Verificando tu cobertura</string>
     <string name="activity_open_claim">Abriendo tu reclamo</string>
@@ -138,10 +139,6 @@
     <string name="report_see_claim">Ver mi reclamo</string>
     <string name="report_error_title">No pudimos enviar tu reporte</string>
 
-    <!-- Debug builds only: voice fixtures -->
-    <string name="debug_voice_title">Voz de prueba</string>
-    <string name="debug_voice_empty">No hay grabaciones en esta versión.</string>
-    <string name="debug_voice_close">Cerrar</string>
 
     <!-- Notifications -->
     <string name="notification_channel_approvals">Aprobaciones</string>

@@ -1,23 +1,29 @@
 #!/usr/bin/env bash
-# Escudo voice scenario on the emulator against the deployed backend, event-driven:
-# report the accident with 3 gallery photos, then speak (recorded WAVs) to the Escudo Assistant
-# and approve every pause with the (virtual) fingerprint until the claim is signed.
+# Escudo chat scenario on the emulator against the deployed backend, event-driven:
+# report the accident with 3 gallery photos, then type to the Escudo Assistant (debug intent extra
+# `chat_message`, same path as the keyboard) and approve every pause with the (virtual)
+# fingerprint until the claim is signed.
 #
 # It never sleeps for a fixed time: it waits on the app's `EscudoScenario` logcat markers
-# (voice_end, assistant_idle, approval_required, approval_outcome, report_done),
+# (chat_sent, assistant_idle, approval_required, approval_outcome, report_done),
 # so the measured time is the real system time.
 #
 # Prerequisites (once): live debug build installed and signed in; 3 crash photos in the gallery
 # (backend/samples/photos); device PIN + one enrolled fingerprint (see README); backend reset
 # (`make reset CLOUD=1` at the repo root).
 #
-# Usage: scripts/voice_scenario.sh            (ANDROID_SERIAL defaults to the running Pixel_9_API_36_1)
+# Usage: scripts/chat_scenario.sh            (ANDROID_SERIAL defaults to the running Pixel_9_API_36_1)
 set -euo pipefail
 
 ADB_BIN="${ADB:-$HOME/Library/Android/sdk/platform-tools/adb}"
 SERIAL="${ANDROID_SERIAL:-$("$(dirname "$0")/emulator_serial.sh")}"
 PKG=app.escudo.android
-FIXTURES=(01_choque 02_taller 04_acepto 05_firma)
+MESSAGES=(
+  "Tuve un choque menor, ya subí las fotos en la app. Ayúdame con todo, por favor."
+  "Sí, agenda el taller más cercano con el primer horario disponible."
+  "Sí, acepto el deducible."
+  "Firma el reclamo, por favor."
+)
 APPROVALS_NEEDED=3
 TURN_TIMEOUT=90
 
@@ -117,22 +123,22 @@ report_accident() {
   say "claim $(grep -o 'report_done [A-Z0-9-]*' "$LOG" | tail -1 | cut -d' ' -f2) opened and assessed (3 photos)"
 }
 
-speak() { # <fixture> : play it and wait until the assistant is done answering
-  local idle voice drops attempt
+say_in_chat() { # <message> : type it in the assistant chat and wait until the assistant is done
+  local idle sent drops attempt quoted
+  local sq="'"; quoted="'${1//$sq/$sq\\$sq$sq}'" # single-quoted for the device shell
   for attempt in 1 2; do
-    idle=$(count "assistant_idle"); voice=$(count "voice_end"); drops=$(count "disconnected")
+    idle=$(count "assistant_idle"); sent=$(count "chat_sent"); drops=$(count "disconnected")
     front
-    # If the session dropped, the app reconnects first and then plays the recording.
-    adb shell am start -n "$PKG/.MainActivity" --es voice_input_file "$1" >/dev/null 2>&1
-    wait_for "voice_end" "$voice" 60 || die "fixture $1 did not play"
-    say "spoke $1"
+    adb shell am start -n "$PKG/.MainActivity" --es chat_message "$quoted" >/dev/null 2>&1
+    wait_for "chat_sent" "$sent" 30 || die "message not sent: $1"
+    say "typed: $1"
     if wait_for "assistant_idle|disconnected" "$((idle + drops))" "$TURN_TIMEOUT" && [ "$(count "disconnected")" -eq "$drops" ]; then
       say "assistant answered (tools so far: $(grep -o 'tool_call [a-z_]*' "$LOG" | cut -d' ' -f2 | paste -sd, -))"
       return 0
     fi
-    say "voice session dropped (attempt $attempt); speaking $1 again"
+    say "chat dropped (attempt $attempt); sending again"
   done
-  die "no answer to $1"
+  die "no answer to: $1"
 }
 
 approved=0
@@ -163,9 +169,9 @@ approve_pending() { # approve every pause the agent has asked for, with the fing
 
 say "start (serial $SERIAL)"
 report_accident
-for fixture in "${FIXTURES[@]}"; do
+for message in "${MESSAGES[@]}"; do
   [ "$approved" -ge "$APPROVALS_NEEDED" ] && break
-  speak "$fixture"
+  say_in_chat "$message"
   approve_pending
 done
 [ "$approved" -eq "$APPROVALS_NEEDED" ] || die "only $approved approvals"

@@ -42,7 +42,6 @@ official release notes on the date above.
 | Onest | Variable TTF from google/fonts `ofl/onest` (SIL OFL 1.1), bundled as `res/font/onest.ttf` |
 | Direction | «A · Sereno» tokens (`design/a-sereno/tokens.json`), logo mark redrawn as vectors (`design/a-sereno/mark.svg`) |
 
-## Audio for the Escudo Assistant
+## Escudo Assistant
 
-`AudioRecord` (`VOICE_COMMUNICATION`, PCM16 mono 16 kHz, 40 ms chunks, AEC + NS when available)
-and `AudioTrack` (`USAGE_MEDIA`, PCM16 mono 24 kHz, stream mode) — platform APIs, no library.
+Typed chat over OkHttp WebSocket (`/assistant/chat`); no audio APIs.

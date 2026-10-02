@@ -1,7 +1,7 @@
 # Escudo para Android
 
 App del cliente de Escudo: póliza, estado del reclamo, aprobaciones con biometría, Asistente
-Escudo por voz y reporte de accidentes. Expone `reportAccident`, `getCoverage` y
+Escudo (chat escrito) y reporte de accidentes. Expone `reportAccident`, `getCoverage` y
 `getClaimStatus` como AppFunctions para agentes del sistema (ver [APPFUNCTIONS.md](APPFUNCTIONS.md)).
 Versiones en [VERSIONS.md](VERSIONS.md).
 
@@ -71,64 +71,40 @@ make build                 # ./gradlew assembleDebug (ambos sabores)
 make test                  # ./gradlew testDebugUnitTest (ambos sabores)
 make install               # instala live y abre la app; FLAVOR=fake para la API falsa
 make appfunctions          # lista las AppFunctions de Escudo en el dispositivo (API 36.1+)
-make live-test             # prueba de voz instrumentada en el emulador contra la nube
+make chat-scenario         # escenario completo por chat en el emulador contra la nube, cronometrado
 ```
 
 Ensayo de aprobación sin backend: sabor `fake`, reportar un accidente con foto crea una
 aprobación pendiente; `adb shell am start -d escudo://approvals/<id>` abre la pantalla como lo
 hace la notificación. En el emulador, PIN con `adb shell locksettings set-pin 1234`.
 
-## Voz en el emulador (sin teléfono)
+## Asistente Escudo (chat escrito)
 
-El asistente escucha a través de una `VoiceSource`: `MicrophoneSource` (AudioRecord, producción) o
-`FileSource`, que reproduce un WAV PCM16 16 kHz mono **en tiempo real** por el mismo camino:
-fragmentos de 40 ms → WebSocket → Gemini Live → herramientas MCP → voz de respuesta.
+El asistente es un chat escrito sobre el mismo agente y las mismas herramientas MCP
+(`wss://…/assistant/chat`, ver `contracts/tools.md`). La app muestra las respuestas en streaming,
+chips en línea con lo que el agente está haciendo («Buscando talleres…») y una tarjeta ámbar en línea
+cuando el agente se detiene por una aprobación; «Revisar y aprobar» abre la aprobación con huella y, al
+aprobar, la conversación continúa sola (`approval_resolved`). Si la conexión se cae (Cloud Run corta
+los WebSockets a los 60 min), la app se reconecta con el mismo `session_id` y la conversación sigue.
 
-- Grabaciones de prueba en español: `testdata/voice/*.wav` (generadas con `generate.sh`, origen en
-  `SOURCES.md`). Solo las versiones debug las incluyen.
-- Hacer que el asistente "escuche" una grabación (solo debug):
-
-  ```bash
-  adb shell am start -n app.escudo.android/.MainActivity --es voice_input_file 01_choque
-  adb shell am start -n app.escudo.android/.MainActivity --es voice_input_file 02_taller
-  # o un archivo propio (debug pide READ_MEDIA_AUDIO):
-  adb shell pm grant app.escudo.android android.permission.READ_MEDIA_AUDIO
-  adb shell am start -n app.escudo.android/.MainActivity --es voice_input_file /sdcard/Download/mi_voz.wav
-  ```
-
-  También hay un atajo oculto: mantener presionado el título «Asistente Escudo» abre la lista de grabaciones.
-- Prueba automática contra la nube: `make live-test` (instrumentada, `LIVE_TESTS=1`): reproduce
-  `01_choque.wav` y verifica que el servidor la transcribe, que llega una llamada a herramienta y
-  que el asistente responde con audio. `make test` no la ejecuta (sigue sin red).
-- En el escenario el presentador habla al micrófono de la laptop: el emulador lo usa si se inicia con
-  `emulator -avd Pixel_9_API_36_1 -allow-host-audio`. Probado con `say` por los parlantes: el
-  micrófono de la laptop capta muy poco (pico 0.013), así que el camino probado y para ensayos es
-  `FileSource`; la voz real requiere hablar cerca del micrófono.
-- Escenario completo por voz, cronometrado: `make voice-scenario` (`scripts/voice_scenario.sh`). Reporta
-  el accidente con 3 fotos, habla con las grabaciones y aprueba cada pausa con la huella virtual
-  (`adb emu finger touch 1`) hasta el reclamo firmado. No duerme tiempos fijos: espera los
-  marcadores `EscudoScenario` de logcat (`voice_end`, `assistant_idle`, `approval_required`,
-  `approval_outcome`, `report_done`). Antes: `make reset CLOUD=1` en la raíz. Medido el
-  2026-09-30: **168 s** de punta a punta (41 s son automatización de la UI del reporte), 3 aprobaciones.
-  Con `escudo-approval:v1` (2026-10-01): **223 s**, 3 aprobaciones firmadas; 36 s son automatización de
-  la UI y ~25 s un timeout A2A al taller (`list_repair_options`) que el backend reintenta.
-  Con los agentes socios corregidos (2026-10-01): **169 s**, 3 aprobaciones firmadas con huella.
-- Las aprobaciones del escenario se firman con la llave del dispositivo: la huella virtual desbloquea
-  la llave a través de BiometricPrompt (`CryptoObject`), igual que en un teléfono real.
+- Escenario completo cronometrado: `make chat-scenario` (`scripts/chat_scenario.sh`). Reporta el
+  accidente con 3 fotos, escribe al asistente (extra de depuración
+  `adb shell am start -n app.escudo.android/.MainActivity --es chat_message '…'`, el mismo camino que el
+  teclado) y aprueba cada pausa con la huella virtual (`adb emu finger touch 1`) hasta el reclamo
+  firmado. Espera marcadores `EscudoScenario` de logcat, no tiempos fijos. Antes: `make reset CLOUD=1`
+  en la raíz. Medido el 2026-10-01: **146 s** (38 s son automatización de la UI del reporte),
+  3 aprobaciones firmadas con huella.
 - Preparar la huella del emulador (una vez): PIN `adb shell locksettings set-pin 1234`, luego
-  Ajustes → Seguridad → Huella (`adb shell am start -a android.settings.FINGERPRINT_ENROLL`) y tocar
-  el sensor con `adb emu finger touch 1` hasta «Fingerprint added».
-- Al soltar el botón se envían 2 s de silencio: con 800 ms Live no detecta el fin del turno.
+  `adb shell am start -a android.settings.FINGERPRINT_ENROLL` y tocar el sensor con
+  `adb emu finger touch 1` hasta «Fingerprint added».
+- Capturas: `docs/screenshots/chat/`.
 
 ## Protocolos con el backend
 
 - REST: `contracts/openapi.yaml`.
-- Voz (`/assistant/live`): audio binario PCM16 16 kHz de subida y 24 kHz de bajada; mensajes
-  JSON `ready`, `transcript`, `tool_call`, `approval_required`, `interrupted`, `turn_complete`,
-  `error`. El botón es push-to-talk; al soltarlo se envían 2 s de silencio para que la
-  detección automática de actividad cierre el turno. Ver `assistant/AssistantProtocol.kt`.
-- El asistente también acepta texto (ícono de teclado junto al micrófono): útil en lugares ruidosos
-  y para ensayar sin micrófono. Usa el mismo socket (`{"type":"text"}`).
+- Chat (`/assistant/chat`): tramas JSON `ready`, `text` (deltas `final:false`, mensaje completo `final:true`),
+  `tool_call`, `tool_result`, `approval_required`, `approval_resolved`, `turn_complete`, `error`; autenticación solo
+  con el encabezado `Authorization`. Ver `assistant/ChatProtocol.kt`.
 - Push de aprobación: notificación + datos `{"type": "approval_request", "approval_id", …}`,
   canal `approvals`; al tocarla abre `escudo://approvals/<id>`.
 
@@ -139,7 +115,7 @@ app/src/main/kotlin/app/escudo/android/
   data/            API (HTTP y falsa), repositorio, eventos de la línea de tiempo, fotos
   appfunctions/    reportAccident, getCoverage, getClaimStatus + mapeo de entradas/salidas
   approvals/       ApprovalFlow + BiometricVerifier
-  assistant/       sesión de voz (WebSocket), micrófono y parlante
+  assistant/       chat con el Asistente Escudo (WebSocket, protocolo, sesión falsa)
   push/            FCM: registro del dispositivo y notificación de aprobación
   ui/theme/        paleta, tipografía y formas (todo el estilo en un solo lugar)
   ui/…             pantallas: póliza, reclamo, aprobaciones, asistente, reportar

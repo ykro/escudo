@@ -13,8 +13,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
-import app.escudo.android.assistant.VoiceFixtures
-import app.escudo.android.assistant.VoiceRequest
 import app.escudo.android.ui.navigation.EscudoNavHost
 import app.escudo.android.ui.theme.EscudoTheme
 
@@ -25,7 +23,7 @@ import app.escudo.android.ui.theme.EscudoTheme
 class MainActivity : FragmentActivity() {
   private var deepLinkApprovalId by mutableStateOf<String?>(null)
   private var deepLinkNonce by mutableIntStateOf(0)
-  private var debugVoice by mutableStateOf<VoiceRequest?>(null)
+  private var debugChatMessage by mutableStateOf<String?>(null)
 
   private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
@@ -41,8 +39,8 @@ class MainActivity : FragmentActivity() {
           deepLinkApprovalId = deepLinkApprovalId,
           deepLinkNonce = deepLinkNonce,
           onDeepLinkHandled = { deepLinkApprovalId = null },
-          debugVoice = debugVoice,
-          onDebugVoiceHandled = { debugVoice = null },
+          debugChatMessage = debugChatMessage,
+          onDebugChatHandled = { debugChatMessage = null },
         )
       }
     }
@@ -59,10 +57,10 @@ class MainActivity : FragmentActivity() {
    */
   private fun handleIntent(intent: Intent?) {
     intent ?: return
-    // Debug builds: `adb shell am start -n app.escudo.android/.MainActivity --es voice_input_file 01_choque`
-    // makes the assistant hear that recording through the real pipeline (see testdata/voice).
+    // Debug builds: `adb shell am start -n app.escudo.android/.MainActivity --es chat_message '…'`
+    // sends that message in the assistant chat as if typed (scripts/chat_scenario.sh).
     if (BuildConfig.DEBUG) {
-      intent.getStringExtra(VoiceFixtures.EXTRA)?.let { debugVoice = VoiceFixtures.resolve(this, it) }
+      intent.getStringExtra(EXTRA_CHAT_MESSAGE)?.let { debugChatMessage = it }
     }
     val data = intent.data
     val fromLink = data?.takeIf { it.scheme == "escudo" && it.host == "approvals" }
@@ -70,6 +68,10 @@ class MainActivity : FragmentActivity() {
     if (fromLink == null && fromExtras == null) return
     deepLinkApprovalId = fromLink?.lastPathSegment ?: fromExtras
     deepLinkNonce++
+  }
+
+  companion object {
+    const val EXTRA_CHAT_MESSAGE = "chat_message"
   }
 
   private fun requestNotificationPermission() {

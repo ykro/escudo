@@ -3,9 +3,9 @@ package app.escudo.android
 import android.content.Context
 import app.escudo.android.approvals.ApprovalSigner
 import app.escudo.android.approvals.KeystoreApprovalSigner
-import app.escudo.android.assistant.AssistantSessionFactory
-import app.escudo.android.assistant.FakeAssistantSession
-import app.escudo.android.assistant.LiveAssistantSession
+import app.escudo.android.assistant.ChatSessionFactory
+import app.escudo.android.assistant.FakeChatSession
+import app.escudo.android.assistant.LiveChatSession
 import app.escudo.android.data.EscudoRepository
 import app.escudo.android.data.PhotoLoader
 import app.escudo.android.data.api.EscudoApi
@@ -54,8 +54,8 @@ class AppContainer(private val context: Context) {
   /** Device-bound approval key (escudo-approval:v1), EC P-256 in the Android Keystore. */
   val approvalSigner: ApprovalSigner = KeystoreApprovalSigner()
 
-  val assistant = AssistantSessionFactory {
-    if (config.useFakeApi) FakeAssistantSession() else LiveAssistantSession(config.assistantUrl, tokens)
+  val assistant = ChatSessionFactory {
+    if (config.useFakeApi) FakeChatSession() else LiveChatSession(config.chatUrl, tokens)
   }
 
   /** Stable per-install id sent with approvals as the device-bound signal. */
@@ -75,9 +75,9 @@ class AppContainer(private val context: Context) {
 }
 
 data class AppConfig(val useFakeApi: Boolean, val apiUrl: String) {
-  /** `wss://…/assistant/live`, derived from the REST base URL. */
-  val assistantUrl: String
-    get() = apiUrl.trimEnd('/').replaceFirst(Regex("^http"), "ws") + "/assistant/live"
+  /** `wss://…/assistant/chat`, derived from the REST base URL. */
+  val chatUrl: String
+    get() = apiUrl.trimEnd('/').replaceFirst(Regex("^http"), "ws") + "/assistant/chat"
 
   companion object {
     fun fromBuildConfig() = AppConfig(BuildConfig.USE_FAKE_API, BuildConfig.ESCUDO_API_URL)

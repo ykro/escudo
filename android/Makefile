@@ -1,8 +1,7 @@
 # Escudo for Android. Run from escudo/android (or via the repo-root Makefile).
 #   make build                 assemble debug APKs (fake + live flavors)
 #   make test                  unit tests (offline)
-#   make live-test             instrumented voice test on the emulator against the cloud
-#   make voice-scenario        full voice scenario (report → 3 fingerprint approvals → signed), timed
+#   make chat-scenario         full chat scenario on the emulator (report → 3 fingerprint approvals → signed), timed
 #   make install [FLAVOR=live] install on the connected device/emulator and launch
 #   make google-services       download app/google-services.json from Firebase
 #   make appfunctions          list Escudo's AppFunctions on the device (Android 16 QPR2+)
@@ -24,7 +23,7 @@ export ANDROID_SERIAL
 
 FLAVOR_CAP := $(shell echo $(FLAVOR) | awk '{print toupper(substr($$0,1,1)) substr($$0,2)}')
 
-.PHONY: build test live-test voice-scenario install google-services appfunctions serial clean
+.PHONY: build test chat-scenario install google-services appfunctions serial clean
 
 build:
 	$(GRADLE) assembleDebug
@@ -32,14 +31,10 @@ build:
 test:
 	$(GRADLE) testDebugUnitTest
 
-# Instrumented tests against the deployed backend (spoken voice → Live → MCP tools). Emulator required.
-live-test:
-	LIVE_TESTS=1 $(GRADLE) connectedDebugAndroidTest
-
-# Voice-driven scenario on the emulator against the cloud, event-driven; prints the real time.
+# Typed-chat scenario on the emulator against the cloud, event-driven; prints the real time.
 # Reset the backend first: `make reset CLOUD=1` at the repo root.
-voice-scenario:
-	ADB=$(ADB) scripts/voice_scenario.sh
+chat-scenario:
+	ADB=$(ADB) scripts/chat_scenario.sh
 
 install:
 	$(GRADLE) install$(FLAVOR_CAP)Debug
