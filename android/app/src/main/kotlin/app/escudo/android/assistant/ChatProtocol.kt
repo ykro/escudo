@@ -9,7 +9,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
-/** What the Escudo Assistant chat tells the app (contracts/tools.md → Chat WebSocket). */
+/** What Asistente Escudo chat tells the app (contracts/tools.md → Chat WebSocket). */
 sealed interface ChatEvent {
   data class Ready(val sessionId: String?, val mock: Boolean) : ChatEvent
 

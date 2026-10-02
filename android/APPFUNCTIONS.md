@@ -94,4 +94,4 @@ adb shell cmd app_function set-enabled --package app.escudo.android --function "
   conversation. The most "agent-like" option for the stage without Gemini.
 - **Gemini**: as of 2026-09-30, Gemini's integration with third-party AppFunctions is in private
   preview (trusted testers / Early Access Program) and is not available to this app. The
-  on-stage agent is the Escudo Assistant; AppFunctions are shown with the tools above.
+  on-stage agent is Asistente Escudo; AppFunctions are shown with the tools above.

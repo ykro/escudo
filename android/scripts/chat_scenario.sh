@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Escudo chat scenario on the emulator against the deployed backend, event-driven:
-# report the accident with 3 gallery photos, then type to the Escudo Assistant (debug intent extra
+# report the accident with 3 gallery photos, then type to Asistente Escudo (debug intent extra
 # `chat_message`, same path as the keyboard) and approve every pause with the (virtual)
 # fingerprint until the claim is signed.
 #

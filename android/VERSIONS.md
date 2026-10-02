@@ -42,6 +42,6 @@ official release notes on the date above.
 | Onest | Variable TTF from google/fonts `ofl/onest` (SIL OFL 1.1), bundled as `res/font/onest.ttf` |
 | Direction | «A · Sereno» tokens (`design/a-sereno/tokens.json`), logo mark redrawn as vectors (`design/a-sereno/mark.svg`) |
 
-## Escudo Assistant
+## Asistente Escudo
 
 Typed chat over OkHttp WebSocket (`/assistant/chat`); no audio APIs.

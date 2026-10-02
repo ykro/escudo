@@ -18,7 +18,7 @@ import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 
 /**
- * One conversation with the Escudo Assistant: an ADK agent in the backend that acts only through
+ * One conversation with Asistente Escudo: an ADK agent in the backend that acts only through
  * Escudo's MCP tools. The phone is a thin client: it sends what the customer types and renders
  * what comes back.
  */
