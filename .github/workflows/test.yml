@@ -1,0 +1,60 @@
+# make test on every push and pull request: backend pytest, web vitest, Android unit tests.
+# Mock modes only (MOCK_AI=1, MOCK_AUTH=1, Android `fake`/JVM tests): no cloud credentials, no network
+# calls to Google Cloud. Dependencies (uv, npm, Gradle) are cached between runs.
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  make-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      MOCK_AI: "1"
+      MOCK_AUTH: "1"
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Python (uv)
+        uses: astral-sh/setup-uv@v10
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: JDK
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Gradle (cached)
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Android SDK (licenses accepted; AGP downloads the compileSdk platform it needs)
+        uses: android-actions/setup-android@v4
+        with:
+          packages: "platform-tools"
+
+      - name: Install web dependencies
+        run: npm ci --no-audit --no-fund
+        working-directory: web
+
+      - name: make test
+        run: make test

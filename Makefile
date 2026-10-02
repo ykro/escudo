@@ -19,8 +19,8 @@ ENV_FILE := $(if $(wildcard .env),--env-file ../.env,)
 ANDROID_AVD ?= Pixel_9_API_36_1
 EMULATOR := $${ANDROID_HOME:-$$HOME/Library/Android/sdk}/emulator/emulator
 
-.PHONY: help up up-mock web seed reset test scenario scenario-live infra deploy deploy-api deploy-web \
-	photos voices brand android-build android-test android-install android-emulator android-serial voice-scenario
+.PHONY: help up up-mock web seed reset test scenario chat-scenario scenario-live stage-on stage-off infra deploy deploy-api deploy-web \
+	photos brand android-build android-test android-install android-emulator android-serial
 
 help: ## Lista todos los comandos
 	@grep -hE '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | sed -E 's/:.*## /\t/' | awk -F'\t' '{printf "  make %-18s %s\n", $$1, $$2}'
@@ -50,9 +50,6 @@ reset: ## Estado inicial en < 10 s en ESCUDO_BASE_URL (CLOUD=1: el desplegado)
 photos: ## Regenera las fotos de choque de muestra con IMAGE_MODEL (backend/samples/photos)
 	cd $(BACKEND) && uv run $(ENV_FILE) python scripts/generate_sample_photos.py
 
-voices: ## Regenera los audios de prueba de voz (macOS say + ffmpeg, android/testdata/voice)
-	android/testdata/voice/generate.sh
-
 brand: ## Regenera logo y maquetas de la dirección «A · Sereno» con IMAGE_MODEL (brand/)
 	cd $(BACKEND) && uv run $(ENV_FILE) python ../brand/generate_brand.py $(ARGS)
 
@@ -62,12 +59,17 @@ test: ## Pruebas: backend (pytest), Android (unitarias) y web (vitest)
 	@if [ -f android/Makefile ]; then $(MAKE) -C android test; fi
 	@if [ -f web/package.json ]; then cd web && npm test --silent; fi
 
-scenario: ## Escenario completo vía MCP, aprobaciones automáticas (modo prueba; CLOUD=1, APPROVE_DELAY=4)
-	cd $(BACKEND) && uv run $(ENV_FILE) python -m escudo.scenario --base-url $(ESCUDO_BASE_URL) --test-mode --auto-approve \
-		$(if $(FIREBASE_WEB_API_KEY),--sign-in,)
+# Each run gets its own customer (POST /admin/runs needs the admin token: Secret Manager in the cloud).
+RUN_ADMIN = $(if $(LOCAL),$${ADMIN_TOKEN},$$(gcloud secrets versions access latest --secret=escudo-admin-token --project=ai-experiments-487722))
+
+scenario: ## Escenario completo vía MCP con su propio cliente, aprobaciones firmadas (modo prueba; CLOUD=1, APPROVE_DELAY=4)
+	cd $(BACKEND) && ADMIN_TOKEN=$(RUN_ADMIN) uv run $(ENV_FILE) python -m escudo.scenario --base-url $(ESCUDO_BASE_URL) --test-mode --auto-approve
+
+chat-scenario: ## Escenario por chat escrito con su propio cliente: 3 aprobaciones firmadas, < 3 min (CLOUD=1)
+	cd $(BACKEND) && ADMIN_TOKEN=$(RUN_ADMIN) uv run $(ENV_FILE) python -m escudo.chat_scenario --base-url $(ESCUDO_BASE_URL) --test-mode
 
 scenario-live: ## Mismo escenario, pero espera a que apruebes cada paso en el teléfono
-	cd $(BACKEND) && uv run $(ENV_FILE) python -m escudo.scenario --base-url $(ESCUDO_BASE_URL) $(if $(FIREBASE_WEB_API_KEY),--sign-in,)
+	cd $(BACKEND) && uv run $(ENV_FILE) python -m escudo.scenario --base-url $(ESCUDO_BASE_URL) --shared
 
 # --- cloud ------------------------------------------------------------------------
 infra: ## Crea o verifica todo en GCP desde cero (infra/01..06, idempotente)
@@ -80,6 +82,13 @@ deploy-api: ## Despliega solo escudo-api
 
 deploy-web: ## Despliega solo escudo-web
 	bash infra/11-deploy-web.sh
+
+# Talk days: one warm instance of each service (no cold start on stage). Other days: scale to zero.
+stage-on: ## Día de charla: escudo-api y escudo-web con min-instances=1 (sin arranque en frío)
+	@for svc in escudo-api escudo-web; do gcloud run services update $$svc --region=us-central1 --project=ai-experiments-487722 --min-instances=1 --quiet >/dev/null && echo "$$svc: min-instances=1"; done
+
+stage-off: ## Fuera de la charla: min-instances=0 (escala a cero, sin costo en reposo)
+	@for svc in escudo-api escudo-web; do gcloud run services update $$svc --region=us-central1 --project=ai-experiments-487722 --min-instances=0 --quiet >/dev/null && echo "$$svc: min-instances=0"; done
 
 # --- Android (escudo/android has its own Makefile) -------------------------------
 android-build: ## APKs de depuración (sabores fake y live)
@@ -99,6 +108,3 @@ android-emulator: ## Arranca (o reutiliza) el emulador Pixel_9_API_36_1 y muestr
 
 android-serial: ## Serial adb del emulador Pixel_9_API_36_1 en ejecución
 	@android/scripts/emulator_serial.sh $(ANDROID_AVD)
-
-voice-scenario: ## Escenario por voz en el emulador Pixel_9_API_36_1 (3 aprobaciones con huella; reset CLOUD=1 antes)
-	$(MAKE) -C android voice-scenario ANDROID_AVD=$(ANDROID_AVD)
