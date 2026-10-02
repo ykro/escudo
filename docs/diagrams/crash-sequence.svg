@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg viewBox="0 0 1000 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="crash-sequence-title crash-sequence-desc">
       <title id="crash-sequence-title">Escenario del choque con tres aprobaciones</title>
-      <desc id="crash-sequence-desc">Secuencia del escenario del choque: Andrea reporta con fotos y pide ayuda por voz, el Asistente Escudo usa las herramientas MCP automáticas y el API delega grúa y talleres por A2A; luego, tres veces, una herramienta con aprobación devuelve pending_approval, llega un push, Andrea aprueba con su huella y el asistente repite la llamada con el approval_id.</desc>
+      <desc id="crash-sequence-desc">Secuencia del escenario del choque: Andrea reporta con fotos y pide ayuda por chat, el Asistente Escudo usa las herramientas MCP automáticas y el API delega grúa y talleres por A2A; luego, tres veces, una herramienta con aprobación devuelve pending_approval, llega un push, Andrea aprueba con su huella y el asistente repite la llamada con el approval_id.</desc>
       <defs>
         <style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;family=Noto+Serif:ital@0;1&amp;family=Noto+Sans+KR:wght@400;500;600&amp;family=Noto+Serif+KR:wght@400&amp;family=Noto+Sans+TC:wght@400;500;600&amp;family=Noto+Serif+TC:wght@400&amp;display=swap');</style>
         <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
@@ -32,7 +32,7 @@
       <!-- MESSAGES -->
       <!-- M1 Andrea -> API: report with photos (REST from the app) -->
       <line x1="120" y1="128" x2="636" y2="128" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
-      <!-- M2 Andrea -> Asistente: voice -->
+      <!-- M2 Andrea -> Asistente: chat -->
       <line x1="120" y1="172" x2="376" y2="172" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
       <!-- M3 Asistente -> API: automatic tools over MCP -->
       <line x1="384" y1="216" x2="636" y2="216" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
@@ -48,7 +48,7 @@
       <line x1="636" y1="448" x2="120" y2="448" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow-open)"/>
       <!-- M9 Andrea -> API: approve after BiometricPrompt (focal) -->
       <line x1="120" y1="488" x2="636" y2="488" stroke="#0F5C4D" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
-      <!-- M10 API -> Asistente: nudge (async) -->
+      <!-- M10 API -> Asistente: approval_resolved, it carries on by itself (async) -->
       <line x1="636" y1="528" x2="384" y2="528" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow-open)"/>
       <!-- M11 Asistente -> API: same tool + approval_id -->
       <line x1="384" y1="568" x2="636" y2="568" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
@@ -59,7 +59,7 @@
       <rect x="464" y="108" width="88" height="12" rx="2" fill="#f5f5f5"/>
       <text x="508" y="117" fill="#2e5aa8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">REPORTE+FOTOS</text>
       <rect x="196" y="152" width="104" height="12" rx="2" fill="#f5f5f5"/>
-      <text x="248" y="161" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">VOZ · «AYÚDAME»</text>
+      <text x="248" y="161" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CHAT · «AYÚDAME»</text>
       <rect x="456" y="196" width="104" height="12" rx="2" fill="#f5f5f5"/>
       <text x="508" y="205" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">MCP · AUTOMÁTICAS</text>
       <rect x="720" y="236" width="80" height="12" rx="2" fill="#f5f5f5"/>
@@ -96,7 +96,7 @@
       <rect x="308" y="38" width="28" height="12" rx="2" fill="none" stroke="#2d3142" stroke-opacity="0.40" stroke-width="0.8"/>
       <text x="322" y="47" fill="#2d3142" fill-opacity="0.80" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ADK</text>
       <text x="380" y="64" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Asistente Escudo</text>
-      <text x="380" y="79" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Gemini Live</text>
+      <text x="380" y="79" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">ADK · GEMINI_MODEL</text>
 
       <!-- Escudo API (focal: the server enforces) -->
       <rect x="560" y="32" width="160" height="56" rx="6" fill="#f5f5f5"/>
@@ -114,9 +114,9 @@
       <text x="880" y="64" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Grúa · Talleres</text>
       <text x="880" y="79" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">agentes A2A</text>
 
-      <!-- LEGEND -->
+      <!-- LEYENDA -->
       <line x1="30" y1="668" x2="970" y2="668" stroke="#2d3142" stroke-opacity="0.10" stroke-width="0.8"/>
-      <text x="30" y="692" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+      <text x="30" y="692" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEYENDA</text>
       <line x1="100" y1="688" x2="128" y2="688" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
       <text x="136" y="692" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">llamada</text>
       <line x1="216" y1="688" x2="244" y2="688" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>

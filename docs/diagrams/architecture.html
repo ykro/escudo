@@ -61,7 +61,7 @@
       <line x1="728" y1="300" x2="782" y2="300" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
       <!-- Capabilities -> Tow / Repair over A2A -->
       <line x1="664" y1="308" x2="664" y2="358" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
-      <!-- Voice adapter -> Gemini Live (lane under the service) -->
+      <!-- Chat adapter -> Gemini (lane under the service) -->
       <path d="M352,440 V468 Q352,476 360,476 H856 Q864,476 864,468 V338" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
       <!-- FCM approval push -> Android (async, over the top) -->
       <path d="M864,96 V44 Q864,36 856,36 H120 Q112,36 112,44 V94" fill="none" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
@@ -69,8 +69,8 @@
       <path d="M944,136 H960 Q968,136 968,144 V516 Q968,524 960,524 H120 Q112,524 112,516 V442" fill="none" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
 
       <!-- ARROW LABELS -->
-      <rect x="200" y="114" width="56" height="12" rx="2" fill="#f5f5f5"/>
-      <text x="228" y="123" fill="#2e5aa8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">REST · VOZ</text>
+      <rect x="196" y="114" width="64" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="228" y="123" fill="#2e5aa8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">REST · CHAT</text>
       <rect x="212" y="250" width="32" height="12" rx="2" fill="#f5f5f5"/>
       <text x="228" y="259" fill="#2e5aa8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">MCP</text>
       <rect x="208" y="386" width="40" height="12" rx="2" fill="#f5f5f5"/>
@@ -80,7 +80,7 @@
       <rect x="672" y="324" width="68" height="12" rx="2" fill="#f5f5f5"/>
       <text x="706" y="333" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">A2A · CARD</text>
       <rect x="556" y="456" width="88" height="12" rx="2" fill="#f5f5f5"/>
-      <text x="600" y="465" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">GEMINI LIVE</text>
+      <text x="600" y="465" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CHAT · GEMINI</text>
       <rect x="440" y="18" width="120" height="12" rx="2" fill="#f5f5f5"/>
       <text x="500" y="27" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">FCM · APROBACIÓN</text>
       <rect x="480" y="506" width="120" height="12" rx="2" fill="#f5f5f5"/>
@@ -94,7 +94,7 @@
       <text x="54" y="111" fill="#7a8399" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">APP</text>
       <text x="112" y="132" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Escudo Android</text>
       <text x="112" y="147" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">AppFunctions · huella</text>
-      <text x="112" y="160" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">voz por WebSocket</text>
+      <text x="112" y="160" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">chat por WebSocket</text>
 
       <!-- MCP clients (external) -->
       <rect x="32" y="232" width="160" height="72" rx="6" fill="#f5f5f5"/>
@@ -124,8 +124,8 @@
       <text x="336" y="194" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">/claims · /approvals</text>
       <text x="336" y="252" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">MCP</text>
       <text x="336" y="266" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">/mcp</text>
-      <text x="336" y="324" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">VOZ</text>
-      <text x="336" y="338" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">/assistant/live</text>
+      <text x="336" y="324" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">CHAT</text>
+      <text x="336" y="338" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">/assistant/chat</text>
       <text x="336" y="396" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">A2A</text>
       <text x="336" y="410" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">/a2a/escudo</text>
 
@@ -170,11 +170,11 @@
       <rect x="792" y="270" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.22)" stroke-width="0.8"/>
       <text x="806" y="279" fill="#7a8399" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">EXT</text>
       <text x="864" y="302" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Gemini · Vertex AI</text>
-      <text x="864" y="318" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">3.8-flash · 3.8-live</text>
+      <text x="864" y="318" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">chat · perito · A2A</text>
 
-      <!-- LEGEND -->
+      <!-- LEYENDA -->
       <line x1="30" y1="552" x2="970" y2="552" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
-      <text x="30" y="576" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+      <text x="30" y="576" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEYENDA</text>
       <rect x="100" y="566" width="14" height="12" rx="2" fill="rgba(15,92,77,0.08)" stroke="#0F5C4D" stroke-width="1"/>
       <text x="120" y="576" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">regla de autonomía</text>
       <rect x="236" y="566" width="14" height="12" rx="2" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
