@@ -6,7 +6,7 @@ export const SURFACE_LABEL: Record<string, string> = {
   mcp: "MCP",
   a2a: "A2A",
   rest: "API",
-  voice: "Voz",
+  chat: "Chat",
   appfunctions: "AppFunctions",
   webmcp: "WebMCP",
 };

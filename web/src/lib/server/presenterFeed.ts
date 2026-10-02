@@ -9,9 +9,9 @@ import type { EscudoEvent } from "../timeline";
  * escudo-web service account (read-only). The browser never gets Firestore access, so the
  * presenter needs no login and the database stays closed.
  */
-export type PresenterSnapshot = { events: EscudoEvent[]; claim: Claim | null; approvals: Approval[]; at: string };
+export type PresenterSnapshot = { events: EscudoEvent[]; claims: Claim[]; approvals: Approval[]; at: string };
 
-const MAX_EVENTS = 200;
+const MAX_EVENTS = 400; // several concurrent runs; the view keeps the one it follows
 
 function db(): Firestore {
   const app =
@@ -30,8 +30,8 @@ export function watchPresenter(onChange: (s: PresenterSnapshot) => void, onError
 
   const emit = () => {
     if (!ready.events || !ready.claims || !ready.approvals) return;
-    const claim = [...claims].sort((a, b) => b.created_at.localeCompare(a.created_at))[0] ?? null;
-    onChange({ events, claim, approvals, at: new Date().toISOString() });
+    const recent = [...claims].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 30);
+    onChange({ events, claims: recent, approvals, at: new Date().toISOString() });
   };
 
   const unsubscribers = [

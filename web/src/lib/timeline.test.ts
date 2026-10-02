@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPresenterState, clock, phoneScreen, type EscudoEvent } from "./timeline";
+import { buildPresenterState, clock, phoneScreen, selectRun, type EscudoEvent } from "./timeline";
 import type { Approval, Claim } from "./types";
 
 let n = 0;
@@ -79,5 +79,22 @@ describe("phoneScreen", () => {
     expect(phoneScreen(claim, [{ ...approval, status: "used" }]).kind).toBe("claim");
     expect(phoneScreen({ ...claim, status: "signed" }, []).kind).toBe("signed");
     expect(phoneScreen(null, []).kind).toBe("idle");
+  });
+});
+
+describe("selectRun", () => {
+  const a1 = ev({ run_id: "run-a", ts: "2026-10-01T10:00:00Z" });
+  const b1 = ev({ run_id: "run-b", ts: "2026-10-01T10:00:05Z" });
+  const a2 = ev({ run_id: "run-a", ts: "2026-10-01T10:00:09Z" });
+
+  it("follows the given run only", () => {
+    expect(selectRun([a1, b1, a2], "run-b")).toEqual({ runId: "run-b", events: [b1] });
+  });
+  it("defaults to the run of the newest event", () => {
+    expect(selectRun([a1, b1, a2]).runId).toBe("run-a");
+    expect(selectRun([a1, b1, a2]).events).toEqual([a1, a2]);
+  });
+  it("is empty without events", () => {
+    expect(selectRun([])).toEqual({ runId: null, events: [] });
   });
 });

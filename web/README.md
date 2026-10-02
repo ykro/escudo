@@ -4,7 +4,9 @@ Portal del cliente (póliza, coberturas, deducible, talleres, reclamo) con **Web
 **/presenter** para la charla. Next.js 16 en Cloud Run (`escudo-web`).
 
 - Portal: https://escudo-web-611681112050.us-central1.run.app/
-- Presentador: https://escudo-web-611681112050.us-central1.run.app/presenter (sin login; `?demo=1` reproduce una corrida grabada, sin nube)
+- Presentador: https://escudo-web-611681112050.us-central1.run.app/presenter (sin login; `?run=<id>` sigue
+  una corrida —la imprimen `make scenario` y `make chat-scenario`—, sin `?run` la más reciente; `?demo=1`
+  reproduce una corrida grabada, sin nube)
 
 ```bash
 npm install
@@ -37,11 +39,13 @@ Escenario fijo de 1920×1080 que se escala a cualquier proyector. Lee Firestore 
 `approvals`) **en el servidor** con la cuenta de servicio `escudo-web` (solo lectura) y lo envía por
 Server-Sent Events (`/api/presenter/stream`): el navegador no necesita login ni acceso a la base.
 
-- Línea de tiempo: reloj relativo, insignia de superficie (Android, Web, MCP, A2A, Voz, AppFunctions,
+- Línea de tiempo: reloj relativo, insignia de superficie (Android, Web, MCP, A2A, Chat, AppFunctions,
   WebMCP), agente y resultado. Las consultas de estado que hacen las pantallas no aparecen; las de agentes sí.
 - Pausas de aprobación: banda ámbar (el único ámbar de la pantalla) con el motivo, fija hasta que
   Andrea aprueba en el teléfono.
 - Encabezado: tiempo transcurrido (se detiene al firmar) y aprobaciones «n de 3».
+- Una corrida a la vez: cada corrida de escenario tiene su propio cliente y `run_id`
+  (`X-Escudo-Run-Id`); la vista muestra solo los eventos, el reclamo y las aprobaciones de la corrida que sigue.
 
 ### Espejo del teléfono: por qué es una tarjeta en vivo y no una captura
 

@@ -32,7 +32,7 @@ function Screen({ screen }: { screen: PhoneScreen }) {
       return (
         <div className={styles.phoneBody} key="approval">
           <div className={styles.phoneApproval}>
-            {screen.claimId && <p className={styles.phoneMuted}>Reclamo {screen.claimId}</p>}
+            {screen.claimId && <p className={styles.phoneMuted}>{screen.claimId}</p>}
             <p className={styles.phoneApprovalTitle}>{screen.title}</p>
             {screen.amount != null && <p className={styles.phoneAmount}>{usd(screen.amount)}</p>}
             <p className={styles.phoneSmall}>{screen.reason}</p>

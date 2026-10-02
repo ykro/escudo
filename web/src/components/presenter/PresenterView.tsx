@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { EscudoMark } from "@/brand/EscudoMark";
-import { buildPresenterState, clock, EXPECTED_APPROVALS, phoneScreen } from "@/lib/timeline";
+import { buildPresenterState, clock, EXPECTED_APPROVALS, phoneScreen, selectRun } from "@/lib/timeline";
 import { usePresenterFeed } from "./usePresenterFeed";
 import { PhoneMirror } from "./PhoneMirror";
 import { Timeline } from "./Timeline";
@@ -32,10 +32,14 @@ function useNow(active: boolean): number {
   return now;
 }
 
-export function PresenterView({ demo }: { demo: boolean }) {
+export function PresenterView({ demo, run }: { demo: boolean; run?: string }) {
   const feed = usePresenterFeed(demo);
-  const state = useMemo(() => buildPresenterState(feed.events), [feed.events]);
-  const phone = useMemo(() => phoneScreen(feed.claim, feed.approvals), [feed.claim, feed.approvals]);
+  const followed = useMemo(() => selectRun(feed.events, run), [feed.events, run]);
+  const state = useMemo(() => buildPresenterState(followed.events), [followed.events]);
+  const phone = useMemo(() => {
+    const claim = feed.claims.find((c) => c.claim_id === state.claimId) ?? null;
+    return phoneScreen(claim, feed.approvals.filter((a) => a.claim_id === state.claimId));
+  }, [feed.claims, feed.approvals, state.claimId]);
   const running = Boolean(state.startedAt && !state.endedAt);
   const now = useNow(running);
   const scale = useStageScale();

@@ -7,20 +7,20 @@ import demoEvents from "@/lib/fixtures/scenario-events.json";
 export type Feed = {
   connection: "connecting" | "live" | "reconnecting";
   events: EscudoEvent[];
-  claim: Claim | null;
+  claims: Claim[];
   approvals: Approval[];
 };
 
 /** Live snapshot over SSE (/api/presenter/stream); EventSource reconnects on its own. */
 export function usePresenterFeed(demo: boolean): Feed {
-  const [feed, setFeed] = useState<Feed>({ connection: "connecting", events: [], claim: null, approvals: [] });
+  const [feed, setFeed] = useState<Feed>({ connection: "connecting", events: [], claims: [], approvals: [] });
 
   useEffect(() => {
     if (demo) return replayDemo(setFeed);
     const source = new EventSource("/api/presenter/stream");
     source.onmessage = (message) => {
       const snapshot = JSON.parse(message.data);
-      setFeed({ connection: "live", events: snapshot.events, claim: snapshot.claim, approvals: snapshot.approvals });
+      setFeed({ connection: "live", events: snapshot.events, claims: snapshot.claims ?? [], approvals: snapshot.approvals });
     };
     source.onerror = () => setFeed((f) => ({ ...f, connection: "reconnecting" }));
     return () => source.close();
@@ -76,7 +76,7 @@ function replayDemo(setFeed: (f: Feed) => void): () => void {
           repair: done("select_repair_shop") ? { shop_id: "shop_zona10", shop_name: "Taller Carrocería Diez", slot: "2026-10-01T08:00:00-06:00", quote_usd: 910 } : null,
         } as Claim)
       : null;
-    setFeed({ connection: "live", events: shown, claim, approvals });
+    setFeed({ connection: "live", events: shown, claims: claim ? [claim] : [], approvals });
     if (shown.length === recorded.length) clearInterval(timer);
   }, 250);
   return () => clearInterval(timer);

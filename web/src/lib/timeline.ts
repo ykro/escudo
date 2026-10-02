@@ -76,6 +76,15 @@ export function clock(fromIso: string, toIso: string): string {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+/**
+ * Which run the stage follows: `?run=<id>` if given, else the run of the newest event. Each scenario
+ * run has its own customer and run id (X-Escudo-Run-Id), so concurrent runs never mix on screen.
+ */
+export function selectRun(events: EscudoEvent[], run?: string | null): { runId: string | null; events: EscudoEvent[] } {
+  const runId = run || [...events].sort((a, b) => b.ts.localeCompare(a.ts))[0]?.run_id || null;
+  return { runId, events: runId ? events.filter((e) => e.run_id === runId) : [] };
+}
+
 export function buildPresenterState(input: EscudoEvent[]): PresenterState {
   const events = [...input].sort((a, b) => a.ts.localeCompare(b.ts));
   const startedAt = events[0]?.ts ?? null;
