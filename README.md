@@ -1,7 +1,7 @@
 # Escudo — una aseguradora de autos lista para agentes
 
 > Demo de la charla **«Built for Agents: Making Your Apps Usable by AI»**.
-> [English version](README.en.md) · [Guía de incorporación](docs/ONBOARDING.md)
+> [English version](README.en.md) · [Guía de incorporación](docs/ONBOARDING.md) · [Guion de la demo](docs/DEMO.md)
 
 Escudo es una aseguradora de autos ficticia de Guatemala cuyas capacidades pueden usar agentes de IA
 desde tres superficies: una **app Android con AppFunctions**, un **sitio web con WebMCP** y un
@@ -111,6 +111,7 @@ Desde la raíz del repo (`make help` los lista todos):
 | `make deploy` | `deploy-api` + `deploy-web`; conservan el `min-instances` actual de cada servicio |
 | `make deploy-api` | `infra/10-deploy-api.sh`: construye y despliega `escudo-api` |
 | `make deploy-web` | `infra/11-deploy-web.sh`: construye y despliega `escudo-web` |
+| `make warmup` | Antes de subir: toca API, Agent Cards, portal y `/presenter` desplegados e imprime estado y latencia (falla si algo no da 200) |
 | `make stage-on` | Día de charla: `min-instances=1` en `escudo-api` y `escudo-web` (sin arranque en frío) |
 | `make stage-off` | Fuera de la charla: `min-instances=0` (escalan a cero; los despliegues siguientes lo respetan) |
 | `make photos` | Regenera las fotos de ensayo del choque con `IMAGE_MODEL` |
@@ -162,7 +163,7 @@ web/                      Next.js 16 (ver web/README.md)
 infra/                    scripts numerados e idempotentes: 01-06 crean el proyecto desde cero, 10-11 despliegan
 brand/                    prompts y generador del logo y las maquetas «A · Sereno» (make brand)
 data/                     SOURCES.md (procedencia de cada dato y recurso) y DATASHEET.md
-docs/                     ONBOARDING.md, diagramas, capturas y escudo-chat-run.mp4 (corrida completa, respaldo)
+docs/                     ONBOARDING.md, DEMO.md (guion de la demo, capturas en docs/demo/), diagramas, capturas y escudo-chat-run.mp4 (corrida completa, respaldo)
 ```
 
 ## Decisiones técnicas

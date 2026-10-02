@@ -1,7 +1,7 @@
 # Escudo — an agent-ready car insurer
 
 > Demo for the talk **"Built for Agents: Making Your Apps Usable by AI"**.
-> [Versión en español](README.md) · [Onboarding guide (Spanish)](docs/ONBOARDING.md)
+> [Versión en español](README.md) · [Onboarding guide (Spanish)](docs/ONBOARDING.md) · [Demo script (Spanish)](docs/DEMO.md)
 
 Escudo is a fictional Guatemalan car insurer whose capabilities AI agents can use from three
 surfaces: an **Android app with AppFunctions**, a **website with WebMCP** and an **MCP server**. Its
@@ -111,6 +111,7 @@ From the repo root (`make help` lists them all):
 | `make deploy` | `deploy-api` + `deploy-web`; each keeps the service's current `min-instances` |
 | `make deploy-api` | `infra/10-deploy-api.sh`: builds and deploys `escudo-api` |
 | `make deploy-web` | `infra/11-deploy-web.sh`: builds and deploys `escudo-web` |
+| `make warmup` | Before going on stage: touches the deployed API, Agent Cards, portal and `/presenter`, prints status and latency (fails unless all 200) |
 | `make stage-on` | Talk day: `min-instances=1` on `escudo-api` and `escudo-web` (no cold start) |
 | `make stage-off` | Any other day: `min-instances=0` (scale to zero; later deploys keep it) |
 | `make photos` | Regenerates the rehearsal crash photos with `IMAGE_MODEL` |
@@ -163,7 +164,7 @@ web/                      Next.js 16 (see web/README.md)
 infra/                    numbered, idempotent scripts: 01-06 build the project from scratch, 10-11 deploy
 brand/                    prompts and generator for the "A · Sereno" logo and mockups (make brand)
 data/                     SOURCES.md (origin of every data file and asset) and DATASHEET.md
-docs/                     ONBOARDING.md, diagrams, screenshots and escudo-chat-run.mp4 (a full run, fallback)
+docs/                     ONBOARDING.md, DEMO.md (demo script, screenshots in docs/demo/), diagrams, screenshots and escudo-chat-run.mp4 (a full run, fallback)
 ```
 
 ## Technical decisions

@@ -483,6 +483,7 @@ el agente A2A (`agents/escudo_agent.build_a2a_agent`) o una AppFunction (que lla
 | La evaluación de fotos tarda mucho | El perito lanza una llamada de respaldo cada 5 s (hasta 4, gana la primera; límite 45 s, después `assessment_unavailable`). Si `global` está lento para todos, ninguna gana antes: los tiempos quedan en los logs como `assessment_timing` |
 | El chat no sigue solo después de aprobar | La aprobación se decidió con otra conversación cerrada: reabre el chat con la cabecera `X-Escudo-Chat-Session` (la app la guarda) o escribe «sigue» |
 | `make scenario` → 401 en `/admin/runs` | Token de admin distinto al del servidor local (ver fila de `make reset`) o sin acceso a Secret Manager (`CLOUD=1`) |
+| Portal: «No pudimos iniciar sesión»; `make scenario CLOUD=1` falla al iniciar sesión (403 `Requests from referer … are blocked`) | La llave web de Firebase (`Browser key (auto created by Firebase)`) tiene restricción de referrers que no incluye a Escudo. La llave se comparte con otras apps del proyecto: agrega (no reemplaces) `https://escudo-web-611681112050.us-central1.run.app/*`, `https://escudo-web-z63pqhhmxq-uc.a.run.app/*`, `http://localhost:3217/*` y `http://127.0.0.1:3217/*`. Los corredores de escenario inician sesión por REST sin referrer: con referrers activos necesitan su propia llave sin esa restricción (`FIREBASE_WEB_API_KEY` en `.env`). La app Android usa otra llave y no se ve afectada |
 | `make up-offline` → `EADDRINUSE 127.0.0.1:3217` | `make web` (u otro `next-server`) ya usa el puerto: ciérralo o usa `PORT=3218 make up-offline` |
 | El chat se queda «pensando» más de 30 s | Gemini tardó; cada llamada se corta a los 30 s y se reintenta. Si se repite, `global` está lento: usa el respaldo (`make chat-scenario CLOUD=1` o `/presenter?demo=1`) |
 
@@ -491,6 +492,7 @@ el agente A2A (`agents/escudo_agent.build_a2a_agent`) o una AppFunction (que lla
 **La víspera**
 
 - [ ] `make stage-on`: `escudo-api` y `escudo-web` con una instancia caliente (`min-instances=1`).
+- [ ] Ensayar el guion completo de [DEMO.md](DEMO.md) una vez.
 - [ ] `make test` en verde (y el último run de CI en GitHub).
 - [ ] `curl https://escudo-api-611681112050.us-central1.run.app/health` → `{"status":"ok"}`; Agent Cards responden.
 - [ ] `make reset CLOUD=1`, `make scenario CLOUD=1 APPROVE_DELAY=4` y `make chat-scenario CLOUD=1`:
@@ -503,7 +505,7 @@ el agente A2A (`agents/escudo_agent.build_a2a_agent`) o una AppFunction (que lla
 
 **Antes de subir**
 
-- [ ] `make reset CLOUD=1` (< 10 s).
+- [ ] `make warmup` → `warmup OK`, luego `make reset CLOUD=1` (< 10 s).
 - [ ] `/presenter` abierto en Chrome a pantalla completa en el proyector; «Aprobaciones 0 de 3» (sin
       `?run`, sigue la corrida del reclamo más reciente: la del teléfono).
 - [ ] `make up-offline` probado en la laptop y `docs/escudo-chat-run.mp4` a mano.

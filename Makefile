@@ -6,6 +6,7 @@ export
 
 BACKEND := backend
 DEPLOYED_URL := https://escudo-api-611681112050.us-central1.run.app
+DEPLOYED_WEB := https://escudo-web-611681112050.us-central1.run.app
 ESCUDO_BASE_URL ?= http://127.0.0.1:8080
 # `make reset|scenario CLOUD=1` targets the deployed service instead of the local one.
 ifeq ($(CLOUD),1)
@@ -21,7 +22,7 @@ ENV_FILE := $(if $(wildcard .env),--env-file ../.env,)
 ANDROID_AVD ?= Pixel_9_API_36_1
 EMULATOR := $${ANDROID_HOME:-$$HOME/Library/Android/sdk}/emulator/emulator
 
-.PHONY: help up up-mock up-offline web seed reset test scenario chat-scenario scenario-live stage-on stage-off infra deploy deploy-api deploy-web \
+.PHONY: help up up-mock up-offline web seed reset test scenario chat-scenario scenario-live stage-on stage-off warmup infra deploy deploy-api deploy-web \
 	photos brand android-build android-test android-install android-emulator android-serial
 
 help: ## Lista todos los comandos
@@ -94,6 +95,21 @@ stage-on: ## Día de charla: escudo-api y escudo-web con min-instances=1 (sin ar
 
 stage-off: ## Fuera de la charla: min-instances=0 (escala a cero, sin costo en reposo)
 	@for svc in escudo-api escudo-web; do gcloud run services update $$svc --region=us-central1 --project=ai-experiments-487722 --min-instances=0 --quiet >/dev/null && echo "$$svc: min-instances=0"; done
+
+# Before going on stage: touch every public surface once so no request on stage pays a cold start
+# (the API instance also warms its A2A partners on start). Fails if anything is not 200.
+WARM_URLS := $(DEPLOYED_URL)/health \
+	$(DEPLOYED_URL)/a2a/escudo/.well-known/agent-card.json \
+	$(DEPLOYED_URL)/a2a/tow/.well-known/agent-card.json \
+	$(DEPLOYED_URL)/a2a/repair/.well-known/agent-card.json \
+	$(DEPLOYED_WEB)/entrar $(DEPLOYED_WEB)/presenter
+warmup: ## Antes de subir: toca API, Agent Cards, portal y /presenter desplegados (todo 200)
+	@fail=0; for url in $(WARM_URLS); do \
+		out=$$(curl -s -o /dev/null -w '%{http_code} %{time_total}' --max-time 60 "$$url"); \
+		printf '  %s  %6.2f s  %s\n' "$${out% *}" "$${out#* }" "$$url"; \
+		[ "$${out% *}" = "200" ] || fail=1; \
+	done; \
+	if [ $$fail = 0 ]; then echo "warmup OK"; else echo "warmup: algo no respondió 200"; exit 1; fi
 
 # --- Android (escudo/android has its own Makefile) -------------------------------
 android-build: ## APKs de depuración (sabores fake y live)
