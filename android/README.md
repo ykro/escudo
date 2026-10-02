@@ -83,7 +83,9 @@ hace la notificación. En el emulador, PIN con `adb shell locksettings set-pin 1
 El asistente es un chat escrito sobre el mismo agente y las mismas herramientas MCP
 (`wss://…/assistant/chat`, ver `contracts/tools.md`). La app muestra las respuestas en streaming,
 chips en línea con lo que el agente está haciendo («Buscando talleres…») y una tarjeta ámbar en línea
-cuando el agente se detiene por una aprobación; «Revisar y aprobar» abre la aprobación con huella y, al
+cuando el agente se detiene por una aprobación (el chip de esa acción queda en ámbar, «esperando tu
+aprobación», sin puntos de «escribiendo»: el agente está detenido a propósito, y solo pasa a ✓ cuando
+el reintento aprobado tiene éxito); «Revisar y aprobar» abre la aprobación con huella y, al
 aprobar, la conversación continúa sola (`approval_resolved`). Si la conexión se cae (Cloud Run corta
 los WebSockets a los 60 min), la app se reconecta con el mismo `session_id` y la conversación sigue.
 
@@ -92,7 +94,7 @@ los WebSockets a los 60 min), la app se reconecta con el mismo `session_id` y la
   `adb shell am start -n app.escudo.android/.MainActivity --es chat_message '…'`, el mismo camino que el
   teclado) y aprueba cada pausa con la huella virtual (`adb emu finger touch 1`) hasta el reclamo
   firmado. Espera marcadores `EscudoScenario` de logcat, no tiempos fijos. Antes: `make reset CLOUD=1`
-  en la raíz. Medido el 2026-10-01: **146 s** (38 s son automatización de la UI del reporte),
+  en la raíz. Medido el 2026-10-01: **106 s** (35 s son automatización de la UI del reporte),
   3 aprobaciones firmadas con huella.
 - Preparar la huella del emulador (una vez): PIN `adb shell locksettings set-pin 1234`, luego
   `adb shell am start -a android.settings.FINGERPRINT_ENROLL` y tocar el sensor con

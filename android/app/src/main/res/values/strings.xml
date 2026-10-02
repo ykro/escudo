@@ -107,6 +107,8 @@
     <string name="chat_suggestion_claim">¿Cómo va mi reclamo?</string>
     <string name="chat_placeholder">Escribe tu mensaje</string>
     <string name="chat_send">Enviar</string>
+    <string name="chat_tool_waiting">%1$s · esperando tu aprobación</string>
+    <string name="chat_tool_not_done">%1$s · no se realizó</string>
     <string name="chat_review_approval">Revisar y aprobar</string>
     <string name="chat_approval_approved">Aprobado por ti</string>
     <string name="chat_approval_rejected">Rechazado por ti</string>

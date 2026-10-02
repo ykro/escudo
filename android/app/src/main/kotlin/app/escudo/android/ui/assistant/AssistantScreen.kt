@@ -29,6 +29,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
@@ -180,8 +181,8 @@ fun AssistantScreen(
 
   // Debug builds: a message from the scenario script (intent extra) is sent as if typed.
   LaunchedEffect(debugMessage) { debugMessage?.let { vm.send(it); onDebugMessageConsumed() } }
-  LaunchedEffect(state.items.size, (state.items.lastOrNull() as? ChatItem.Assistant)?.text?.length, state.thinking) {
-    val count = state.items.size + if (state.thinking) 1 else 0
+  LaunchedEffect(state.items.size, (state.items.lastOrNull() as? ChatItem.Assistant)?.text?.length, state.showTyping) {
+    val count = state.items.size + if (state.showTyping) 1 else 0
     if (count > 0) listState.animateScrollToItem(count - 1)
   }
 
@@ -212,7 +213,7 @@ fun AssistantScreen(
               is ChatItem.Approval -> ApprovalCard(item, onReview = { onOpenApprovals(item.approvalId) })
             }
           }
-          if (state.thinking && (state.items.lastOrNull() as? ChatItem.Assistant)?.streaming != true) {
+          if (state.showTyping) {
             item(key = "typing") { TypingIndicator() }
           }
         }
@@ -306,20 +307,36 @@ private fun Bubble(text: String, fromUser: Boolean, streaming: Boolean = false) 
 @Composable
 private fun ToolChip(item: ChatItem.Tool) {
   val colors = MaterialTheme.colorScheme
+  val extra = EscudoTheme.extra
+  val waiting = item.status == ChatItem.Tool.Status.WAITING
   Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
-    Surface(color = colors.secondaryContainer, contentColor = colors.onSecondaryContainer, shape = MaterialTheme.shapes.extraLarge) {
+    Surface(
+      color = when (item.status) {
+        ChatItem.Tool.Status.WAITING -> extra.pauseContainer
+        ChatItem.Tool.Status.NOT_DONE -> colors.surfaceContainerHigh
+        else -> colors.secondaryContainer
+      },
+      contentColor = if (waiting) extra.onPauseContainer else colors.onSecondaryContainer,
+      shape = MaterialTheme.shapes.extraLarge,
+    ) {
       Row(
         Modifier.padding(horizontal = Spacing.sm, vertical = Spacing.xs + 2.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.s),
       ) {
-        if (item.done) {
-          Icon(painterResource(R.drawable.ic_check_circle), contentDescription = null, tint = colors.primary, modifier = Modifier.size(16.dp))
-        } else {
-          CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp)
+        when (item.status) {
+          ChatItem.Tool.Status.RUNNING -> CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp)
+          ChatItem.Tool.Status.WAITING -> Icon(painterResource(R.drawable.ic_hourglass), contentDescription = null, tint = extra.pause, modifier = Modifier.size(16.dp))
+          ChatItem.Tool.Status.DONE -> Icon(painterResource(R.drawable.ic_check_circle), contentDescription = null, tint = colors.primary, modifier = Modifier.size(16.dp))
+          ChatItem.Tool.Status.NOT_DONE -> Icon(Icons.Filled.Close, contentDescription = null, tint = colors.onSurfaceVariant, modifier = Modifier.size(16.dp))
         }
         Text(
-          toolActivity(item.tool) + if (item.done) "" else "…",
+          when (item.status) {
+            ChatItem.Tool.Status.RUNNING -> toolActivity(item.tool) + "…"
+            ChatItem.Tool.Status.WAITING -> stringResource(R.string.chat_tool_waiting, toolLabel(item.tool))
+            ChatItem.Tool.Status.DONE -> toolActivity(item.tool)
+            ChatItem.Tool.Status.NOT_DONE -> stringResource(R.string.chat_tool_not_done, toolLabel(item.tool))
+          },
           style = MaterialTheme.typography.labelMedium,
         )
       }

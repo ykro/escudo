@@ -48,10 +48,10 @@ class ChatStateTest {
   @Test
   fun `tool calls become chips that complete with their result`() {
     val s = ChatReducer.userSent(ready, "taller", "u1").on(ChatEvent.ToolCall("list_repair_options"))
-    assertEquals(ChatItem.Tool((s.items.last() as ChatItem.Tool).key, "list_repair_options", done = false), s.items.last())
+    assertEquals(ChatItem.Tool((s.items.last() as ChatItem.Tool).key, "list_repair_options", ChatItem.Tool.Status.RUNNING), s.items.last())
     assertTrue(s.thinking)
     val done = s.on(ChatEvent.ToolResult("list_repair_options"))
-    assertTrue((done.items.last() as ChatItem.Tool).done)
+    assertEquals(ChatItem.Tool.Status.DONE, (done.items.last() as ChatItem.Tool).status)
   }
 
   @Test
@@ -85,7 +85,52 @@ class ChatStateTest {
       ChatEvent.ToolResult("request_tow"),
     )
     assertEquals(listOf("request_tow", "list_repair_options"), s.items.map { (it as ChatItem.Tool).tool })
-    assertEquals(listOf(true, false), s.items.map { (it as ChatItem.Tool).done })
-    assertTrue(s.on(ChatEvent.TurnComplete).items.all { (it as ChatItem.Tool).done })
+    assertEquals(listOf(ChatItem.Tool.Status.DONE, ChatItem.Tool.Status.RUNNING), s.items.map { (it as ChatItem.Tool).status })
+    assertTrue(s.on(ChatEvent.TurnComplete).items.all { (it as ChatItem.Tool).status == ChatItem.Tool.Status.DONE })
+  }
+
+  private fun ChatState.tool(name: String) = items.filterIsInstance<ChatItem.Tool>().single { it.tool == name }.status
+
+  @Test
+  fun `a paused tool waits for the human and only completes after the approved retry`() {
+    val required = ChatEvent.ApprovalRequired("apr_1", "select_repair_shop", "Reservar", null, "sha256:a")
+    val paused = ChatReducer.userSent(ready, "agenda el taller", "u1").on(
+      ChatEvent.ToolCall("select_repair_shop"), ChatEvent.ToolCall("select_repair_shop"),
+      ChatEvent.ToolResult("select_repair_shop"), required,
+    )
+    assertEquals(ChatItem.Tool.Status.WAITING, paused.tool("select_repair_shop"))
+    // The agent is stopped by design: no typing dots, even while its explanation streams.
+    assertFalse(paused.showTyping)
+    val explained = paused.on(ChatEvent.Text("Te envié una solicitud", final = true), ChatEvent.TurnComplete)
+    assertEquals(ChatItem.Tool.Status.WAITING, explained.tool("select_repair_shop"))
+
+    val approved = explained.on(ChatEvent.ApprovalResolved("apr_1", "select_repair_shop", "approved"))
+    assertEquals(ChatItem.Tool.Status.WAITING, approved.tool("select_repair_shop"))
+    assertTrue(approved.showTyping) // now the agent really works again
+    val retrying = approved.on(ChatEvent.ToolCall("select_repair_shop"))
+    assertEquals(ChatItem.Tool.Status.RUNNING, retrying.tool("select_repair_shop"))
+    assertEquals(ChatItem.Tool.Status.DONE, retrying.on(ChatEvent.ToolResult("select_repair_shop")).tool("select_repair_shop"))
+  }
+
+  @Test
+  fun `a rejected pause marks the action as not done`() {
+    val s = ready.on(
+      ChatEvent.ToolCall("sign_claim"), ChatEvent.ToolResult("sign_claim"),
+      ChatEvent.ApprovalRequired("apr_2", "sign_claim", "Firmar", null, "h"),
+      ChatEvent.ApprovalResolved("apr_2", "sign_claim", "rejected"),
+    )
+    assertEquals(ChatItem.Tool.Status.NOT_DONE, s.tool("sign_claim"))
+  }
+
+  @Test
+  fun `the retry may start before approval_resolved arrives`() {
+    val s = ready.on(
+      ChatEvent.ToolCall("accept_deductible"), ChatEvent.ToolResult("accept_deductible"),
+      ChatEvent.ApprovalRequired("apr_3", "accept_deductible", "Pagar 500 USD", null, "h"), ChatEvent.TurnComplete,
+      ChatEvent.ToolCall("accept_deductible"), ChatEvent.ToolResult("accept_deductible"),
+      ChatEvent.ApprovalResolved("apr_3", "accept_deductible", "approved"),
+    )
+    assertEquals(ChatItem.Tool.Status.DONE, s.tool("accept_deductible"))
+    assertEquals(ChatItem.Approval.Status.APPROVED, s.items.filterIsInstance<ChatItem.Approval>().single().status)
   }
 }
