@@ -1,4 +1,4 @@
-"""Escudo Assistant chat (/assistant/chat): header-only auth, tool calls through the capabilities,
+"""Asistente Escudo chat (/assistant/chat): header-only auth, tool calls through the capabilities,
 pause on approval and automatic resume once the phone approves. MOCK_AI: deterministic assistant."""
 
 from __future__ import annotations

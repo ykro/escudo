@@ -1,6 +1,6 @@
 """MCP adapter: Escudo's capabilities as MCP tools (streamable HTTP at /mcp).
 
-Any MCP client — Gemini, Claude, the Escudo Assistant — gets the same 11
+Any MCP client — Gemini, Claude, Asistente Escudo — gets the same 11
 tools, authenticated with the customer's Firebase ID token. There is no
 `approve` tool: gated tools return `pending_approval` and the human approves
 on the phone.

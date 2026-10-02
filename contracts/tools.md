@@ -95,7 +95,7 @@ exactly like the app.
 
 - MCP: streamable HTTP at `/mcp`, bearer = customer Firebase ID token.
 - A2A: Escudo agent at `/a2a/escudo`, Tow at `/a2a/tow`, Repair at `/a2a/repair`, each with its Agent Card at the well-known path of the current A2A version. Escudo discovers peers from `A2A_PEERS` (base URLs only). Cards are public. Calling `/a2a/escudo` requires the customer's Firebase ID token (bearer) or the partner key `X-Escudo-A2A-Key` plus `X-Escudo-Customer-Id`; Tow and Repair require the partner key when `A2A_SHARED_SECRET` is set. Every surface acts as the `customer_id` of the verified token.
-- Chat: Escudo Assistant, a typed chat over a WebSocket at `/assistant/chat` (protocol below). An ADK agent on `GEMINI_MODEL` that acts only through the MCP tools (loopback to `/mcp` with the customer's own token, header `X-Escudo-Actor: escudo_assistant`).
+- Chat: Asistente Escudo, a typed chat over a WebSocket at `/assistant/chat` (protocol below). An ADK agent on `GEMINI_MODEL` that acts only through the MCP tools (loopback to `/mcp` with the customer's own token, header `X-Escudo-Actor: escudo_assistant`).
 - Timeline events from clients: `POST /events` accepts only `kind: "message"` (capability calls and
   approvals are recorded by the backend itself). The server always sets `id` and `ts`; a `claim_id` must
   belong to the caller (else `403`). Schema: `events.schema.json`.
@@ -126,7 +126,7 @@ are disabled. If the customer has a chat open on that approval, the assistant re
 
 ## Chat WebSocket `/assistant/chat`
 
-The Escudo Assistant is a typed chat. Every frame is a JSON text frame.
+Asistente Escudo is a typed chat. Every frame is a JSON text frame.
 
 - **Auth**: `Authorization: Bearer <Firebase ID token>` on the upgrade request — nothing else (no query
   parameter, no auth frame). Missing or invalid → `{"type":"error","code":"unauthenticated"|"invalid_token",…}`

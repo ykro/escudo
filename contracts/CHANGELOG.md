@@ -32,7 +32,7 @@ live in `openapi.yaml` (REST), `tools.md` (capabilities, approvals, push, chat) 
 - A2A: Agent Cards are public at `{base}/.well-known/agent-card.json`. `/a2a/escudo` requires the
   customer's token or the partner key (`X-Escudo-A2A-Key`) plus `X-Escudo-Customer-Id`; `/a2a/tow` and
   `/a2a/repair` require the partner key. Cards declare these schemes.
-- Chat (Escudo Assistant): WebSocket `/assistant/chat`, `Authorization` header only; client frames
+- Chat (Asistente Escudo): WebSocket `/assistant/chat`, `Authorization` header only; client frames
   `text`, `end`; server frames `ready`, `text` (deltas + final), `tool_call` and `tool_result` (paired by `call_id`),
   `approval_required`, `approval_resolved`, `turn_complete`, `error`. After an approval the assistant
   resumes by itself, from any instance. There is no voice surface; the event surface is `chat`.

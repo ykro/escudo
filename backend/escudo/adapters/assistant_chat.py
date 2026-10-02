@@ -1,4 +1,4 @@
-"""Escudo Assistant: the customer's typed chat (WebSocket /assistant/chat, contracts/tools.md).
+"""Asistente Escudo: the customer's typed chat (WebSocket /assistant/chat, contracts/tools.md).
 
 An ADK agent on GEMINI_MODEL that acts only through Escudo's *MCP tools* (loopback to /mcp with the
 customer's own token), so it has exactly the same powers — and the same approval gates — as any
@@ -35,6 +35,7 @@ APP_NAME = "escudo_assistant"
 CHAT_SESSIONS = "chat_sessions"
 HISTORY_TURNS = 30  # messages replayed into the model each turn
 APPROVAL_POLL_SECONDS = 1.0
+CHAT_MODEL_TIMEOUT_SECONDS = 30  # per model call (normal: 1-5 s)
 APPROVAL_WATCH_SECONDS = 15 * 60
 
 INSTRUCTION = """Eres el Asistente Escudo, el chat de la aseguradora Escudo en la app de la clienta.
@@ -47,6 +48,7 @@ Cuando la clienta tuvo un choque, ayúdala con todo usando tus herramientas:
 3. select_repair_shop, accept_deductible y sign_claim necesitan su aprobación: cuando una herramienta
    responda pending_approval, dile en una oración que le llegó una notificación para aprobar con su huella
    y detente: no llames más herramientas en ese turno.
+   Para select_repair_shop usa el shop_id y el slot exactos de list_repair_options.
 4. Cuando recibas «[Aviso de Escudo] La clienta aprobó …», repite esa misma herramienta con los mismos
    datos y el approval_id, y sigue con el siguiente paso pendiente sin preguntar. Si rechazó, no lo hagas.
 Nunca digas que aprobaste por ella: no puedes aprobar. No inventes montos, horarios ni identificadores:
@@ -88,7 +90,8 @@ def build_agent(services: Services, token: str | None, run_id: str | None) -> Ba
         headers["X-Escudo-Run-Id"] = run_id
     tools = McpToolset(connection_params=StreamableHTTPConnectionParams(
         url=f"http://127.0.0.1:{services.settings.port}/mcp", headers=headers, timeout=60))
-    return LlmAgent(name=APP_NAME, model=gemini(services.settings), instruction=INSTRUCTION, tools=[tools],
+    return LlmAgent(name=APP_NAME, model=gemini(services.settings, timeout_seconds=CHAT_MODEL_TIMEOUT_SECONDS),
+                    instruction=INSTRUCTION, tools=[tools],
                     generate_content_config=types.GenerateContentConfig(
                         thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW)))
 

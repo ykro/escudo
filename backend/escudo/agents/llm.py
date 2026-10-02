@@ -11,6 +11,13 @@ from ..config import Settings
 RETRY = types.HttpRetryOptions(attempts=3, initial_delay=1.0, max_delay=8.0, http_status_codes=[429, 500, 502, 503, 504])
 
 
-def gemini(settings: Settings) -> Gemini:
-    return Gemini(model=settings.gemini_model, retry_options=RETRY)
+def gemini(settings: Settings, timeout_seconds: float | None = None) -> Gemini:
+    """timeout_seconds bounds each model call: on 2026-10-02 one chat call stalled for 2 minutes. A
+    timed-out turn surfaces as an error frame and the conversation continues with the next message."""
+    if timeout_seconds is None:
+        return Gemini(model=settings.gemini_model, retry_options=RETRY)
+    options = types.HttpOptions(timeout=int(timeout_seconds * 1000), retry_options=RETRY)
+    return Gemini(model=settings.gemini_model, retry_options=RETRY,
+                  client_kwargs={"vertexai": True, "project": settings.project_id, "location": settings.location,
+                                 "http_options": options})
 

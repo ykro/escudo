@@ -1,4 +1,4 @@
-"""Scripted chat scenario: the customer types to the Escudo Assistant, as on the phone.
+"""Scripted chat scenario: the customer types to Asistente Escudo, as on the phone.
 
     uv run python -m escudo.chat_scenario --base-url https://escudo-api-….run.app --test-mode
 
