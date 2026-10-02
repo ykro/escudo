@@ -3,7 +3,7 @@
     /policy, /claims, ...              REST (Android, web)          adapters/rest.py
     /mcp                               MCP streamable HTTP          adapters/mcp_server.py
     /a2a/escudo|tow|repair             A2A + Agent Cards            agents/
-    /assistant/live                    voice (ADK + Gemini Live)    adapters/assistant_live.py
+    /assistant/chat                    typed chat (ADK + MCP tools) adapters/assistant_chat.py
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from fastapi import FastAPI  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 
 from . import seed  # noqa: E402
-from .adapters import assistant_live, rest  # noqa: E402
+from .adapters import assistant_chat, rest  # noqa: E402
 from .adapters.mcp_server import build_mcp  # noqa: E402
 from .agents import escudo_agent, repair_agent, tow_agent  # noqa: E402
 from .agents.hosting import PARTNER_KEY_HEADER, a2a_routes  # noqa: E402
@@ -68,11 +68,10 @@ def create_app(services: Services | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.services = services
-    app.state.assistant_hub = assistant_live.AssistantHub()
     app.add_exception_handler(EscudoError, rest.escudo_error_handler)
     app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"], expose_headers=["X-Reset-Seconds"])
     app.include_router(rest.router)
-    app.include_router(assistant_live.router)
+    app.include_router(assistant_chat.router)
 
     if settings.a2a_shared_secret:
         app.middleware("http")(partner_key_guard(settings.a2a_shared_secret))

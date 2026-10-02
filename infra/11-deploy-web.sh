@@ -29,12 +29,13 @@ NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${PROJECT_ID}.firebaseapp.com
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=${PROJECT_ID}
 ENV
 
-# min-instances=1: the presenter must answer instantly on stage. no-cpu-throttling + 1 h timeout:
-# the presenter keeps a Server-Sent Events stream open for the whole talk.
+# min-instances 0 by default; `make stage-on` keeps one warm on talk days. no-cpu-throttling + 1 h
+# timeout: the presenter keeps a Server-Sent Events stream open for the whole talk.
+MIN_INSTANCES="${MIN_INSTANCES:-0}"
 deploy_run "$SERVICE" "$STAGE" \
   --service-account="$SA" \
   --allow-unauthenticated \
-  --min-instances=1 --max-instances=2 \
+  --min-instances="$MIN_INSTANCES" --max-instances=2 \
   --cpu=1 --memory=512Mi --no-cpu-throttling --timeout=3600 \
   --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT_ID},FIRESTORE_DATABASE=${FIRESTORE_DATABASE}"
 

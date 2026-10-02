@@ -11,8 +11,9 @@ import asyncio
 import time
 from datetime import datetime, timedelta, timezone
 
+from .models import now_iso
 from .repository import Repository
-from .repository.repository import CUSTOMERS, DEVICES, POLICIES, RESETTABLE, SHOPS, TOW_PROVIDERS
+from .repository.repository import CUSTOMERS, DEVICES, POLICIES, RESETTABLE, RUNS, SHOPS, TOW_PROVIDERS
 
 GT = timezone(timedelta(hours=-6))  # Guatemala, no DST
 ORIGIN = {"type": "synthetic", "generator": "backend/escudo/seed.py", "model": None, "prompt": None, "seed": 2027}
@@ -114,6 +115,43 @@ async def write_seed(repo: Repository) -> None:
     await asyncio.gather(*writes)
 
 
+RUN_PREFIX = "run-"
+
+
+async def create_run(repo: Repository, auth) -> dict:  # noqa: ANN001
+    """An isolated, fictional customer for one scenario run: same persona and coverage as the seed,
+    its own ids, policy and Firebase login. Runs never see each other's claims (or the stage customer's)."""
+    import secrets
+    import string
+
+    run_id = RUN_PREFIX + "".join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(6))
+    customer_id = f"cus_{run_id}"
+    origin = {**ORIGIN, "run_id": run_id}
+    customer = {**CUSTOMER, "customer_id": customer_id, "email": f"{run_id}@escudo-demo.example", "ephemeral": True,
+                "run_id": run_id, "origin": origin}
+    policy = {**POLICY, "policy_id": f"POL-{run_id.upper()}", "customer_id": customer_id,
+              "holder": {**POLICY["holder"], "customer_id": customer_id}, "ephemeral": True, "run_id": run_id, "origin": origin}
+    email, password = await auth.create_run_user(run_id, customer_id)
+    await asyncio.gather(
+        repo.store.set(CUSTOMERS, customer_id, customer),
+        repo.store.set(POLICIES, policy["policy_id"], policy),
+        repo.store.set(RUNS, run_id, {"run_id": run_id, "customer_id": customer_id, "uid": f"run_{run_id}", "created_at": now_iso()}),
+    )
+    return {"run_id": run_id, "customer_id": customer_id, "email": email, "password": password}
+
+
+async def drop_run_customers(repo: Repository, auth) -> int:  # noqa: ANN001
+    """Run customers' Firebase users and devices (their Firestore docs go with the cleared collections)."""
+    runs = await repo.store.where(RUNS)
+    run_customers = {r["customer_id"] for r in runs}
+    devices = [d for d in await repo.store.where(DEVICES) if d.get("customer_id") in run_customers]
+    await asyncio.gather(
+        auth.delete_run_users([r["uid"] for r in runs]),
+        *(repo.store.delete(DEVICES, d.get("device_key") or d.get("device_id")) for d in devices),
+    )
+    return len(runs)
+
+
 async def drop_keyless_devices(repo: Repository) -> int:
     """Devices registered without an approval key (escudo-approval:v1) can never approve and only make
     pushes fail; reset removes them. Keyed devices (the phone, the scenario's test device) stay."""
@@ -122,9 +160,11 @@ async def drop_keyless_devices(repo: Repository) -> int:
     return len(stale)
 
 
-async def reset(repo: Repository) -> float:
-    """Clear claims/approvals/events and restore the seed (`make reset`). Returns seconds taken."""
+async def reset(repo: Repository, auth=None) -> float:  # noqa: ANN001
+    """Clear claims/approvals/events/chats and run customers, restore the seed (`make reset`)."""
     started = time.perf_counter()
+    if auth is not None:
+        await drop_run_customers(repo, auth)
     await asyncio.gather(*(repo.store.clear(c) for c in RESETTABLE), drop_keyless_devices(repo))
     await write_seed(repo)
     return time.perf_counter() - started

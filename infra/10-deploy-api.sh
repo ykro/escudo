@@ -29,16 +29,18 @@ rsync -a --exclude .venv --exclude __pycache__ --exclude .pytest_cache --exclude
 mkdir -p "$STAGE/contracts" && cp "$ROOT/contracts/"*.json "$ROOT/contracts/"*.md "$ROOT/contracts/"*.yaml "$STAGE/contracts/"
 
 ENV_VARS="GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION},GOOGLE_GENAI_USE_ENTERPRISE=true"
-ENV_VARS+=",GEMINI_MODEL=${GEMINI_MODEL},GEMINI_LIVE_MODEL=${GEMINI_LIVE_MODEL},GEMINI_LIVE_LOCATION=${GEMINI_LIVE_LOCATION}"
+ENV_VARS+=",GEMINI_MODEL=${GEMINI_MODEL}"
 ENV_VARS+=",FIRESTORE_DATABASE=${FIRESTORE_DATABASE},CLAIMS_BUCKET=${CLAIMS_BUCKET},DEMO_CUSTOMER_ID=${DEMO_CUSTOMER_ID}"
 ENV_VARS+=",PUBLIC_BASE_URL=${URL},A2A_PEERS=${URL}/a2a/tow;${URL}/a2a/repair,MOCK_AI=0,MOCK_AUTH=0"
 
-# min-instances=1: no cold start on stage. max-instances=1: the voice session and the approval that
-#   nudges it live in the same process. no-cpu-throttling + 1 h timeout: WebSocket voice sessions.
+# min-instances: 0 by default (scale to zero); `make stage-on` sets 1 on talk days, `make stage-off` back
+#   to 0. Up to 3 instances: chat transcripts and approval waits live in Firestore, so any instance can
+#   serve any request. no-cpu-throttling + 1 h timeout: chat WebSockets stay open during the talk.
+MIN_INSTANCES="${MIN_INSTANCES:-0}"
 deploy_run "$SERVICE" "$STAGE" \
   --service-account="$SA" \
   --allow-unauthenticated \
-  --min-instances=1 --max-instances=1 --concurrency=80 \
+  --min-instances="$MIN_INSTANCES" --max-instances=3 --concurrency=80 \
   --cpu=1 --memory=1Gi --no-cpu-throttling --timeout=3600 --session-affinity \
   --set-env-vars="^@^$(echo "$ENV_VARS" | tr ',' '@' | tr ';' ',')" \
   --set-secrets="ADMIN_TOKEN=escudo-admin-token:latest,A2A_SHARED_SECRET=escudo-a2a-secret:latest"
@@ -46,5 +48,5 @@ deploy_run "$SERVICE" "$STAGE" \
 say "Deployed: $URL"
 echo "  MCP:         $URL/mcp"
 echo "  Agent Cards: $URL/a2a/{escudo,tow,repair}/.well-known/agent-card.json"
-echo "  Voice:       ${URL/https/wss}/assistant/live"
+echo "  Chat:        ${URL/https/wss}/assistant/chat"
 echo "  ADMIN_TOKEN: gcloud secrets versions access latest --secret=escudo-admin-token"

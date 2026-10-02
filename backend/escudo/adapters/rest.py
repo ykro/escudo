@@ -175,12 +175,7 @@ async def _decide(approval_id: str, approve: bool, request: Request, caller: Cal
         run_id=caller.run_id or approval.claim_id or "demo", claim_id=approval.claim_id, tool=approval.tool,
         autonomy="needs_approval", approval_id=approval.approval_id, data={"device_id": device_id} if device_id else {},
     )
-    if approve:
-        # If the customer is talking to the voice assistant, let it continue on its own.
-        request.app.state.assistant_hub.notify(
-            caller.customer_id,
-            f"[Aviso de Escudo] La clienta aprobó {approval.tool} en su teléfono. approval_id={approval.approval_id}. Continúa.",
-        )
+    # A chat waiting on this approval notices it in Firestore and resumes (adapters/assistant_chat.py).
     return approval.model_dump(mode="json", include=set(APPROVAL_FIELDS))
 
 
@@ -230,20 +225,34 @@ async def post_event(event: dict[str, Any], request: Request, caller: Caller = D
     return Response(status_code=204)
 
 
-@router.post("/admin/reset", status_code=204)
-async def reset(
-    request: Request, x_admin_token: str | None = Header(default=None), authorization: str | None = Header(default=None)
-) -> Response:
+def require_admin(request: Request, x_admin_token: str | None, authorization: str | None) -> Services:
     services = services_of(request)
     expected = services.settings.admin_token
     given = x_admin_token or bearer(authorization) or ""
     if expected:
         if not hmac.compare_digest(given, expected):
-            raise Unauthorized("admin_only", "Solo el presentador puede reiniciar la demo.")
+            raise Unauthorized("admin_only", "Solo el presentador puede hacer esto.")
     elif not services.settings.mock_auth:
         raise Unauthorized("admin_disabled", "ADMIN_TOKEN no está configurado.")
-    seconds = await seed.reset(services.repo)
+    return services
+
+
+@router.post("/admin/reset", status_code=204)
+async def reset(
+    request: Request, x_admin_token: str | None = Header(default=None), authorization: str | None = Header(default=None)
+) -> Response:
+    services = require_admin(request, x_admin_token, authorization)
+    seconds = await seed.reset(services.repo, services.auth)
     return Response(status_code=204, headers={"X-Reset-Seconds": f"{seconds:.2f}"})
+
+
+@router.post("/admin/runs", status_code=201)
+async def create_run(
+    request: Request, x_admin_token: str | None = Header(default=None), authorization: str | None = Header(default=None)
+) -> dict[str, str]:
+    """An isolated customer for one scenario run (its own policy, login and run id)."""
+    services = require_admin(request, x_admin_token, authorization)
+    return await seed.create_run(services.repo, services.auth)
 
 
 @router.get("/health", include_in_schema=False)  # not /healthz: Cloud Run's front end reserves that path

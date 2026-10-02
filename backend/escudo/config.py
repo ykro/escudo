@@ -32,8 +32,6 @@ class Settings:
     project_id: str = "ai-experiments-487722"
     location: str = "global"
     gemini_model: str = ""
-    gemini_live_model: str = ""
-    gemini_live_location: str = "us-central1"
     firestore_database: str = "escudo"
     claims_bucket: str = "ai-experiments-487722-escudo-claims"
     mock_ai: bool = False
@@ -56,8 +54,6 @@ class Settings:
             project_id=os.environ.get("GOOGLE_CLOUD_PROJECT", cls.project_id),
             location=os.environ.get("GOOGLE_CLOUD_LOCATION", cls.location),
             gemini_model=os.environ.get("GEMINI_MODEL", ""),
-            gemini_live_model=os.environ.get("GEMINI_LIVE_MODEL", ""),
-            gemini_live_location=os.environ.get("GEMINI_LIVE_LOCATION", cls.gemini_live_location),
             firestore_database=os.environ.get("FIRESTORE_DATABASE", cls.firestore_database),
             claims_bucket=os.environ.get("CLAIMS_BUCKET", cls.claims_bucket),
             mock_ai=mock_ai,

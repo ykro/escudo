@@ -31,7 +31,9 @@ async def main(command: str) -> None:
         email, _ = ensure_customer_login(settings.project_id, DEPLOYED_URL)
         print(f"cliente en Firebase Auth: {email} (contraseña en {ENV_LOCAL})")
     elif command == "reset":
-        seconds = await reset(repo)
+        from .auth import Authenticator
+
+        seconds = await reset(repo, Authenticator(settings))
         print(f"reset listo en {seconds:.1f} s (db '{settings.firestore_database}')")
     else:
         raise SystemExit("uso: python -m escudo.admin seed|reset")

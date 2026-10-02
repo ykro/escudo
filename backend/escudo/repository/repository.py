@@ -20,7 +20,9 @@ DEVICE_AUDIT = "device_audit"
 
 # What `make reset` wipes. Devices survive a reset on purpose: the presenter's
 # phone registers its FCM token once, before the talk.
-RESETTABLE = (CLAIMS, APPROVALS, EVENTS, POLICIES, CUSTOMERS, SHOPS, TOW_PROVIDERS)
+CHAT_SESSIONS = "chat_sessions"
+RUNS = "runs"
+RESETTABLE = (CLAIMS, APPROVALS, EVENTS, POLICIES, CUSTOMERS, SHOPS, TOW_PROVIDERS, CHAT_SESSIONS, RUNS)
 
 
 class Repository:

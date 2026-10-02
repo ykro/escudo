@@ -6,8 +6,10 @@ then prints a timing table. Acceptance: < 3 minutes, exactly 3 approvals.
     uv run python -m escudo.scenario --base-url http://127.0.0.1:8080            # waits for you to approve on the phone
     uv run python -m escudo.scenario --base-url URL --test-mode --auto-approve    # rehearsal: approves via the human endpoint
 
-`--auto-approve` plays the customer's phone: it registers a software test device
-(escudo/test_device.py, key in infra/.generated/) and signs each decision with it,
+Each `--auto-approve` run gets its own isolated customer (POST /admin/runs: policy, login, run id),
+so runs never collide with each other or with the stage phone; `--shared` uses the seeded customer.
+`--auto-approve` plays the customer's phone: it registers a fresh software test device
+(escudo/test_device.py) for the run and signs each decision with it,
 exactly like the app (escudo-approval:v1). Refused unless `--test-mode` is set: in a
 real run only the customer approves, on her phone.
 """
@@ -64,7 +66,6 @@ class Report:
 
 
 Approver = Callable[[str, str], Awaitable[None]]  # (approval_id, args_hash)
-DEVICE_KEY = Path(__file__).resolve().parents[2] / "infra" / ".generated" / "scenario-device.pem"
 
 
 def load_sample_photos() -> list[str]:
@@ -196,12 +197,50 @@ async def firebase_id_token(api_key: str, email: str | None, password: str | Non
         return r.json()["idToken"]
 
 
+WEB_URL = os.environ.get("ESCUDO_WEB_URL", "https://escudo-web-611681112050.us-central1.run.app")
+
+
+@dataclass
+class RunSession:
+    """Who the runner is for this run: an isolated customer (POST /admin/runs) or the seeded one."""
+
+    token: str | None
+    run_id: str | None
+    label: str
+
+    def headers(self, actor: str = "gemini") -> dict[str, str]:
+        h = {"X-Escudo-Actor": actor}
+        if self.token:
+            h["Authorization"] = f"Bearer {self.token}"
+        if self.run_id:
+            h["X-Escudo-Run-Id"] = self.run_id
+        return h
+
+
+async def prepare_run(base: str, *, isolated: bool, token: str | None = None) -> RunSession:
+    """With an admin token + Firebase web key: a brand-new customer for this run, so concurrent runs
+    (and the stage phone) never collide. Otherwise the seeded customer (.env.local)."""
+    api_key = os.environ.get("FIREBASE_WEB_API_KEY")
+    admin = os.environ.get("ADMIN_TOKEN")
+    if token:
+        return RunSession(token, None, "token dado")
+    if isolated and api_key and admin:
+        async with httpx2.AsyncClient(base_url=base, timeout=60) as http:
+            r = await http.post("/admin/runs", headers={"X-Admin-Token": admin})
+            r.raise_for_status()
+            run = r.json()
+        return RunSession(await firebase_id_token(api_key, run["email"], run["password"]), run["run_id"], f"cliente aislado {run['customer_id']}")
+    if api_key:
+        token = await firebase_id_token(api_key, os.environ.get("ESCUDO_CUSTOMER_EMAIL"), os.environ.get("ESCUDO_CUSTOMER_PASSWORD"))
+        return RunSession(token, None, "clienta sembrada")
+    return RunSession(None, None, "sin sesión (MOCK_AUTH)")
+
+
 async def main() -> int:
     parser = argparse.ArgumentParser(description="Escudo scenario runner (MCP)")
     parser.add_argument("--base-url", default=os.environ.get("ESCUDO_BASE_URL", "http://127.0.0.1:8080"))
     parser.add_argument("--token", default=os.environ.get("ESCUDO_ID_TOKEN"), help="Firebase ID token of the customer")
-    parser.add_argument("--sign-in", action="store_true",
-                        help="sign in as the seeded customer (FIREBASE_WEB_API_KEY + ESCUDO_CUSTOMER_EMAIL/PASSWORD from .env.local)")
+    parser.add_argument("--shared", action="store_true", help="use the seeded customer instead of an isolated run customer")
     parser.add_argument("--test-mode", action="store_true", help="rehearsal run (required for --auto-approve)")
     parser.add_argument("--auto-approve", action="store_true", help="approve through the human endpoint (test mode only)")
     parser.add_argument("--approve-delay", type=float, default=float(os.environ.get("APPROVE_DELAY", "0")),
@@ -210,20 +249,17 @@ async def main() -> int:
     if args.auto_approve and not args.test_mode:
         parser.error("--auto-approve is only allowed with --test-mode: in a real run the customer approves on the phone")
 
-    token = args.token
-    if not token and args.sign_in:
-        token = await firebase_id_token(
-            os.environ["FIREBASE_WEB_API_KEY"], os.environ.get("ESCUDO_CUSTOMER_EMAIL"), os.environ.get("ESCUDO_CUSTOMER_PASSWORD")
-        )
-    headers = {"X-Escudo-Actor": "gemini"}
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
-
     base = args.base_url.rstrip("/")
-    print(f"\nEscudo · escenario vía MCP contra {base}\n")
+    session = await prepare_run(base, isolated=not args.shared and args.auto_approve, token=args.token)
+    print(f"\nEscudo · escenario vía MCP contra {base} · {session.label}")
+    if session.run_id:
+        print(f"Presentador: {WEB_URL}/presenter?run={session.run_id}")
+    print()
+    headers = session.headers()
     async with httpx2.AsyncClient(base_url=base, headers=headers, timeout=120) as http:
         if args.auto_approve:
-            device = TestDevice.load_or_create(DEVICE_KEY)
+            # The runner plays the customer's phone: a fresh software device for this run.
+            device = TestDevice(f"scenario-{session.run_id or 'shared'}")
             (await http.post("/devices", json=device.registration())).raise_for_status()
             approver = human_endpoint_approver(http, device, args.approve_delay)
         else:

@@ -5,12 +5,11 @@ Preview-era APIs move fast; these are the versions the backend is built and test
 
 | Piece | Version | Notes |
 | --- | --- | --- |
-| Agent Development Kit (`google-adk[a2a]`) | 2.10.0 | `LlmAgent`, `Runner.run_live` + `LiveRequestQueue` (bidi streaming), `McpToolset` + `StreamableHTTPConnectionParams`, `RemoteA2aAgent`, `A2aAgentExecutor`. ADK 2.10 pins FastAPI < 0.142 |
+| Agent Development Kit (`google-adk[a2a]`) | 2.10.0 | `LlmAgent`, `Runner.run_async` with SSE streaming (chat), `McpToolset` + `StreamableHTTPConnectionParams`, `RemoteA2aAgent`, `A2aAgentExecutor`. ADK 2.10 pins FastAPI < 0.142 |
 | A2A Python SDK (`a2a-sdk[http-server]`) | 1.2.1 | A2A protocol **1.0** (`PROTOCOL_VERSION_CURRENT`); Agent Card at **`/.well-known/agent-card.json`** relative to each agent's base URL; JSON-RPC binding; cards are protobuf `AgentCard` with `supportedInterfaces` |
 | MCP Python SDK (`mcp`) | 2.2.0 | `mcp.server.mcpserver.MCPServer` (FastMCP was renamed in 2.x), streamable HTTP at `/mcp` with `stateless_http=True`, `json_response=True`; auth via the SDK's `TokenVerifier` + `AuthSettings` (Firebase ID tokens); clients use `httpx2` |
 | Google Gen AI SDK (`google-genai`) | 2.25.0 | Vertex AI (`vertexai=True`), structured output with Pydantic `response_schema` |
-| Gemini Live on Vertex AI | `GEMINI_LIVE_MODEL=gemini-3.8-live` in **`us-central1`** | Verified: the `global` endpoint answers "model not found" for every Live model tried (`gemini-3.8-live`, `gemini-3.8-flash-live`, `gemini-3.1-flash-live-preview`); `gemini-3.8-live` streams 24 kHz PCM from `us-central1`. ADK gets the region via `Gemini(client_kwargs={"location": …})` |
-| Text / vision model | `GEMINI_MODEL=gemini-3.8-flash` (global) | Damage assessor + Tow / Repair / Escudo agents (`thinking_level=LOW` for partners) |
+| Text / vision model | `GEMINI_MODEL=gemini-3.8-flash` (global) | Damage assessor, the Escudo Assistant chat and the Escudo A2A agent (`thinking_level=LOW`); Tow/Repair use no model |
 | Image model | `IMAGE_MODEL=gemini-3.1-flash-lite-image` (global) | Sample photos; often rate limited (429), the script backs off |
 | firebase-admin | 7.7.0 | ID token verification, FCM `send_each_for_multicast`, Auth user for `make seed` |
 | google-cloud-firestore / storage | 2.33.0 / 3.15.1 | Async Firestore client on the named database `escudo` |
@@ -33,3 +32,7 @@ Preview-era APIs move fast; these are the versions the backend is built and test
   `assessment_timing`.
 - pytest runs async tests with the anyio plugin: MCP's task groups need fixture setup and teardown
   in the same task (pytest-asyncio splits them).
+- Escudo Assistant is a typed chat (`/assistant/chat`): an ADK `LlmAgent` on `GEMINI_MODEL` with
+  `McpToolset` looping back to `/mcp`. Each turn rebuilds the conversation from Firestore
+  (`chat_sessions`) into a fresh in-memory ADK session, and a pending approval is polled in Firestore,
+  so any Cloud Run instance can serve any turn and the chat resumes after an approval (`max-instances=3`).

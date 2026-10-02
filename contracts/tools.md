@@ -139,8 +139,8 @@ Server → client:
 | --- | --- | --- |
 | `ready` | `session_id`, `mock` | Authenticated; send messages |
 | `text` | `text`, `final` | Assistant reply. `final:false` frames are deltas to append; the `final:true` frame carries the whole message and replaces the deltas |
-| `tool_call` | `name` | The assistant called an MCP tool |
-| `tool_result` | `name` | The tool answered |
+| `tool_call` | `name`, `call_id` | The assistant called an MCP tool (once per call) |
+| `tool_result` | `name`, `call_id` | That call answered; `call_id` matches its `tool_call` |
 | `approval_required` | `approval_id`, `tool`, `summary`, `reason`, `args_hash` | A gated tool returned `pending_approval`; the push is on its way |
 | `approval_resolved` | `approval_id`, `tool`, `status` (`approved`\|`rejected`) | The customer decided on her phone; the assistant continues **on its own** (no message needed) |
 | `turn_complete` | – | The assistant finished a turn |

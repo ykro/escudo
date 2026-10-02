@@ -62,6 +62,33 @@ class Authenticator:
         return await asyncio.to_thread(auth.verify_id_token, token)
 
 
+    # --- per-run customers (POST /admin/runs) ----------------------------------------------
+    async def create_run_user(self, run_id: str, customer_id: str) -> tuple[str, str]:
+        """A Firebase email/password user whose token acts as the run's own customer."""
+        import secrets
+
+        email, password = f"{run_id}@escudo-demo.example", secrets.token_urlsafe(14)
+        if self._settings.mock_auth:
+            return email, password
+        from firebase_admin import auth
+
+        def create() -> None:
+            uid = f"run_{run_id}"
+            auth.create_user(uid=uid, email=email, password=password, email_verified=True, display_name=f"Corrida {run_id}")
+            auth.set_custom_user_claims(uid, {"customer_id": customer_id})
+
+        await asyncio.to_thread(create)
+        return email, password
+
+    async def delete_run_users(self, uids: list[str]) -> None:
+        if self._settings.mock_auth or not uids:
+            return
+        from firebase_admin import auth
+
+        # Only ids we created (run_…): the Firebase project is shared with other demos.
+        await asyncio.to_thread(auth.delete_users, [u for u in uids if u.startswith("run_")])
+
+
 def bearer(authorization: str | None) -> str | None:
     if authorization and authorization.lower().startswith("bearer "):
         return authorization[7:].strip() or None

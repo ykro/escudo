@@ -26,6 +26,7 @@ grant roles/datastore.user \
   "expression=resource.name==\"projects/${PROJECT_ID}/databases/${DB}\",title=escudo-db-only,description=Firestore database ${DB} only"
 grant roles/aiplatform.user
 grant roles/firebasecloudmessaging.admin   # the narrowest predefined role with cloudmessaging.messages.create
+grant roles/firebaseauth.admin             # POST /admin/runs creates (and reset deletes) run_* users
 
 say "Bucket gs://${BUCKET}"
 gcloud storage buckets add-iam-policy-binding "gs://${BUCKET}" \
