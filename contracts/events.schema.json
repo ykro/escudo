@@ -8,9 +8,9 @@
   "properties": {
     "id": { "type": "string" },
     "ts": { "type": "string", "format": "date-time" },
-    "run_id": { "type": "string", "description": "Groups one scenario run (usually the claim id or a session id)." },
+    "run_id": { "type": "string", "description": "Groups one run on the presenter timeline: X-Escudo-Run-Id when sent (scenario runs), else the customer's run (run customers: their run id; the stage customer: her customer id), so asides without a claim stay on the same timeline." },
     "claim_id": { "type": ["string", "null"] },
-    "actor": { "type": "string", "enum": ["customer", "escudo_assistant", "escudo_agent", "tow_agent", "repair_agent", "damage_assessor", "gemini", "backend"] },
+    "actor": { "type": "string", "enum": ["customer", "escudo_assistant", "escudo_agent", "tow_agent", "repair_agent", "damage_assessor", "gemini", "external_agent", "backend"] },
     "surface": { "type": "string", "enum": ["android", "web", "mcp", "a2a", "rest", "chat", "appfunctions", "webmcp"] },
     "kind": { "type": "string", "enum": ["tool_call", "tool_result", "a2a_request", "a2a_response", "approval_requested", "approval_granted", "approval_rejected", "message", "error"] },
     "tool": { "type": ["string", "null"], "description": "Capability name from contracts/tools.md." },

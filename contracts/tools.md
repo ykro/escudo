@@ -35,6 +35,14 @@ One domain function per capability lives in `backend/escudo/capabilities/`. Ever
 6. Before asking the human, the server runs the capability's precheck (claim exists, shop/slot was offered,
    deductible not already accepted, …), so a customer is never asked to approve something that would fail.
 
+## Claim ids from agents
+
+Agents (MCP, chat) refer to claims by `claim_id`. If an agent passes an id this customer does not
+have — or omits it on a tool that needs one — the server uses the customer's **active claim** (the
+newest one not yet signed; else the newest). Models do invent ids; the customer's claim is never
+mixed up with someone else's because the lookup is always scoped to the token's customer. The chat
+also tells the model the active claim id at the start of every turn.
+
 ## Device-bound approvals: `escudo-approval:v1`
 
 **Register the device** (once per install, and whenever the key or FCM token changes):
@@ -92,11 +100,12 @@ exactly like the app.
   approvals are recorded by the backend itself). The server always sets `id` and `ts`; a `claim_id` must
   belong to the caller (else `403`). Schema: `events.schema.json`.
 - REST caller labels (optional headers on every REST call): `X-Escudo-Surface` (a `surface` value of
-  events.schema.json, default `rest`), `X-Escudo-Actor` (an `actor` value, default `customer`),
-  `X-Escudo-Run-Id` (groups a run; default the claim id). The backend writes the capability's
+  events.schema.json, default `rest`), `X-Escudo-Actor` (an `actor` value, default `customer`; agents the
+  server cannot identify — AppFunctions from adb, WebMCP, MCP clients — are `external_agent`),
+  `X-Escudo-Run-Id` (groups a run; default: the customer's run, see `run_id` in events.schema.json). The backend writes the capability's
   `tool_call` / `tool_result` / `approval_requested` events with these labels, so clients do not post
   duplicates to `/events`. Unknown values fall back to the defaults. MCP clients may send
-  `X-Escudo-Actor` and `X-Escudo-Run-Id` (surface is always `mcp`; actor defaults to `gemini`).
+  `X-Escudo-Actor` and `X-Escudo-Run-Id` (surface is always `mcp`; actor defaults to `external_agent`).
 
 ## Approval push (FCM)
 

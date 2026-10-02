@@ -2,7 +2,7 @@
 
 What the contracts in this folder say today, in one page, for anyone implementing a client. Details
 live in `openapi.yaml` (REST), `tools.md` (capabilities, approvals, push, chat) and
-`events.schema.json` (timeline). Last change: 2026-10-01 — chat replaces voice; per-run customers.
+`events.schema.json` (timeline). Last change: 2026-10-02 — `external_agent` actor, customer run ids, active-claim defaulting.
 
 ## Identity
 - Every REST, MCP, chat and A2A call carries the customer's **Firebase ID token**; the backend acts as
@@ -36,6 +36,11 @@ live in `openapi.yaml` (REST), `tools.md` (capabilities, approvals, push, chat) 
   `text`, `end`; server frames `ready`, `text` (deltas + final), `tool_call` and `tool_result` (paired by `call_id`),
   `approval_required`, `approval_resolved`, `turn_complete`, `error`. After an approval the assistant
   resumes by itself, from any instance. There is no voice surface; the event surface is `chat`.
+- Timeline runs: every event's `run_id` is `X-Escudo-Run-Id` or the customer's run (run customers: their
+  run id; the stage customer: `cus_demo`), so a run's asides (`getCoverage`, `get_policy`) never leave its
+  timeline. Actors the server cannot identify (AppFunctions via adb, WebMCP, MCP clients) are
+  `external_agent`.
+- Agents' `claim_id`: unknown or missing → the customer's active claim (tools.md, *Claim ids from agents*).
 - Timeline: clients may `POST /events` with `kind: "message"` only; the server sets `id` and `ts` and
   rejects `claim_id`s the caller does not own.
 - Runs: `POST /admin/runs` (admin token) creates an isolated customer (policy, Firebase user) for one
