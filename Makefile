@@ -67,18 +67,20 @@ test: ## Pruebas: backend (pytest), Android (unitarias) y web (vitest)
 
 # Each run gets its own customer (POST /admin/runs needs the admin token: Secret Manager in the cloud).
 RUN_ADMIN = $(if $(LOCAL),$${ADMIN_TOKEN},$$(gcloud secrets versions access latest --secret=escudo-admin-token --project=ai-experiments-487722))
+# Escudo's own Firebase web key (infra/07): from Secret Manager in the cloud, from .env locally.
+RUN_WEB_KEY = $(if $(LOCAL),$${FIREBASE_WEB_API_KEY:-},$$(gcloud secrets versions access latest --secret=escudo-web-api-key --project=ai-experiments-487722))
 
 scenario: ## Escenario completo vía MCP con su propio cliente, aprobaciones firmadas (modo prueba; CLOUD=1, APPROVE_DELAY=4)
-	cd $(BACKEND) && ADMIN_TOKEN=$(RUN_ADMIN) uv run $(ENV_FILE) python -m escudo.scenario --base-url $(ESCUDO_BASE_URL) --test-mode --auto-approve
+	cd $(BACKEND) && ADMIN_TOKEN=$(RUN_ADMIN) FIREBASE_WEB_API_KEY=$(RUN_WEB_KEY) uv run $(ENV_FILE) python -m escudo.scenario --base-url $(ESCUDO_BASE_URL) --test-mode --auto-approve
 
 chat-scenario: ## Escenario por chat escrito con su propio cliente: 3 aprobaciones firmadas, < 3 min (CLOUD=1)
-	cd $(BACKEND) && ADMIN_TOKEN=$(RUN_ADMIN) uv run $(ENV_FILE) python -m escudo.chat_scenario --base-url $(ESCUDO_BASE_URL) --test-mode
+	cd $(BACKEND) && ADMIN_TOKEN=$(RUN_ADMIN) FIREBASE_WEB_API_KEY=$(RUN_WEB_KEY) uv run $(ENV_FILE) python -m escudo.chat_scenario --base-url $(ESCUDO_BASE_URL) --test-mode
 
 scenario-live: ## Mismo escenario, pero espera a que apruebes cada paso en el teléfono
-	cd $(BACKEND) && uv run $(ENV_FILE) python -m escudo.scenario --base-url $(ESCUDO_BASE_URL) --shared
+	cd $(BACKEND) && FIREBASE_WEB_API_KEY=$(RUN_WEB_KEY) uv run $(ENV_FILE) python -m escudo.scenario --base-url $(ESCUDO_BASE_URL) --shared
 
 # --- cloud ------------------------------------------------------------------------
-infra: ## Crea o verifica todo en GCP desde cero (infra/01..06, idempotente)
+infra: ## Crea o verifica todo en GCP desde cero (infra/01..07, idempotente)
 	@for s in infra/0[1-9]-*.sh; do bash "$$s" || exit 1; done
 
 deploy: deploy-api deploy-web ## Despliega escudo-api y escudo-web en Cloud Run

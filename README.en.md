@@ -107,7 +107,7 @@ From the repo root (`make help` lists them all):
 | `make scenario` | Full scenario over MCP in test mode, with its own customer (`POST /admin/runs`) and a test device signing the 3 approvals; `CLOUD=1`, `APPROVE_DELAY=4`. Prints `…/presenter?run=<id>` |
 | `make chat-scenario` | Typed-chat scenario: own customer, claim and 3 photos over REST (as the app does), then the chat; 3 signed approvals; < 3 min. Against `make up-mock` the scripted assistant answers; `CLOUD=1`, Gemini |
 | `make scenario-live` | The MCP scenario with the seeded customer (`--shared`); waits for her to approve each step on the phone |
-| `make infra` | Creates or verifies everything in GCP from an empty project: `infra/01..06` (APIs, `escudo` database, bucket, Artifact Registry, Firebase Auth via API, service accounts, Secret Manager) |
+| `make infra` | Creates or verifies everything in GCP from an empty project: `infra/01..07` (APIs, `escudo` database, bucket, Artifact Registry, Firebase Auth via API, service accounts, Secret Manager, Escudo's own Firebase web key) |
 | `make deploy` | `deploy-api` + `deploy-web`; each keeps the service's current `min-instances` |
 | `make deploy-api` | `infra/10-deploy-api.sh`: builds and deploys `escudo-api` |
 | `make deploy-web` | `infra/11-deploy-web.sh`: builds and deploys `escudo-web` |

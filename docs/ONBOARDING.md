@@ -101,12 +101,21 @@ gcloud auth application-default set-quota-project ai-experiments-487722
 - Secretos en Secret Manager, montados por Cloud Run: `escudo-admin-token` (protege `POST /admin/reset`)
   y `escudo-a2a-secret` (Escudo ↔ socios). Los crea `infra/06-secrets.sh` con un valor aleatorio;
   `make reset CLOUD=1` lee el token de ahí. Nada de esto vive en el repo ni en variables de entorno.
-- `FIREBASE_WEB_API_KEY`: la llave web de Firebase (no es secreta, pero no se versiona). Hace falta para
-  `make scenario` contra la nube y para `make deploy-web`:
+- Llave web de Firebase propia de Escudo («Escudo web key», `infra/07-web-api-key.sh`): solo
+  Identity Toolkit, Secure Token e Installations, y solo para los referrers de `escudo-web` y de la web
+  local en `:3217`. Su valor vive en Secret Manager (`escudo-web-api-key`): `make deploy-web` la inyecta
+  en el build y `make scenario|chat-scenario CLOUD=1` la leen de ahí. Para correr en local, cópiala a
+  `FIREBASE_WEB_API_KEY` en `.env` y a `NEXT_PUBLIC_FIREBASE_API_KEY` en `web/.env.local`:
 
   ```bash
-  gcloud services api-keys get-key-string b6c3370b-e8d5-4007-81fc-087e18079c0d --project ai-experiments-487722
+  gcloud secrets versions access latest --secret=escudo-web-api-key --project ai-experiments-487722
   ```
+
+  Los corredores de escenario inician sesión por REST y mandan `Referer: https://escudo-web-…/` para
+  pasar ese filtro. El filtro de referrers solo evita el reuso casual de una llave que todo navegador
+  recibe (cualquiera puede mandar ese encabezado); no es una frontera de seguridad. Lo que Escudo sí
+  aplica está en el servidor: cada llamada actúa como el `customer_id` del ID token verificado y aprobar
+  exige la firma del teléfono.
 
 ## 4. Firebase y la clienta sembrada
 
@@ -157,7 +166,7 @@ make reset            # API local en ESCUDO_BASE_URL (mismo ADMIN_TOKEN que make
 Proyecto `ai-experiments-487722`, región `us-central1`, repositorio de Artifact Registry `charlas2027`.
 Todos los scripts cargan `infra/env.sh` (que lee `infra/app.env`, `APP=escudo`) y son idempotentes.
 
-Desde un proyecto vacío, `make infra` corre los pasos 1 a 6 en orden; cada script crea lo que falta y
+Desde un proyecto vacío, `make infra` corre los pasos 1 a 7 en orden; cada script crea lo que falta y
 deja igual lo que ya existe. La app Android `app.escudo.android` y su `google-services.json` los maneja
 `android/` (`make -C android google-services`).
 
@@ -171,11 +180,12 @@ En orden:
 | 4 | `bash infra/04-service-account.sh` | Cuenta `escudo-api` con lo mínimo: `datastore.user` solo sobre la base `escudo` (condición IAM), `aiplatform.user`, `firebasecloudmessaging.admin` y `storage.objectUser` solo sobre el bucket de reclamos |
 | 5 | `bash infra/05-web-service-account.sh` | Cuenta `escudo-web`: `datastore.viewer` solo sobre la base `escudo` |
 | 6 | `bash infra/06-secrets.sh` | Secretos `escudo-admin-token` y `escudo-a2a-secret` en Secret Manager; `escudo-api` solo puede leer esos dos |
-| 7 | `make seed` | Datos y login de la clienta (sección 4) |
-| 8 | `make deploy-api` (`infra/10-deploy-api.sh`) | Prepara un contexto con `backend/` + `contracts/`, construye con Cloud Build y despliega `escudo-api`: `--max-instances=3 --concurrency=80 --cpu=1 --memory=1Gi --no-cpu-throttling --timeout=3600 --session-affinity`; `--min-instances` conserva el valor actual del servicio (0 si es nuevo; `MIN_INSTANCES=…` lo fuerza). Monta `ADMIN_TOKEN` y `A2A_SHARED_SECRET` desde Secret Manager (`--set-secrets`) y fija `PUBLIC_BASE_URL` y `A2A_PEERS` a la URL determinista del servicio |
-| 9 | `make deploy-web` (`infra/11-deploy-web.sh`) | Escribe `.env.production` con la configuración pública (`NEXT_PUBLIC_*`), construye y despliega `escudo-web` (`--max-instances=2`, 3600 s de timeout para el stream SSE; `--min-instances` también conserva el valor actual) |
+| 7 | `bash infra/07-web-api-key.sh` | Llave web de Firebase «Escudo web key» (APIs y referrers restringidos) y su valor en el secreto `escudo-web-api-key` (sección 3) |
+| 8 | `make seed` | Datos y login de la clienta (sección 4) |
+| 9 | `make deploy-api` (`infra/10-deploy-api.sh`) | Prepara un contexto con `backend/` + `contracts/`, construye con Cloud Build y despliega `escudo-api`: `--max-instances=3 --concurrency=80 --cpu=1 --memory=1Gi --no-cpu-throttling --timeout=3600 --session-affinity`; `--min-instances` conserva el valor actual del servicio (0 si es nuevo; `MIN_INSTANCES=…` lo fuerza). Monta `ADMIN_TOKEN` y `A2A_SHARED_SECRET` desde Secret Manager (`--set-secrets`) y fija `PUBLIC_BASE_URL` y `A2A_PEERS` a la URL determinista del servicio |
+| 10 | `make deploy-web` (`infra/11-deploy-web.sh`) | Escribe `.env.production` con la configuración pública (`NEXT_PUBLIC_*`, la llave web desde `escudo-web-api-key`), construye y despliega `escudo-web` (`--max-instances=2`, 3600 s de timeout para el stream SSE; `--min-instances` también conserva el valor actual) |
 
-`make deploy` corre los pasos 8 y 9. Los modelos y datos que se pasan al servicio salen de
+`make deploy` corre los pasos 9 y 10. Los modelos y datos que se pasan al servicio salen de
 `.env.example` y, encima, de `.env`.
 
 Los dos servicios escalan a cero cuando nadie los usa. El día de la charla, `make stage-on` deja una
@@ -483,7 +493,7 @@ el agente A2A (`agents/escudo_agent.build_a2a_agent`) o una AppFunction (que lla
 | La evaluación de fotos tarda mucho | El perito lanza una llamada de respaldo cada 5 s (hasta 4, gana la primera; límite 45 s, después `assessment_unavailable`). Si `global` está lento para todos, ninguna gana antes: los tiempos quedan en los logs como `assessment_timing` |
 | El chat no sigue solo después de aprobar | La aprobación se decidió con otra conversación cerrada: reabre el chat con la cabecera `X-Escudo-Chat-Session` (la app la guarda) o escribe «sigue» |
 | `make scenario` → 401 en `/admin/runs` | Token de admin distinto al del servidor local (ver fila de `make reset`) o sin acceso a Secret Manager (`CLOUD=1`) |
-| Portal: «No pudimos iniciar sesión»; `make scenario CLOUD=1` falla al iniciar sesión (403 `Requests from referer … are blocked`) | La llave web de Firebase (`Browser key (auto created by Firebase)`) tiene restricción de referrers que no incluye a Escudo. La llave se comparte con otras apps del proyecto: agrega (no reemplaces) `https://escudo-web-611681112050.us-central1.run.app/*`, `https://escudo-web-z63pqhhmxq-uc.a.run.app/*`, `http://localhost:3217/*` y `http://127.0.0.1:3217/*`. Los corredores de escenario inician sesión por REST sin referrer: con referrers activos necesitan su propia llave sin esa restricción (`FIREBASE_WEB_API_KEY` en `.env`). La app Android usa otra llave y no se ve afectada |
+| Portal: «No pudimos iniciar sesión», o el corredor recibe 403 `Requests from referer … are blocked` | La «Escudo web key» no acepta ese origen. Agrega el origen a sus referrers en `infra/07-web-api-key.sh` y vuelve a correrlo (en local, la web debe estar en `:3217`) |
 | `make up-offline` → `EADDRINUSE 127.0.0.1:3217` | `make web` (u otro `next-server`) ya usa el puerto: ciérralo o usa `PORT=3218 make up-offline` |
 | El chat se queda «pensando» más de 30 s | Gemini tardó; cada llamada se corta a los 30 s y se reintenta. Si se repite, `global` está lento: usa el respaldo (`make chat-scenario CLOUD=1` o `/presenter?demo=1`) |
 

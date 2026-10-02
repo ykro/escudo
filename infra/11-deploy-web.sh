@@ -14,7 +14,9 @@ set -a
 source "$ROOT/.env.example"
 [ -f "$ROOT/.env" ] && source "$ROOT/.env"
 set +a
-: "${FIREBASE_WEB_API_KEY:?set FIREBASE_WEB_API_KEY in .env (see .env.example)}"
+# Escudo's own web API key (infra/07-web-api-key.sh), read from Secret Manager; never in git.
+FIREBASE_WEB_API_KEY="$(gcloud secrets versions access latest --secret=escudo-web-api-key 2>/dev/null || true)"
+: "${FIREBASE_WEB_API_KEY:?run infra/07-web-api-key.sh first (secret escudo-web-api-key)}"
 
 say "Staging build context"
 STAGE="$GEN/build-web"

@@ -189,9 +189,13 @@ async def firebase_id_token(api_key: str, email: str | None, password: str | Non
     if not (email and password):
         raise SystemExit("Falta el login de la clienta: corre `make seed` (escribe ESCUDO_CUSTOMER_EMAIL/PASSWORD en .env.local)")
     async with httpx2.AsyncClient(timeout=20) as client:
+        # Escudo's web key only accepts escudo-web's referrers, so the runner says it comes from there.
+        # That check only limits casual reuse of a key every browser receives; it is not a boundary:
+        # the server acts as the customer_id of the verified ID token, whoever signed in.
         r = await client.post(
             f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={api_key}",
             json={"email": email, "password": password, "returnSecureToken": True},
+            headers={"Referer": f"{WEB_URL}/"},
         )
         r.raise_for_status()
         return r.json()["idToken"]

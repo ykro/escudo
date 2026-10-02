@@ -226,13 +226,19 @@ androidAppfunctionsReturnValue:
 1. Una vez antes de la charla: `chrome://flags/#enable-webmcp-testing` → **Enabled** → relanzar Chrome.
 2. Abre https://escudo-web-611681112050.us-central1.run.app/reclamo con la sesión de Andrea. El pie dice
    «WebMCP · 4 herramientas disponibles para el agente de tu navegador».
-3. DevTools (`⌥⌘I`) → pestaña **Application** → en la barra lateral, **WebMCP**: aparecen
-   `getCoverage`, `getDeductible`, `findRepairShops` y `getClaimStatus`.
-4. Elige **getDeductible** → **Run tool** con `{}`. Respuesta: `{"deductible_usd": 500, "currency": "USD", …}`.
+3. DevTools (`⌥⌘I`) → pestaña **Application** → en la barra lateral, sección *Application*,
+   **WebMCP** (marcado *NEW*). Abajo, en **Available Tools**, aparecen `findRepairShops`,
+   `getClaimStatus`, `getCoverage` y `getDeductible`, cada una con su descripción.
+4. Elige **getDeductible**; en el panel **Details** baja a **Run Tool** y pulsa **Run Tool** (sin
+   entrada). Arriba, en la actividad, aparece `getDeductible · Completed`; en la pestaña **Output**:
 
-![Portal con WebMCP activo](screenshots/portal-reclamo.png)
+   ```json
+   {"deductible_usd":500,"currency":"USD","rental_days":7,"note":"…"}
+   ```
 
-- **Señala:** las cuatro son de solo lectura; ninguna aprueba. En el presentador aparece como
+![WebMCP en DevTools: getDeductible ejecutada](demo/22-webmcp-devtools.png)
+
+- **Señala:** las cuatro tienen la marca `readOnly` (se ve en **Details → Flags**); ninguna aprueba. En el presentador aparece como
   **Agente externo** con insignia **WebMCP**.
 
 ## Si algo falla
@@ -248,7 +254,7 @@ androidAppfunctionsReturnValue:
 | Gemini lento o caído | https://escudo-web-611681112050.us-central1.run.app/presenter?demo=1: corrida real grabada, rotulada **REPETICIÓN GRABADA**. Dilo en voz alta |
 | Sin red | `make up-offline` y http://127.0.0.1:3217/presenter?demo=1 (todo local, fuentes incluidas) |
 | Sin red ni laptop confiable | El video [`escudo-chat-run.mp4`](escudo-chat-run.mp4) (83 s, también rotulado como repetición) |
-| El portal dice «No pudimos iniciar sesión» | La llave web de Firebase no acepta el dominio de `escudo-web`: revisa sus referrers en la consola (ONBOARDING §11). Mientras tanto, salta el aparte de WebMCP |
+| El portal dice «No pudimos iniciar sesión» | Revisa los referrers de la «Escudo web key» (ONBOARDING §11); mientras tanto, salta el aparte de WebMCP |
 
 ## Después de la demo
 
