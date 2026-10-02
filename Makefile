@@ -11,6 +11,8 @@ ESCUDO_BASE_URL ?= http://127.0.0.1:8080
 ifeq ($(CLOUD),1)
 ESCUDO_BASE_URL := $(DEPLOYED_URL)
 endif
+# One admin token for local servers (make up-mock / make up); in the cloud it comes from Secret Manager.
+ADMIN_TOKEN ?= local-admin
 LOCAL := $(filter http://127.0.0.1% http://localhost%,$(ESCUDO_BASE_URL))
 ENV_FILE := $(if $(wildcard .env),--env-file ../.env,)
 
@@ -19,7 +21,7 @@ ENV_FILE := $(if $(wildcard .env),--env-file ../.env,)
 ANDROID_AVD ?= Pixel_9_API_36_1
 EMULATOR := $${ANDROID_HOME:-$$HOME/Library/Android/sdk}/emulator/emulator
 
-.PHONY: help up up-mock web seed reset test scenario chat-scenario scenario-live stage-on stage-off infra deploy deploy-api deploy-web \
+.PHONY: help up up-mock up-offline web seed reset test scenario chat-scenario scenario-live stage-on stage-off infra deploy deploy-api deploy-web \
 	photos brand android-build android-test android-install android-emulator android-serial
 
 help: ## Lista todos los comandos
@@ -30,10 +32,13 @@ up: ## API local (Firestore + Gemini con ADC) en :8080
 	cd $(BACKEND) && uv run $(ENV_FILE) uvicorn escudo.main:create_app --factory --host 0.0.0.0 --port 8080
 
 up-mock: ## API local sin nube (MOCK_AI=1 MOCK_AUTH=1) en :8080
-	cd $(BACKEND) && MOCK_AI=1 MOCK_AUTH=1 ADMIN_TOKEN=local-admin uv run uvicorn escudo.main:create_app --factory --host 0.0.0.0 --port 8080
+	cd $(BACKEND) && MOCK_AI=1 MOCK_AUTH=1 ADMIN_TOKEN=$(ADMIN_TOKEN) uv run uvicorn escudo.main:create_app --factory --host 0.0.0.0 --port 8080
 
 web: ## Portal + /presenter local en :3217 (contra el API desplegado)
 	cd web && npm run dev
+
+up-offline: ## Respaldo sin red: build de producción local en :3217, fuentes propias; /presenter?demo=1
+	web/scripts/serve-offline.sh
 
 # --- data -------------------------------------------------------------------------
 seed: ## Póliza, talleres y grúas en Firestore + login del cliente en Firebase Auth (.env.local)

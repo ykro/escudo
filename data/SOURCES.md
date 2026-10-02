@@ -15,6 +15,7 @@ seed), `human` (written by hand for the demo).
 | Presenter mockup | `brand/mockups/presenter.jpg` | `synthetic` — `IMAGE_MODEL`, prompt `brand/prompts/presenter.md` | `make brand ARGS="--force presenter"` |
 | Vector mark | `web/src/brand/EscudoMark.tsx`, `web/src/app/icon.svg`, `android/design/a-sereno/mark.svg` | `human` — hand-drawn SVG redraw of the raster logo | – |
 | Design tokens | `web/src/brand/tokens.json`, `android/design/a-sereno/tokens.json` | `human` — direction "A · Sereno" (colors, contrast pairs, type, spacing, motion) | – |
-| Font | Onest (`next/font/google`; Android bundles it, license `android/design/a-sereno/Onest-OFL.txt`) | third party, SIL Open Font License 1.1 | – |
-| Presenter demo replay | `web/src/lib/fixtures/scenario-events.json` | `synthetic` — events recorded from one `make scenario CLOUD=1` run (2026-09-30), screen-refresh reads removed, idle gaps capped at 6 s | re-record from Firestore `events` after a run |
+| Font | Onest (web: `web/src/app/fonts/Onest-Variable.woff2` via `next/font/local`, license `web/src/app/fonts/Onest-OFL.txt`; Android bundles it, license `android/design/a-sereno/Onest-OFL.txt`) | third party, SIL Open Font License 1.1 | – |
+| Presenter demo replay | `web/src/lib/fixtures/scenario-events.json` | `synthetic` — the 37 events of one real `make chat-scenario CLOUD=1` run (`run-6958m5`, 2026-10-01, fictional customer), idle gaps capped at 6 s; shown as REPETICIÓN GRABADA | re-record from Firestore `events` after a run |
 | Screenshots | `docs/screenshots/*.png`, `android/docs/` | captured from the running apps (Playwright / emulator) | `node web/e2e/live-run.mjs` |
+| Run video | `docs/escudo-chat-run.mp4` (83 s, 1280×720) | captured with Playwright from `/presenter?demo=1` (the recorded run `run-6958m5`, labelled REPETICIÓN GRABADA), H.264 with ffmpeg | record `/presenter?demo=1` after re-recording the fixture |

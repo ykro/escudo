@@ -23,7 +23,7 @@ Escudo is a fictional car insurer whose capabilities are usable by AI agents fro
 | Component | Stack | Runs on |
 | --- | --- | --- |
 | Escudo backend (`backend/`) | Python, FastAPI, official MCP SDK (streamable HTTP), ADK, Firestore db `escudo`, Firebase Storage/Cloud Storage bucket `ai-experiments-487722-escudo-claims`, FCM | Cloud Run service `escudo-api` |
-| Escudo Assistant | The customer's chat agent: ADK + `GEMINI_MODEL`, uses the MCP tools; typed chat over a WebSocket (`/assistant/chat`), transcript in Firestore | Inside the backend (WebSocket), chat from the Android app |
+| Asistente Escudo | The customer's chat agent: ADK + `GEMINI_MODEL`, uses the MCP tools; typed chat over a WebSocket (`/assistant/chat`), transcript in Firestore | Inside the backend (WebSocket), chat from the Android app |
 | Escudo / Tow / Repair agents | ADK agents, each with its own A2A endpoint and Agent Card | Inside the backend, separate mount paths |
 | Damage assessor | Gemini multimodal (`GEMINI_MODEL`): damaged parts, severity, cost range | Inside the backend |
 | Escudo for Android (`android/`) | Kotlin, Compose, Material 3, Jetpack AppFunctions, Firebase Auth, FCM, BiometricPrompt | Presenter's phone |
@@ -33,7 +33,7 @@ Tow and repair live in the same service for simplicity, but they only talk to th
 
 ## Seed data (`make seed`, `make reset`)
 
-- One customer with an active policy: own damage, towing included, replacement car for 7 days, 500 USD deductible.
+- One customer with an active policy: own damage, towing included, replacement car for 7 days, USD 500 deductible.
 - Three repair shops with open slots and two tow providers with simulated arrival times based on location.
 - Three sample photos of a minor crash generated with `IMAGE_MODEL` (script + prompt committed) for rehearsals; new photos from the phone also work.
 
@@ -69,8 +69,8 @@ Tow and repair live in the same service for simplicity, but they only talk to th
 ## Android with AppFunctions
 
 - Exposed functions: `reportAccident` (gallery photos + description), `getCoverage`, `getClaimStatus`, all backed by the same API.
-- Screens: policy, claim status, pending approvals (biometric), Escudo Assistant (chat).
-- Escudo Assistant (ADK + `GEMINI_MODEL`, typed chat) is the primary agent on stage. If Gemini's AppFunctions integration is available at build time, the same scenario also runs through Gemini; otherwise AppFunctions are shown with the Android developer tools.
+- Screens: policy, claim status, pending approvals (biometric), Asistente Escudo (chat).
+- Asistente Escudo (ADK + `GEMINI_MODEL`, typed chat) is the primary agent on stage. AppFunctions are shown with the Android developer tools (`adb`); on the timeline that caller is "Agente externo", never "Gemini".
 
 ## Web with WebMCP
 
@@ -81,7 +81,7 @@ Tow and repair live in the same service for simplicity, but they only talk to th
 
 - Live timeline of every step: which agent acts, through which surface (Android, web, MCP, A2A), which tool, the result.
 - Approval pauses stand out with the reason until the customer approves.
-- Every component writes events (schema `contracts/events.schema.json`) to Firestore `events`; the view reads them in real time. Next to it, a mirror of the phone screen (scrcpy capture or the app's own mirror stream — pick the simplest reliable option and document it).
+- Every component writes events (schema `contracts/events.schema.json`) to Firestore `events`; the view reads them in real time. Next to it, a mirror of the phone screen rebuilt from the same Firestore state (no screen capture).
 
 ## Acceptance criteria
 
@@ -92,9 +92,9 @@ Tow and repair live in the same service for simplicity, but they only talk to th
 - `make reset` restores policy, shops and tow providers and clears claims and events.
 - `make test` passes (backend pytest, Android unit tests, web tests).
 
-## Shared rules (all four demo repos)
+## Rules
 
-These demos are teaching material for a talk. The code, folder names, reports and docs must make the talk's ideas visible. Prefer small files named after the concept they teach, and comments that explain *why*, not *what*.
+Escudo is teaching material for a talk. The code, folder names, reports and docs must make the talk's ideas visible. Prefer small files named after the concept they teach, and comments that explain *why*, not *what*.
 
 ### Stack
 
@@ -104,23 +104,21 @@ These demos are teaching material for a talk. The code, folder names, reports an
 | Android | Kotlin, Jetpack Compose, Material 3 |
 | Cloud models | Gemini via Vertex AI with the Google Gen AI SDK (`@google/genai` / `google-genai`), ADC, `GOOGLE_CLOUD_LOCATION=global` |
 | Images | Nano Banana 2 Lite (`IMAGE_MODEL`) via Vertex AI |
-| Local models | Gemma served with Ollama; EmbeddingGemma where retrieval is needed |
-| Fine-tuning | LoRA with Hugging Face TRL + PEFT as a Vertex AI Custom Job (L4, `europe-west4`); same script wrapped in a Colab notebook; exported to quantized GGUF for Ollama |
 | Agents | Agent Development Kit (ADK, Python); MCP for tools; A2A for agent-to-agent |
-| Cloud | Google Cloud project `ai-experiments-487722`. Every web app or API runs on **Cloud Run** (`us-central1`, Dockerfile + Cloud Build + Artifact Registry repo `charlas2027`). Firebase services (Auth, Firestore named database per app, FCM, Storage, App Check) are used as SDKs, never Firebase Hosting |
-| Local data | JSON/JSONL files or SQLite in the repo |
+| Cloud | Google Cloud project `ai-experiments-487722`. The API and the web run on **Cloud Run** (`us-central1`, Dockerfile + Cloud Build + Artifact Registry repo `charlas2027`). Firebase services (Auth, Firestore named database per app, FCM, Storage, App Check) are used as SDKs, never Firebase Hosting |
+| Local data | JSON seed files in the repo |
 
 ### Cloud first
 
-Everything runs in the cloud unless the talk requires the laptop (offline model, latency measured on the stage hardware). Every component that runs on the laptop is listed in the README's "Decisiones técnicas" section with the reason.
+Everything runs in the cloud. The only laptop component is the stage fallback (`make up-offline`: the web's production build replaying a recorded run, labelled REPETICIÓN GRABADA); it is listed in the README's "Decisiones técnicas" section.
 
 ### Rules
 
-- No model name or version is hard-coded. Models come from env vars (`GEMINI_MODEL`, `IMAGE_MODEL`, `GEMMA_BASE_MODEL`, `LOCAL_MODEL_TAG`, `EMBEDDING_MODEL`) documented in `.env.example`.
-- Preview APIs (AppFunctions with Gemini, WebMCP, UCP, AP2, A2A, MCP SDK, ADK): check the current official docs before implementing (context7 or the web) and record the version used in the README.
-- `Makefile` targets: `make up` (start everything needed locally), `make reset` (back to the initial state in under 10 seconds), `make test`, `make deploy`, and where it applies `make eval`, `make train`.
+- No model name or version is hard-coded. Models come from env vars (`GEMINI_MODEL`, `IMAGE_MODEL`) documented in `.env.example`.
+- Preview APIs (AppFunctions, WebMCP, A2A, MCP SDK, ADK): check the current official docs before implementing (context7 or the web) and record the version used in the README.
+- `Makefile` targets: `make up` (start everything needed locally), `make reset` (back to the initial state in under 10 seconds), `make test`, `make deploy`; `make help` lists every target.
 - Data: every record carries `origin` (`web` with URL + license, `synthetic` with model + prompt + seed, `human`). Documented in `data/SOURCES.md` and `data/DATASHEET.md`. Fictional seed data is generated by scripts. No secrets in the repo.
-- Python uses `uv`. Node uses npm. Code in English; UI in Spanish (Guatemala/LatAm neutral).
+- Python uses `uv`. Node uses npm. Code in English; UI in Spanish (Guatemala/LatAm neutral, tú). Actors on the timeline are named truthfully: the chat is "Asistente Escudo", AppFunctions, MCP and WebMCP callers are "Agente externo".
 - Tests must pass before a task is done (`make test`). Anything that needs the cloud also has a mock mode (`MOCK_AI=1`) so tests and rehearsals run without network.
 - No `CLAUDE.md` in the repo.
 
@@ -130,7 +128,7 @@ Everything runs in the cloud unless the talk requires the laptop (offline model,
 - Production-grade: own brand identity (name, logo mark, palette, typography), consistent components, designed empty/loading/error states, no placeholder text.
 - Web: responsive, keyboard accessible, WCAG 2.2 AA contrast, purposeful motion only. Android: Material 3 and platform conventions.
 - Every app on stage has a presenter view: a separate route readable from the back of an auditorium (large type, high contrast, 16:9 at 1920×1080), no logins or manual steps during the talk.
-- Visual assets (logos, product photos, sample photos) are generated with `IMAGE_MODEL` by a script in `scripts/` and committed; the prompt is kept next to the asset.
+- Visual assets (logo, sample crash photos) are generated with `IMAGE_MODEL` by a script in `scripts/` and committed; the prompt is kept next to the asset.
 
 ### Docs (written at the end, from the finished code)
 

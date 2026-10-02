@@ -6,12 +6,12 @@
 Escudo is a fictional Guatemalan car insurer whose capabilities AI agents can use from three
 surfaces: an **Android app with AppFunctions**, a **website with WebMCP** and an **MCP server**. Its
 own agent delegates to a tow-truck agent and a repair-shop agent over **A2A**, and the customer writes
-to the **Escudo Assistant** in a chat. The talk's scenario — *"tuve un choque menor, aquí
+to **Asistente Escudo** in a chat. The talk's scenario — *"tuve un choque menor, aquí
 están las fotos, ayúdame con todo"* ("I had a minor crash, here are the photos, help me with
 everything") — goes from report to signed claim with **exactly three human approvals**, each one a
 fingerprint on the phone.
 
-![Presenter view during an approval pause](docs/screenshots/presenter-live-pause.png)
+![Presenter view during an approval pause](docs/screenshots/presenter-chat-pause.png)
 
 ## What you'll learn
 
@@ -47,7 +47,7 @@ fingerprint on the phone.
 
 1. Andrea reports the accident in the app with three photos (`open_claim` + `attach_claim_photos`);
    the damage assessor (multimodal Gemini with structured output) returns parts, severity and cost range.
-2. She writes to the Escudo Assistant: "help me with everything". Without asking, the assistant calls
+2. She writes to Asistente Escudo: "help me with everything". Without asking, the assistant calls
    `request_tow` and `list_repair_options` (the Escudo agent delegates over A2A to Grúas Aliadas and the
    Red de Talleres) and `request_rental_car` (automatic because the seeded policy covers it).
 3. Three times — `select_repair_shop`, `accept_deductible`, `sign_claim` — the tool returns
@@ -66,8 +66,11 @@ The full table, with inputs and outputs, is in [`contracts/tools.md`](contracts/
 No cloud (everything simulated: `MOCK_AI=1 MOCK_AUTH=1`, in-memory store, deterministic partner agents):
 
 ```bash
-make up-mock          # API at http://127.0.0.1:8080
-make scenario         # in another terminal: the whole scenario over MCP, the 3 approvals signed by a test device
+echo "sdk.dir=$HOME/Library/Android/sdk" >> android/local.properties   # once: make test includes Android
+make up-mock          # API at http://127.0.0.1:8080 (ADMIN_TOKEN=local-admin)
+make reset            # in another terminal: back to the initial state (same token)
+make scenario         # the whole scenario over MCP, the 3 approvals signed by a test device
+make chat-scenario    # the same flow over the chat, with the scripted assistant
 make test             # backend (pytest), Android (unit) and web (vitest)
 ```
 
@@ -84,6 +87,10 @@ Every `make scenario` and `make chat-scenario` run creates its own fictional cus
 (`POST /admin/runs`: policy, Firebase login and `run_id`), so concurrent runs never collide with each
 other or with the stage customer, who is the seeded one. `make reset` deletes those customers.
 
+No network on stage: `make up-offline` serves the production web build from the laptop and
+`http://127.0.0.1:3217/presenter?demo=1` replays a real recorded run, labelled
+**REPETICIÓN GRABADA** (recorded replay). Last resort: the video [`docs/escudo-chat-run.mp4`](docs/escudo-chat-run.mp4).
+
 ## `make` commands
 
 From the repo root (`make help` lists them all):
@@ -91,20 +98,21 @@ From the repo root (`make help` lists them all):
 | Command | What it does |
 | --- | --- |
 | `make up` | Local API on `:8080` against real Firestore, Storage and Gemini (ADC, `.env`) |
-| `make up-mock` | Local API without cloud (`MOCK_AI=1 MOCK_AUTH=1`, `ADMIN_TOKEN=local-admin`) |
+| `make up-mock` | Local API without cloud (`MOCK_AI=1 MOCK_AUTH=1`, `ADMIN_TOKEN=local-admin`, the same one `make reset` uses) |
+| `make up-offline` | No-network fallback: production web build on `127.0.0.1:3217` with self-hosted fonts; `/presenter?demo=1` replays the recorded run |
 | `make web` | Local portal and `/presenter` on `:3217` (`npm run dev`, config in `web/.env.local`) |
 | `make seed` | Writes policy, shops and tow providers to Firestore and creates the customer's Firebase Auth login (credentials in `.env.local`) |
 | `make reset` | `POST /admin/reset` on `ESCUDO_BASE_URL` (< 10 s). `CLOUD=1` targets the deployed service and reads the token from Secret Manager (`escudo-admin-token`) |
 | `make test` | Backend `pytest` with `MOCK_AI=1 MOCK_AUTH=1`, Android unit tests and web `vitest` |
 | `make scenario` | Full scenario over MCP in test mode, with its own customer (`POST /admin/runs`) and a test device signing the 3 approvals; `CLOUD=1`, `APPROVE_DELAY=4`. Prints `…/presenter?run=<id>` |
-| `make chat-scenario` | Typed-chat scenario against the cloud: own customer, claim and 3 photos over REST (as the app does), then the chat; 3 signed approvals; < 3 min |
+| `make chat-scenario` | Typed-chat scenario: own customer, claim and 3 photos over REST (as the app does), then the chat; 3 signed approvals; < 3 min. Against `make up-mock` the scripted assistant answers; `CLOUD=1`, Gemini |
 | `make scenario-live` | The MCP scenario with the seeded customer (`--shared`); waits for her to approve each step on the phone |
 | `make infra` | Creates or verifies everything in GCP from an empty project: `infra/01..06` (APIs, `escudo` database, bucket, Artifact Registry, Firebase Auth via API, service accounts, Secret Manager) |
-| `make deploy` | `deploy-api` + `deploy-web` |
+| `make deploy` | `deploy-api` + `deploy-web`; each keeps the service's current `min-instances` |
 | `make deploy-api` | `infra/10-deploy-api.sh`: builds and deploys `escudo-api` |
 | `make deploy-web` | `infra/11-deploy-web.sh`: builds and deploys `escudo-web` |
 | `make stage-on` | Talk day: `min-instances=1` on `escudo-api` and `escudo-web` (no cold start) |
-| `make stage-off` | Any other day: `min-instances=0` (scale to zero; deploys also use 0) |
+| `make stage-off` | Any other day: `min-instances=0` (scale to zero; later deploys keep it) |
 | `make photos` | Regenerates the rehearsal crash photos with `IMAGE_MODEL` |
 | `make brand` | Regenerates the "A · Sereno" logo and mockups with `IMAGE_MODEL` from `brand/prompts/` (`ARGS="--force logo"`) |
 | `make android-build` | `./gradlew assembleDebug` (`live` and `fake` flavors) |
@@ -151,10 +159,11 @@ android/                  Kotlin + Compose + Material 3 (see android/README.md)
 web/                      Next.js 16 (see web/README.md)
   src/lib/webmcp.ts       WebMCP tools
   src/app/presenter/      presenter view (1920×1080)
+  scripts/serve-offline.sh  make up-offline: production build with no network
 infra/                    numbered, idempotent scripts: 01-06 build the project from scratch, 10-11 deploy
 brand/                    prompts and generator for the "A · Sereno" logo and mockups (make brand)
 data/                     SOURCES.md (origin of every data file and asset) and DATASHEET.md
-docs/                     ONBOARDING.md, diagrams and screenshots
+docs/                     ONBOARDING.md, diagrams, screenshots and escudo-chat-run.mp4 (a full run, fallback)
 ```
 
 ## Technical decisions
@@ -164,12 +173,15 @@ docs/                     ONBOARDING.md, diagrams and screenshots
 | **One Cloud Run service with Tow and Repair inside it, but A2A only.** The three agents are mounted in `escudo-api` under `/a2a/escudo`, `/a2a/tow` and `/a2a/repair`, each with its own Agent Card. | One deploy, one cold start and one service account. The Escudo agent only knows base URLs (`A2A_PEERS`), reads the Agent Card, indexes by skill and calls the RPC URL the card declares (`agents/peers.py`); it never imports partner code. `tests/test_discovery.py` checks this, including that `escudo_agent.py` contains no partner paths. | Three separate services (more deploys and cold starts without teaching anything new). Calling the partners' functions directly (it would hide the A2A lesson). |
 | **The chat keeps no state in the process (up to 3 instances).** | The transcript lives in Firestore (`chat_sessions`) and is rebuilt every turn; while an approval is pending the chat watches it in Firestore, so when the phone approves — whichever instance that request reaches — the chat sends `approval_resolved` and the assistant carries on by itself. So `escudo-api` scales up to 3 instances (`--session-affinity` keeps each WebSocket on its instance). `min-instances` is 0 by default and `make stage-on` raises it to 1 on talk days; `--no-cpu-throttling` and `--timeout=3600` keep the WebSocket alive. | A single instance with in-memory nudges (a single point of failure that forces `max-instances=1`). Pub/Sub to fan out nudges (more parts for no reason: Firestore already holds the state). |
 | **Typed chat instead of voice.** | On the emulator the live microphone never worked — only pre-recorded audio did — and Gemini Live socket drops added risk on stage. Text is readable by the audience, rehearses deterministically (`make chat-scenario`) and uses the same agent, the same MCP tools and the same approval pauses: the talk's lesson doesn't change. The model is `GEMINI_MODEL` with `thinking_level=LOW`. | Voice with Gemini Live (`Runner.run_live`). |
-| **Its own customer per scenario run.** | `POST /admin/runs` (admin token) creates an ephemeral customer: its policy, a Firebase user `run_<id>` with the `customer_id` claim, and a `run_id`. The runners send `X-Escudo-Run-Id`, and `/presenter?run=<id>` follows only that run (without `?run`, the latest). Two rehearsals at once — or a rehearsal while the stage phone is connected — never step on each other. `make reset` deletes those customers, their users and their devices; the stage customer stays the seeded one. The `escudo-api` account has `roles/firebaseauth.admin` for this (`infra/04`). | One shared customer (runs stepped on each other). |
+| **Its own customer per scenario run.** | `POST /admin/runs` (admin token) creates an ephemeral customer: its policy, a Firebase user `run_<id>` with the `customer_id` claim, and a `run_id`. The runners send `X-Escudo-Run-Id`, and `/presenter?run=<id>` follows only that run (without `?run`, the run of the latest claim). Without the header every event carries the customer's run, so an aside over MCP or WebMCP lands on the same timeline. Two rehearsals at once — or a rehearsal while the stage phone is connected — never step on each other. `make reset` deletes those customers, their users and their devices; the stage customer stays the seeded one. The `escudo-api` account has `roles/firebaseauth.admin` for this (`infra/04`). | One shared customer (runs stepped on each other). |
 | **CI with GitHub Actions.** | `.github/workflows/test.yml` runs `make test` on every push to `main` and every PR: backend `pytest`, web `vitest` and Android `testDebugUnitTest` with JDK 17, mock modes only (no cloud calls), with uv, npm and Gradle caches. A Cloud Build GitHub trigger needs a one-time manual OAuth connection in the console (there is no CLI or API path); Actions needs nothing beyond the repo. | A Cloud Build trigger. |
 | **Approval bound to tool + arguments hash, single use.** | `approvals.args_hash` is the SHA-256 of the canonical JSON `{tool, args}` (without `approval_id` or nulls). `redeem` checks customer, tool, hash and status inside one atomic update and marks the approval `used`. An approval for "Taller Carrocería Diez on Tuesday" does not work for another shop, another slot, or twice. Before asking, the server runs the precheck so a customer is never asked to approve something that would fail. A misused approval (other tool or other data) is not burned. | Telling the model in the prompt to "ask first" (a prompt is not a control). Exposing `approve` as a tool (the agent would approve itself). A generic "yes" token not bound to the action shown. |
 | **Approving takes a phone signature, not just the token (`escudo-approval:v1`).** | An agent holding the customer's token (MCP, chat, A2A) could call `POST /approvals/{id}/approve` itself. So the app registers an EC P-256 key from the Android Keystore (unlocked by BiometricPrompt) via `POST /devices` and signs `escudo-approval:v1:{approval_id}:{args_hash}:approve`; the server (`backend/escudo/devices.py`) checks owner, registered device and signature, and answers 403 with no state change otherwise. The scenario runner plays the phone with a software test device (`escudo/test_device.py`). | Trusting the token (any agent holding it could approve). A PIN or code sent by push (can be relayed to an agent). |
 | **Optional A2A shared secret (`A2A_SHARED_SECRET`).** | Tow and Repair only answer RPC carrying `X-Escudo-A2A-Key` (compared with `hmac.compare_digest` in `main.partner_key_guard`). Their Agent Cards stay public — discovery must work — and declare the `securitySchemes.partnerKey` scheme, so a caller learns *how* to authenticate from the card. The Escudo agent (`/a2a/escudo`) answers about a customer's claims, so it requires a credential: the customer's Firebase token (acts as her) or the partner key plus `X-Escudo-Customer-Id` (`main.EscudoAgentGuard`); its card declares both schemes. Like REST, MCP and the chat, it acts as the verified token's `customer_id`, never as a fixed customer. The secret lives in Secret Manager (`escudo-a2a-secret`, `infra/06-secrets.sh`) and Cloud Run mounts it; empty locally and in tests. | OAuth or mTLS between partners: right between real companies, out of proportion for partners living in the same service. |
 | **Phone mirror drawn from backend state.** | The right panel of `/presenter` (`web/src/components/presenter/PhoneMirror.tsx`) shows what the app shows — pending approval first, then the claim — from the same Firestore data. It does not depend on USB, the emulator or a capture process, and it always matches the timeline. | Screen capture with `scrcpy` as the main source (kept as an option for pixel-exact mirroring: a `scrcpy` window over the panel). A custom stream from the app. |
+| **The server picks the claim, not the model.** | Every chat turn the server reminds the assistant of the active claim, and `gateway.call_capability` replaces any `claim_id` an agent invents or takes from another customer with the newest open claim (`repository.active_claim`). A model that hallucinates an id (`clm_96051512`) no longer breaks the scenario. Each chat model call is also capped at 30 s and retried. | Trusting the prompt (it failed in a real rehearsal). Rejecting the invented id (the scenario stalled). |
+| **Actors under their real name.** | On the timeline the chat is "Asistente Escudo"; whoever calls over MCP, WebMCP or AppFunctions (`adb` on stage) is "Agente externo". No surface says "Gemini" unless it is. The presenter also shows when an agent discovers another (Agent Card) or lists the tools (`tools/list`), and tags steps that need no approval as "automático". | Labelling everything "Gemini". |
+| **A labelled no-network fallback.** | `make up-offline` serves the production build from the laptop with self-hosted fonts (`next/font/local`), and `/presenter?demo=1` replays a real recorded chat run (`run-6958m5`, 37 events). The screen says **REPETICIÓN GRABADA** and "Reclamo grabado", never "en vivo". Last resort: `docs/escudo-chat-run.mp4`. | An unlabelled replay (misleads the audience). Google Fonts (fails offline). |
 | **Photo downscaling in two places.** | On the phone, `PhotoLoader` keeps each photo at ≤ 1600 px, JPEG 80 (uploading raw 12 MP photos took ~40 s). On the backend, `damage_assessor.for_assessment` takes them to 1024 px, JPEG 80, for the model only: three photos took 86–90 s and dropped to 6–10 s with the same verdict. The received originals are stored in Cloud Storage in parallel with the assessment. The assessor also uses `thinking_level=LOW` and `MEDIA_RESOLUTION_MEDIUM`. | Sending full-resolution photos (slow, no better result). |
 | **Everything runs in the cloud, plus the phone.** See the table below. | The talk needs nothing of its own on the laptop: no local model and no latency measured on stage hardware. The scenario depends on the venue network only for the phone and the browser, and anyone can repeat the demo with the deployed URLs. | Running the backend on the laptop (one more thing that can fail on stage). |
 
@@ -182,7 +194,7 @@ docs/                     ONBOARDING.md, diagrams and screenshots
 | Firestore, Storage, Auth, FCM | Firebase (project `ai-experiments-487722`, database `escudo`) | Used as SDKs, never Firebase Hosting |
 | Gemini (assessor, chat, Escudo agent) | Vertex AI (`global`) | Models come from environment variables |
 | Escudo for Android | The presenter's phone; in rehearsals, the `Pixel_9_API_36_1` emulator | Fingerprint and AppFunctions belong to the device |
-| Laptop | Only a browser (Chrome with `/presenter` and the WebMCP portal) and, in rehearsals, the emulator | No Escudo component runs on the laptop |
+| Laptop | Only a browser (Chrome with `/presenter` and the WebMCP portal) and, in rehearsals, the emulator | No Escudo component runs on the laptop, except the no-network fallback (`make up-offline`) |
 
 ## Preview API versions
 
@@ -211,7 +223,7 @@ Checked on 2026-09-30. Details in [`backend/VERSIONS.md`](backend/VERSIONS.md),
 | Agent Cards | https://escudo-api-611681112050.us-central1.run.app/a2a/escudo/.well-known/agent-card.json (also `/a2a/tow/…` and `/a2a/repair/…`) |
 | Chat | `wss://escudo-api-611681112050.us-central1.run.app/assistant/chat` (`Authorization` header) |
 | Portal | https://escudo-web-611681112050.us-central1.run.app/ |
-| Presenter | https://escudo-web-611681112050.us-central1.run.app/presenter (`?run=<id>` follows one run; `?demo=1` replays a recorded run with no cloud) |
+| Presenter | https://escudo-web-611681112050.us-central1.run.app/presenter (`?run=<id>` follows one run; `?demo=1` replays a recorded run with no cloud, labelled REPETICIÓN GRABADA) |
 
 ## Credits and provenance
 
@@ -223,7 +235,7 @@ Checked on 2026-09-30. Details in [`backend/VERSIONS.md`](backend/VERSIONS.md),
 - **Visual identity** "A · Sereno": tokens in `android/design/a-sereno/tokens.json` and
   `web/src/brand/tokens.json`, vector mark `android/design/a-sereno/mark.svg`; synthetic logo and
   mockups (`IMAGE_MODEL`) with their prompts and generator in `brand/` (`make brand`).
-- **Typeface**: Onest (SIL OFL 1.1, `android/design/a-sereno/Onest-OFL.txt`).
+- **Typeface**: Onest (SIL OFL 1.1, `android/design/a-sereno/Onest-OFL.txt`; on the web, self-hosted in `web/src/app/fonts/` with its license).
 - **Diagrams** (`docs/diagrams/`): made with the `diagram-design` skill (light editorial skin, pine accent `#0F5C4D`).
 
 All companies, people, plates and addresses are fictional. Full inventory of data and generated assets

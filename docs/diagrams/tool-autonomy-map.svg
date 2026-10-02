@@ -1,222 +1,227 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg viewBox="0 0 1248 680" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tool-autonomy-map-title tool-autonomy-map-desc">
-      <title id="tool-autonomy-map-title">Mapa de herramientas, autonomía y superficies</title>
-      <desc id="tool-autonomy-map-desc">Matriz de las 11 capacidades de Escudo: ocho son automáticas, request_rental_car pide aprobación solo si la póliza no lo cubre, y accept_deductible, select_repair_shop y sign_claim siempre la piden; todas están en MCP y REST, algunas en AppFunctions, WebMCP y el agente A2A, y aprobar solo existe como endpoint REST que llama la app tras la huella.</desc>
-      <defs><style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;family=Noto+Serif:ital@0;1&amp;family=Noto+Sans+KR:wght@400;500;600&amp;family=Noto+Serif+KR:wght@400&amp;family=Noto+Sans+TC:wght@400;500;600&amp;family=Noto+Serif+TC:wght@400&amp;display=swap');</style></defs>
-      <rect width="100%" height="100%" fill="#f5f5f5"/>
-      <rect x="12" y="72" width="208" height="52" rx="6" fill="#ffffff" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.8"/>
-      <text x="116" y="96" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Capacidad</text>
-      <text x="116" y="112" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">× autonomía y superficie</text>
-      <rect x="232" y="72" width="148" height="52" rx="6" fill="#0F5C4D"/>
-      <text x="306" y="92" fill="#ffffff" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Autonomía</text>
-      <text x="306" y="108" fill="#ffffff" fill-opacity="0.85" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">autonomy.py</text>
-      <rect x="396" y="72" width="148" height="52" rx="6" fill="#2d3142"/>
-      <text x="470" y="92" fill="#ffffff" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">MCP</text>
-      <text x="470" y="108" fill="#ffffff" fill-opacity="0.85" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">/mcp · chat</text>
-      <rect x="560" y="72" width="148" height="52" rx="6" fill="#2d3142"/>
-      <text x="634" y="92" fill="#ffffff" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">REST</text>
-      <text x="634" y="108" fill="#ffffff" fill-opacity="0.85" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Android · web</text>
-      <rect x="724" y="72" width="148" height="52" rx="6" fill="#2d3142"/>
-      <text x="798" y="92" fill="#ffffff" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">AppFunctions</text>
-      <text x="798" y="108" fill="#ffffff" fill-opacity="0.85" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Android</text>
-      <rect x="888" y="72" width="148" height="52" rx="6" fill="#2d3142"/>
-      <text x="962" y="92" fill="#ffffff" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">WebMCP</text>
-      <text x="962" y="108" fill="#ffffff" fill-opacity="0.85" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Chrome</text>
-      <rect x="1052" y="72" width="148" height="52" rx="6" fill="#2d3142"/>
-      <text x="1126" y="92" fill="#ffffff" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">A2A</text>
-      <text x="1126" y="108" fill="#ffffff" fill-opacity="0.85" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">/a2a/escudo</text>
-      <rect x="12" y="140" width="208" height="36" rx="4" fill="#ffffff" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.8"/>
-      <text x="24" y="162" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist Mono', monospace">get_policy</text>
-      <text x="208" y="162" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">póliza</text>
-      <rect x="232" y="140" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="306" y="162" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">Automático</text>
-      <rect x="396" y="140" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="470" y="162" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
-      <rect x="560" y="140" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="634" y="162" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">GET /policy</text>
-      <rect x="724" y="140" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="798" y="162" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">getCoverage</text>
-      <rect x="888" y="140" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="962" y="156" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">getCoverage</text>
-      <text x="962" y="169" fill="#2d3142" fill-opacity="0.85" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">getDeductible</text>
-      <rect x="1052" y="140" width="148" height="36" rx="4" fill="#f5f5f5" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="1126" y="162" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
-      <rect x="12" y="180" width="208" height="36" rx="4" fill="#ffffff" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.8"/>
-      <text x="24" y="202" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist Mono', monospace">check_coverage</text>
-      <text x="208" y="202" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">cobertura</text>
-      <rect x="232" y="180" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="306" y="202" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">Automático</text>
-      <rect x="396" y="180" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="470" y="202" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
-      <rect x="560" y="180" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="634" y="202" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">GET /coverage/check</text>
-      <rect x="724" y="180" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="798" y="202" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">getCoverage</text>
-      <rect x="888" y="180" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="962" y="202" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">getCoverage</text>
-      <rect x="1052" y="180" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="1126" y="202" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
-      <rect x="12" y="220" width="208" height="36" rx="4" fill="#ffffff" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.8"/>
-      <text x="24" y="242" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist Mono', monospace">open_claim</text>
-      <text x="208" y="242" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">reclamo</text>
-      <rect x="232" y="220" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="306" y="242" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">Automático</text>
-      <rect x="396" y="220" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="470" y="242" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
-      <rect x="560" y="220" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="634" y="242" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">POST /claims</text>
-      <rect x="724" y="220" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="798" y="242" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">reportAccident</text>
-      <rect x="888" y="220" width="148" height="36" rx="4" fill="#f5f5f5" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="962" y="242" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
-      <rect x="1052" y="220" width="148" height="36" rx="4" fill="#f5f5f5" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="1126" y="242" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
-      <rect x="12" y="260" width="208" height="36" rx="4" fill="#ffffff" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.8"/>
-      <text x="24" y="282" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist Mono', monospace">attach_claim_photos</text>
-      <text x="208" y="282" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">perito</text>
-      <rect x="232" y="260" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="306" y="282" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">Automático</text>
-      <rect x="396" y="260" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="470" y="282" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
-      <rect x="560" y="260" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="634" y="282" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">POST …/photos</text>
-      <rect x="724" y="260" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="798" y="282" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">reportAccident</text>
-      <rect x="888" y="260" width="148" height="36" rx="4" fill="#f5f5f5" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="962" y="282" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
-      <rect x="1052" y="260" width="148" height="36" rx="4" fill="#f5f5f5" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="1126" y="282" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
-      <rect x="12" y="300" width="208" height="36" rx="4" fill="#ffffff" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.8"/>
-      <text x="24" y="322" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist Mono', monospace">request_tow</text>
-      <text x="208" y="322" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">grúa</text>
-      <rect x="232" y="300" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="306" y="322" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">Automático</text>
-      <rect x="396" y="300" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="470" y="322" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
-      <rect x="560" y="300" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="634" y="322" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">POST …/tow</text>
-      <rect x="724" y="300" width="148" height="36" rx="4" fill="#f5f5f5" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="798" y="322" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
-      <rect x="888" y="300" width="148" height="36" rx="4" fill="#f5f5f5" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="962" y="322" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
-      <rect x="1052" y="300" width="148" height="36" rx="4" fill="#f5f5f5" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="1126" y="322" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
-      <rect x="12" y="340" width="208" height="36" rx="4" fill="#ffffff" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.8"/>
-      <text x="24" y="362" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist Mono', monospace">list_repair_options</text>
-      <text x="208" y="362" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">talleres</text>
-      <rect x="232" y="340" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="306" y="362" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">Automático</text>
-      <rect x="396" y="340" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="470" y="362" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
-      <rect x="560" y="340" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="634" y="362" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">GET …/repair-options</text>
-      <rect x="724" y="340" width="148" height="36" rx="4" fill="#f5f5f5" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="798" y="362" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
-      <rect x="888" y="340" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="962" y="362" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">findRepairShops</text>
-      <rect x="1052" y="340" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="1126" y="362" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
-      <rect x="12" y="380" width="208" height="36" rx="4" fill="#ffffff" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.8"/>
-      <text x="24" y="402" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist Mono', monospace">request_rental_car</text>
-      <text x="208" y="402" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">auto</text>
-      <rect x="232" y="380" width="148" height="36" rx="4" fill="#4f5d75" fill-opacity="0.08" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="306" y="402" fill="#4f5d75" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">Auto si está cubierto</text>
-      <rect x="396" y="380" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="470" y="402" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
-      <rect x="560" y="380" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="634" y="402" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">POST …/rental</text>
-      <rect x="724" y="380" width="148" height="36" rx="4" fill="#f5f5f5" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="798" y="402" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
-      <rect x="888" y="380" width="148" height="36" rx="4" fill="#f5f5f5" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="962" y="402" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
-      <rect x="1052" y="380" width="148" height="36" rx="4" fill="#f5f5f5" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="1126" y="402" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
-      <rect x="12" y="420" width="208" height="36" rx="4" fill="#ffffff" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.8"/>
-      <text x="24" y="442" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist Mono', monospace">accept_deductible</text>
-      <text x="208" y="442" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">deducible</text>
-      <rect x="232" y="420" width="148" height="36" rx="4" fill="#2d3142" fill-opacity="0.08" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="306" y="442" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Aprobación</text>
-      <rect x="396" y="420" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="470" y="442" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
-      <rect x="560" y="420" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="634" y="442" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">POST …/deductible</text>
-      <rect x="724" y="420" width="148" height="36" rx="4" fill="#f5f5f5" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="798" y="442" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
-      <rect x="888" y="420" width="148" height="36" rx="4" fill="#f5f5f5" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="962" y="442" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
-      <rect x="1052" y="420" width="148" height="36" rx="4" fill="#f5f5f5" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="1126" y="442" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
-      <rect x="12" y="460" width="208" height="36" rx="4" fill="#ffffff" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.8"/>
-      <text x="24" y="482" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist Mono', monospace">select_repair_shop</text>
-      <text x="208" y="482" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">taller</text>
-      <rect x="232" y="460" width="148" height="36" rx="4" fill="#2d3142" fill-opacity="0.08" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="306" y="482" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Aprobación</text>
-      <rect x="396" y="460" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="470" y="482" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
-      <rect x="560" y="460" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="634" y="482" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">POST …/repair</text>
-      <rect x="724" y="460" width="148" height="36" rx="4" fill="#f5f5f5" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="798" y="482" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
-      <rect x="888" y="460" width="148" height="36" rx="4" fill="#f5f5f5" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="962" y="482" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
-      <rect x="1052" y="460" width="148" height="36" rx="4" fill="#f5f5f5" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="1126" y="482" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
-      <rect x="12" y="500" width="208" height="36" rx="4" fill="#ffffff" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.8"/>
-      <text x="24" y="522" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist Mono', monospace">sign_claim</text>
-      <text x="208" y="522" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">firma</text>
-      <rect x="232" y="500" width="148" height="36" rx="4" fill="#2d3142" fill-opacity="0.08" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="306" y="522" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Aprobación</text>
-      <rect x="396" y="500" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="470" y="522" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
-      <rect x="560" y="500" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="634" y="522" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">POST …/sign</text>
-      <rect x="724" y="500" width="148" height="36" rx="4" fill="#f5f5f5" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="798" y="522" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
-      <rect x="888" y="500" width="148" height="36" rx="4" fill="#f5f5f5" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="962" y="522" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
-      <rect x="1052" y="500" width="148" height="36" rx="4" fill="#f5f5f5" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="1126" y="522" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
-      <rect x="12" y="540" width="208" height="36" rx="4" fill="#ffffff" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.8"/>
-      <text x="24" y="562" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist Mono', monospace">get_claim_status</text>
-      <text x="208" y="562" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">estado</text>
-      <rect x="232" y="540" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="306" y="562" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">Automático</text>
-      <rect x="396" y="540" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="470" y="562" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
-      <rect x="560" y="540" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="634" y="562" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">GET /claims/{id}</text>
-      <rect x="724" y="540" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="798" y="562" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">getClaimStatus</text>
-      <rect x="888" y="540" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="962" y="562" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">getClaimStatus</text>
-      <rect x="1052" y="540" width="148" height="36" rx="4" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="1126" y="562" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
-      <rect x="12" y="580" width="208" height="36" rx="4" fill="#ffffff" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.8"/>
-      <text x="24" y="602" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif">aprobar</text>
-      <text x="208" y="602" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">no es tool</text>
-      <rect x="232" y="580" width="148" height="36" rx="4" fill="#2d3142" fill-opacity="0.08" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="306" y="602" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Solo humano</text>
-      <rect x="396" y="580" width="148" height="36" rx="4" fill="#f5f5f5" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="470" y="602" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
-      <rect x="560" y="580" width="148" height="36" rx="4" fill="#0f5c4d" fill-opacity="0.07" stroke="#0F5C4D" stroke-width="1.4"/>
-      <text x="634" y="596" fill="#0F5C4D" font-size="9" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle">POST …/approve</text>
-      <text x="634" y="609" fill="#0F5C4D" fill-opacity="0.85" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">app + huella</text>
-      <rect x="724" y="580" width="148" height="36" rx="4" fill="#f5f5f5" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="798" y="602" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
-      <rect x="888" y="580" width="148" height="36" rx="4" fill="#f5f5f5" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="962" y="602" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
-      <rect x="1052" y="580" width="148" height="36" rx="4" fill="#f5f5f5" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.6"/>
-      <text x="1126" y="602" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
-      <line x1="12" y1="636" x2="1236" y2="636" stroke="#2d3142" stroke-opacity="0.10" stroke-width="0.8"/>
-      <text x="12" y="656" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEYENDA</text>
-      <rect x="92" y="646" width="14" height="12" rx="2" fill="#2d3142" fill-opacity="0.08" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.8"/>
-      <text x="112" y="656" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">aprobación humana</text>
-      <rect x="227" y="646" width="14" height="12" rx="2" fill="#FFFFFF" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.8"/>
-      <text x="247" y="656" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">automático / expuesta</text>
-      <rect x="384" y="646" width="14" height="12" rx="2" fill="#4f5d75" fill-opacity="0.08" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.8"/>
-      <text x="404" y="656" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">condicional</text>
-      <rect x="485" y="646" width="14" height="12" rx="2" fill="#f5f5f5" stroke="#2d3142" stroke-opacity="0.12" stroke-width="0.8"/>
-      <text x="505" y="656" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">no expuesta</text>
-      <rect x="586" y="646" width="14" height="12" rx="2" fill="#0f5c4d" fill-opacity="0.07" stroke="#0F5C4D" stroke-width="1.4"/>
-      <text x="606" y="656" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">el único camino para aprobar</text>
-    </svg>
+  <title id="tool-autonomy-map-title">Mapa de herramientas, autonomía y superficies</title>
+  <desc id="tool-autonomy-map-desc">Matriz de las 11 capacidades de Escudo: ocho son automáticas, request_rental_car pide aprobación solo si la póliza no lo cubre, y accept_deductible, select_repair_shop y sign_claim siempre la piden; todas están en MCP y REST, algunas en AppFunctions, WebMCP y el agente A2A, y aprobar solo existe como endpoint REST que llama la app tras la huella.</desc>
+  <defs>
+    <pattern id="hatch-conditional" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="6" height="6" fill="#FBF3E2"/>
+      <line x1="0" y1="0" x2="0" y2="6" stroke="#C9963F" stroke-width="1.6" stroke-opacity="0.55"/>
+    </pattern>
+  </defs>
+  <rect width="100%" height="100%" fill="#f5f5f5"/>
+  <rect x="12" y="72" width="208" height="52" rx="6" fill="#ffffff" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+  <text x="116" y="96" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Capacidad</text>
+  <text x="116" y="112" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">× autonomía y superficie</text>
+  <rect x="232" y="72" width="148" height="52" rx="6" fill="#0F5C4D"/>
+  <text x="306" y="92" fill="#ffffff" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Autonomía</text>
+  <text x="306" y="108" fill="#ffffff" fill-opacity="0.85" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">autonomy.py</text>
+  <rect x="396" y="72" width="148" height="52" rx="6" fill="#2d3142"/>
+  <text x="470" y="92" fill="#ffffff" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">MCP</text>
+  <text x="470" y="108" fill="#ffffff" fill-opacity="0.85" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">/mcp · chat</text>
+  <rect x="560" y="72" width="148" height="52" rx="6" fill="#2d3142"/>
+  <text x="634" y="92" fill="#ffffff" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">REST</text>
+  <text x="634" y="108" fill="#ffffff" fill-opacity="0.85" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Android · web</text>
+  <rect x="724" y="72" width="148" height="52" rx="6" fill="#2d3142"/>
+  <text x="798" y="92" fill="#ffffff" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">AppFunctions</text>
+  <text x="798" y="108" fill="#ffffff" fill-opacity="0.85" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Android</text>
+  <rect x="888" y="72" width="148" height="52" rx="6" fill="#2d3142"/>
+  <text x="962" y="92" fill="#ffffff" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">WebMCP</text>
+  <text x="962" y="108" fill="#ffffff" fill-opacity="0.85" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Chrome</text>
+  <rect x="1052" y="72" width="148" height="52" rx="6" fill="#2d3142"/>
+  <text x="1126" y="92" fill="#ffffff" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">A2A</text>
+  <text x="1126" y="108" fill="#ffffff" fill-opacity="0.85" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">/a2a/escudo</text>
+  <rect x="12" y="140" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+  <text x="24" y="162" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist Mono', monospace">get_policy</text>
+  <text x="208" y="162" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">póliza</text>
+  <rect x="232" y="140" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="306" y="162" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">Automático</text>
+  <rect x="396" y="140" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="470" y="162" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
+  <rect x="560" y="140" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="634" y="162" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">GET /policy</text>
+  <rect x="724" y="140" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="798" y="162" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">getCoverage</text>
+  <rect x="888" y="140" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="962" y="156" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">getCoverage</text>
+  <text x="962" y="169" fill="#2d3142" fill-opacity="0.85" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">getDeductible</text>
+  <rect x="1052" y="140" width="148" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.28)" stroke-width="0.6" stroke-dasharray="3 2"/>
+  <text x="1126" y="162" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
+  <rect x="12" y="180" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+  <text x="24" y="202" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist Mono', monospace">check_coverage</text>
+  <text x="208" y="202" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">cobertura</text>
+  <rect x="232" y="180" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="306" y="202" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">Automático</text>
+  <rect x="396" y="180" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="470" y="202" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
+  <rect x="560" y="180" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="634" y="202" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">GET /coverage/check</text>
+  <rect x="724" y="180" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="798" y="202" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">getCoverage</text>
+  <rect x="888" y="180" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="962" y="202" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">getCoverage</text>
+  <rect x="1052" y="180" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="1126" y="202" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
+  <rect x="12" y="220" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+  <text x="24" y="242" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist Mono', monospace">open_claim</text>
+  <text x="208" y="242" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">reclamo</text>
+  <rect x="232" y="220" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="306" y="242" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">Automático</text>
+  <rect x="396" y="220" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="470" y="242" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
+  <rect x="560" y="220" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="634" y="242" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">POST /claims</text>
+  <rect x="724" y="220" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="798" y="242" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">reportAccident</text>
+  <rect x="888" y="220" width="148" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.28)" stroke-width="0.6" stroke-dasharray="3 2"/>
+  <text x="962" y="242" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
+  <rect x="1052" y="220" width="148" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.28)" stroke-width="0.6" stroke-dasharray="3 2"/>
+  <text x="1126" y="242" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
+  <rect x="12" y="260" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+  <text x="24" y="282" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist Mono', monospace">attach_claim_photos</text>
+  <text x="208" y="282" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">perito</text>
+  <rect x="232" y="260" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="306" y="282" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">Automático</text>
+  <rect x="396" y="260" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="470" y="282" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
+  <rect x="560" y="260" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="634" y="282" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">POST …/photos</text>
+  <rect x="724" y="260" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="798" y="282" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">reportAccident</text>
+  <rect x="888" y="260" width="148" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.28)" stroke-width="0.6" stroke-dasharray="3 2"/>
+  <text x="962" y="282" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
+  <rect x="1052" y="260" width="148" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.28)" stroke-width="0.6" stroke-dasharray="3 2"/>
+  <text x="1126" y="282" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
+  <rect x="12" y="300" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+  <text x="24" y="322" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist Mono', monospace">request_tow</text>
+  <text x="208" y="322" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">grúa</text>
+  <rect x="232" y="300" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="306" y="322" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">Automático</text>
+  <rect x="396" y="300" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="470" y="322" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
+  <rect x="560" y="300" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="634" y="322" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">POST …/tow</text>
+  <rect x="724" y="300" width="148" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.28)" stroke-width="0.6" stroke-dasharray="3 2"/>
+  <text x="798" y="322" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
+  <rect x="888" y="300" width="148" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.28)" stroke-width="0.6" stroke-dasharray="3 2"/>
+  <text x="962" y="322" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
+  <rect x="1052" y="300" width="148" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.28)" stroke-width="0.6" stroke-dasharray="3 2"/>
+  <text x="1126" y="322" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
+  <rect x="12" y="340" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+  <text x="24" y="362" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist Mono', monospace">list_repair_options</text>
+  <text x="208" y="362" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">talleres</text>
+  <rect x="232" y="340" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="306" y="362" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">Automático</text>
+  <rect x="396" y="340" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="470" y="362" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
+  <rect x="560" y="340" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="634" y="362" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">GET …/repair-options</text>
+  <rect x="724" y="340" width="148" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.28)" stroke-width="0.6" stroke-dasharray="3 2"/>
+  <text x="798" y="362" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
+  <rect x="888" y="340" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="962" y="362" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">findRepairShops</text>
+  <rect x="1052" y="340" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="1126" y="362" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
+  <rect x="12" y="380" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+  <text x="24" y="402" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist Mono', monospace">request_rental_car</text>
+  <text x="208" y="402" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">auto</text>
+  <rect x="232" y="380" width="148" height="36" rx="4" fill="url(#hatch-conditional)" stroke="#C9963F" stroke-width="0.6"/>
+  <text x="306" y="402" fill="#4f5d75" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">Auto si está cubierto</text>
+  <rect x="396" y="380" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="470" y="402" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
+  <rect x="560" y="380" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="634" y="402" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">POST …/rental</text>
+  <rect x="724" y="380" width="148" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.28)" stroke-width="0.6" stroke-dasharray="3 2"/>
+  <text x="798" y="402" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
+  <rect x="888" y="380" width="148" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.28)" stroke-width="0.6" stroke-dasharray="3 2"/>
+  <text x="962" y="402" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
+  <rect x="1052" y="380" width="148" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.28)" stroke-width="0.6" stroke-dasharray="3 2"/>
+  <text x="1126" y="402" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
+  <rect x="12" y="420" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+  <text x="24" y="442" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist Mono', monospace">accept_deductible</text>
+  <text x="208" y="442" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">deducible</text>
+  <rect x="232" y="420" width="148" height="36" rx="4" fill="#F3DFB4" stroke="#9A6A1F" stroke-width="0.6"/>
+  <text x="306" y="442" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Aprobación</text>
+  <rect x="396" y="420" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="470" y="442" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
+  <rect x="560" y="420" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="634" y="442" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">POST …/deductible</text>
+  <rect x="724" y="420" width="148" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.28)" stroke-width="0.6" stroke-dasharray="3 2"/>
+  <text x="798" y="442" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
+  <rect x="888" y="420" width="148" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.28)" stroke-width="0.6" stroke-dasharray="3 2"/>
+  <text x="962" y="442" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
+  <rect x="1052" y="420" width="148" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.28)" stroke-width="0.6" stroke-dasharray="3 2"/>
+  <text x="1126" y="442" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
+  <rect x="12" y="460" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+  <text x="24" y="482" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist Mono', monospace">select_repair_shop</text>
+  <text x="208" y="482" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">taller</text>
+  <rect x="232" y="460" width="148" height="36" rx="4" fill="#F3DFB4" stroke="#9A6A1F" stroke-width="0.6"/>
+  <text x="306" y="482" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Aprobación</text>
+  <rect x="396" y="460" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="470" y="482" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
+  <rect x="560" y="460" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="634" y="482" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">POST …/repair</text>
+  <rect x="724" y="460" width="148" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.28)" stroke-width="0.6" stroke-dasharray="3 2"/>
+  <text x="798" y="482" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
+  <rect x="888" y="460" width="148" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.28)" stroke-width="0.6" stroke-dasharray="3 2"/>
+  <text x="962" y="482" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
+  <rect x="1052" y="460" width="148" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.28)" stroke-width="0.6" stroke-dasharray="3 2"/>
+  <text x="1126" y="482" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
+  <rect x="12" y="500" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+  <text x="24" y="522" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist Mono', monospace">sign_claim</text>
+  <text x="208" y="522" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">firma</text>
+  <rect x="232" y="500" width="148" height="36" rx="4" fill="#F3DFB4" stroke="#9A6A1F" stroke-width="0.6"/>
+  <text x="306" y="522" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Aprobación</text>
+  <rect x="396" y="500" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="470" y="522" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
+  <rect x="560" y="500" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="634" y="522" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">POST …/sign</text>
+  <rect x="724" y="500" width="148" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.28)" stroke-width="0.6" stroke-dasharray="3 2"/>
+  <text x="798" y="522" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
+  <rect x="888" y="500" width="148" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.28)" stroke-width="0.6" stroke-dasharray="3 2"/>
+  <text x="962" y="522" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
+  <rect x="1052" y="500" width="148" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.28)" stroke-width="0.6" stroke-dasharray="3 2"/>
+  <text x="1126" y="522" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
+  <rect x="12" y="540" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+  <text x="24" y="562" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist Mono', monospace">get_claim_status</text>
+  <text x="208" y="562" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">estado</text>
+  <rect x="232" y="540" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="306" y="562" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">Automático</text>
+  <rect x="396" y="540" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="470" y="562" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
+  <rect x="560" y="540" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="634" y="562" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">GET /claims/{id}</text>
+  <rect x="724" y="540" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="798" y="562" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">getClaimStatus</text>
+  <rect x="888" y="540" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="962" y="562" fill="#2d3142" font-size="9" font-weight="400" font-family="'Geist Mono', monospace" text-anchor="middle">getClaimStatus</text>
+  <rect x="1052" y="540" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.6"/>
+  <text x="1126" y="562" fill="#2d3142" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">✓</text>
+  <rect x="12" y="580" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+  <text x="24" y="602" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif">aprobar</text>
+  <text x="208" y="602" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">no es tool</text>
+  <rect x="232" y="580" width="148" height="36" rx="4" fill="#F3DFB4" stroke="#9A6A1F" stroke-width="0.6"/>
+  <text x="306" y="602" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Solo humano</text>
+  <rect x="396" y="580" width="148" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.28)" stroke-width="0.6" stroke-dasharray="3 2"/>
+  <text x="470" y="602" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
+  <rect x="560" y="580" width="148" height="36" rx="4" fill="rgba(15,92,77,0.07)" stroke="#0F5C4D" stroke-width="1.4"/>
+  <text x="634" y="596" fill="#0F5C4D" font-size="9" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle">POST …/approve</text>
+  <text x="634" y="609" fill="#0F5C4D" fill-opacity="0.85" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">app + huella</text>
+  <rect x="724" y="580" width="148" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.28)" stroke-width="0.6" stroke-dasharray="3 2"/>
+  <text x="798" y="602" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
+  <rect x="888" y="580" width="148" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.28)" stroke-width="0.6" stroke-dasharray="3 2"/>
+  <text x="962" y="602" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
+  <rect x="1052" y="580" width="148" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.28)" stroke-width="0.6" stroke-dasharray="3 2"/>
+  <text x="1126" y="602" fill="#7a8399" font-size="10" font-weight="400" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
+  <line x1="12" y1="636" x2="1236" y2="636" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+  <text x="12" y="656" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEYENDA</text>
+  <rect x="92" y="646" width="14" height="12" rx="2" fill="#F3DFB4" stroke="#9A6A1F" stroke-width="0.8"/>
+  <text x="112" y="656" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">aprobación humana</text>
+  <rect x="227" y="646" width="14" height="12" rx="2" fill="#FFFFFF" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+  <text x="247" y="656" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">automático / expuesta</text>
+  <rect x="384" y="646" width="14" height="12" rx="2" fill="url(#hatch-conditional)" stroke="#C9963F" stroke-width="0.8"/>
+  <text x="404" y="656" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">condicional</text>
+  <rect x="485" y="646" width="14" height="12" rx="2" fill="#f5f5f5" stroke="rgba(45,49,66,0.28)" stroke-width="0.8" stroke-dasharray="3 2"/>
+  <text x="505" y="656" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">no expuesta</text>
+  <rect x="586" y="646" width="14" height="12" rx="2" fill="rgba(15,92,77,0.07)" stroke="#0F5C4D" stroke-width="1.4"/>
+  <text x="606" y="656" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">el único camino para aprobar</text>
+</svg>

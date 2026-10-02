@@ -40,7 +40,8 @@ Versiones con las que se construyó y probó el proyecto (2026-09-30). Las libre
 | Google Chrome | 150 o más (probado con 154.0.8037.59) | WebMCP y la vista del presentador |
 | scrcpy | opcional | Solo si se quiere el espejo píxel a píxel del teléfono |
 
-`make test` corre las pruebas de Android, así que también necesita JDK 17 y el Android SDK. En GitHub,
+`make test` corre las pruebas de Android, así que también necesita JDK 17 y el Android SDK con
+`sdk.dir` configurado (sección 2, antes de la primera prueba). En GitHub,
 `.github/workflows/test.yml` corre el mismo `make test` en cada push a `main` y en cada PR (modos
 simulados, sin nube, con caché de uv, npm y Gradle).
 
@@ -61,14 +62,28 @@ cd web && npm ci && cp .env.example .env.local && cd ..
 - `web/.env.local` (no se versiona): configuración pública del portal (`NEXT_PUBLIC_ESCUDO_API_URL`,
   `NEXT_PUBLIC_FIREBASE_API_KEY`, …) y, para el feed del presentador en el servidor, `GOOGLE_CLOUD_PROJECT`
   y `FIRESTORE_DATABASE`.
-- `android/local.properties` (no se versiona): ver la [sección 8](#8-emulador-android).
+- `android/local.properties` (no se versiona): las claves de la app están en la [sección 8](#8-emulador-android).
+
+**Android SDK antes de `make test`.** Gradle necesita saber dónde está el SDK. Con Android Studio
+instalado basta con:
+
+```bash
+echo "sdk.dir=$HOME/Library/Android/sdk" >> android/local.properties   # o exporta ANDROID_HOME
+```
 
 Comprobación rápida sin nube:
 
 ```bash
-make up-mock     # terminal 1
-make scenario    # terminal 2: debe terminar con «aprobaciones: 3 (esperadas 3) · OK»
+make up-mock          # terminal 1 (ADMIN_TOKEN=local-admin por defecto)
+make reset            # terminal 2: «reset OK» (mismo ADMIN_TOKEN que up-mock)
+make scenario         # «aprobaciones: 3 (esperadas 3) · OK»
+make chat-scenario    # el mismo flujo por chat, con el asistente simulado: «… · OK»
+make test             # backend, Android y web
 ```
+
+`ADMIN_TOKEN` tiene un solo valor por defecto (`local-admin`) en el `Makefile` y en `.env.example`, así
+que `make up-mock`, `make up`, `make reset`, `make scenario` y `make chat-scenario` coinciden sin
+configurar nada. Si cambias `ADMIN_TOKEN` en `.env`, cambia para todos a la vez.
 
 ## 3. Credenciales y ADC
 
@@ -123,7 +138,9 @@ make seed
 
 Cada superficie (REST, MCP, el chat y el agente A2A de Escudo) actúa como la clienta que dice el token
 verificado (`customer_id`, ver `backend/escudo/auth.py`). Un usuario sin ese claim es su propio cliente:
-no ve póliza ni reclamos. Solo con `MOCK_AUTH=1` (pruebas locales) todo llamador es `DEMO_CUSTOMER_ID`.
+no ve póliza ni reclamos. Solo con `MOCK_AUTH=1` (pruebas locales) no se verifica nada: un bearer
+`mock-customer:<customer_id>` (el que devuelve `POST /admin/runs` en ese modo) actúa como ese cliente y
+cualquier otro llamador es `DEMO_CUSTOMER_ID`.
 
 El servicio desplegado además siembra una base vacía al arrancar (`seed.seed_if_empty`).
 
@@ -132,8 +149,7 @@ registrados se conservan para que el teléfono no tenga que volver a registrarse
 
 ```bash
 make reset CLOUD=1    # servicio desplegado (lee escudo-admin-token de Secret Manager)
-make reset            # API local en ESCUDO_BASE_URL (con make up-mock el token es local-admin:
-                      #   make reset ADMIN_TOKEN=local-admin si tu .env tiene otro)
+make reset            # API local en ESCUDO_BASE_URL (mismo ADMIN_TOKEN que make up-mock / make up)
 ```
 
 ## 5. Google Cloud con `infra/`
@@ -156,15 +172,17 @@ En orden:
 | 5 | `bash infra/05-web-service-account.sh` | Cuenta `escudo-web`: `datastore.viewer` solo sobre la base `escudo` |
 | 6 | `bash infra/06-secrets.sh` | Secretos `escudo-admin-token` y `escudo-a2a-secret` en Secret Manager; `escudo-api` solo puede leer esos dos |
 | 7 | `make seed` | Datos y login de la clienta (sección 4) |
-| 8 | `make deploy-api` (`infra/10-deploy-api.sh`) | Prepara un contexto con `backend/` + `contracts/`, construye con Cloud Build y despliega `escudo-api`: `--min-instances=0 --max-instances=3 --concurrency=80 --cpu=1 --memory=1Gi --no-cpu-throttling --timeout=3600 --session-affinity` (`MIN_INSTANCES=1` para otro mínimo; mejor `make stage-on`). Monta `ADMIN_TOKEN` y `A2A_SHARED_SECRET` desde Secret Manager (`--set-secrets`) y fija `PUBLIC_BASE_URL` y `A2A_PEERS` a la URL determinista del servicio |
-| 9 | `make deploy-web` (`infra/11-deploy-web.sh`) | Escribe `.env.production` con la configuración pública (`NEXT_PUBLIC_*`), construye y despliega `escudo-web` (`--min-instances=0 --max-instances=2`, 3600 s de timeout para el stream SSE) |
+| 8 | `make deploy-api` (`infra/10-deploy-api.sh`) | Prepara un contexto con `backend/` + `contracts/`, construye con Cloud Build y despliega `escudo-api`: `--max-instances=3 --concurrency=80 --cpu=1 --memory=1Gi --no-cpu-throttling --timeout=3600 --session-affinity`; `--min-instances` conserva el valor actual del servicio (0 si es nuevo; `MIN_INSTANCES=…` lo fuerza). Monta `ADMIN_TOKEN` y `A2A_SHARED_SECRET` desde Secret Manager (`--set-secrets`) y fija `PUBLIC_BASE_URL` y `A2A_PEERS` a la URL determinista del servicio |
+| 9 | `make deploy-web` (`infra/11-deploy-web.sh`) | Escribe `.env.production` con la configuración pública (`NEXT_PUBLIC_*`), construye y despliega `escudo-web` (`--max-instances=2`, 3600 s de timeout para el stream SSE; `--min-instances` también conserva el valor actual) |
 
 `make deploy` corre los pasos 8 y 9. Los modelos y datos que se pasan al servicio salen de
 `.env.example` y, encima, de `.env`.
 
 Los dos servicios escalan a cero cuando nadie los usa. El día de la charla, `make stage-on` deja una
 instancia caliente de cada uno (`min-instances=1`, sin arranque en frío) y `make stage-off` los vuelve
-a cero al terminar (sección 12).
+a cero al terminar (sección 12). Un despliegue no cambia ese estado: `infra/10` e `infra/11` leen el
+`min-instances` actual del servicio y lo vuelven a aplicar, así que desplegar la víspera después de
+`make stage-on` deja la instancia caliente, y desplegar otro día deja el servicio en cero.
 
 URLs resultantes: ver la tabla «URLs desplegadas» del README.
 
@@ -172,7 +190,7 @@ URLs resultantes: ver la tabla «URLs desplegadas» del README.
 
 | Modo | Backend | Datos y modelos | Para qué |
 | --- | --- | --- | --- |
-| **Sin nube** | `make up-mock` | En memoria; perito, socios y asistente del chat deterministas; cualquier llamador es la clienta | Desarrollo, pruebas, ensayar sin red |
+| **Sin nube** | `make up-mock` | En memoria; perito, socios y asistente del chat deterministas (`ScriptedAssistant`); tokens `mock-customer:<id>` sin verificar | Desarrollo, pruebas, `make scenario` y `make chat-scenario` sin red |
 | **Local con nube** | `make up` | Firestore `escudo`, Storage, Gemini y FCM reales con tu ADC; tokens de Firebase verificados | Depurar el backend con los servicios reales |
 | **Nube** | `make deploy` | Lo mismo, en Cloud Run | La charla |
 
@@ -191,12 +209,33 @@ Notas:
   pantalla 4 s. `make reset` borra los clientes de corrida, sus usuarios y sus dispositivos.
 - `make chat-scenario` hace lo mismo por el chat: con su propio cliente, abre el reclamo y sube las tres
   fotos por REST (como la app), y luego le escribe al asistente en `wss://…/assistant/chat`; aprueba las
-  tres pausas con el dispositivo de prueba y el asistente sigue solo después de cada una (< 3 min).
+  tres pausas con el dispositivo de prueba y el asistente sigue solo después de cada una (< 3 min). Contra
+  `make up-mock` responde el `ScriptedAssistant`, que recorre los mismos pasos (grúa, talleres, auto,
+  taller con mejor calificación, deducible, firma) en unos 6 s.
+- El reclamo lo pone el servidor, no el modelo. En cada turno el chat le recuerda al asistente el reclamo
+  activo de la clienta, y en `gateway.call_capability` cualquier llamada de un agente (no de la propia
+  clienta) con un `claim_id` que no existe o no es suyo se corrige al reclamo abierto más reciente
+  (`repository.active_claim`; queda en el log «agent claim_id … replaced by the active claim …»). Un id inventado como
+  `clm_96051512` ya no rompe la corrida.
+- Línea de tiempo coherente: cada evento lleva el `run_id` de la corrida (`X-Escudo-Run-Id`) o, si no
+  viene, el de la clienta (`Caller.timeline_run_id`), así que un aparte por MCP, WebMCP o AppFunctions
+  con la misma clienta cae en la misma línea de tiempo. `/presenter` sin `?run` sigue la corrida del
+  reclamo más reciente y no salta a otra por un evento suelto.
+- Cada llamada al modelo del chat tiene un límite de 30 s (`CHAT_MODEL_TIMEOUT_SECONDS`, con reintentos):
+  si Gemini se queda colgado, el turno reintenta en vez de detener el escenario.
 - `make scenario-live` usa la clienta sembrada (`--shared`) y espera a que apruebes en el teléfono
   (sondea `GET /approvals`).
 - Web local: `make web` levanta el portal en `http://localhost:3217`. `/presenter` lee Firestore en el
-  servidor con tu ADC; `/presenter?demo=1` reproduce una corrida grabada
-  (`web/src/lib/fixtures/scenario-events.json`) sin nube.
+  servidor con tu ADC; `/presenter?demo=1` reproduce una corrida real por chat grabada
+  (`web/src/lib/fixtures/scenario-events.json`, corrida `run-6958m5`) sin nube, rotulada
+  **REPETICIÓN GRABADA** («Reclamo grabado», teléfono «grabado»): nunca dice «en vivo».
+- Respaldo sin red: `make up-offline` construye la web en modo producción y la sirve desde la laptop en
+  `http://127.0.0.1:3217` (`web/scripts/serve-offline.sh`). Las fuentes son propias
+  (`web/src/app/fonts/`), así que ni la página ni el build piden nada a internet; abre
+  `/presenter?demo=1`. `web/e2e/offline.spec.ts` lo comprueba con toda petición externa bloqueada. El
+  último respaldo es el video `docs/escudo-chat-run.mp4` (83 s: la misma corrida grabada, también rotulada REPETICIÓN GRABADA).
+- Cuenta para el portal: correo y contraseña de Andrea están en `.env.local` (los escribe `make seed`).
+  La pantalla de entrada no lo menciona a propósito: es la de una aseguradora, no la de un ensayo.
 - App contra backend local: sabor `live` con `escudo.apiUrl=http://10.0.2.2:8080` y
   `escudo.mockAuth=true` en `local.properties` (solo debug permite HTTP a `10.0.2.2`). O el sabor `fake`
   (`make android-install FLAVOR=fake`), que no usa red.
@@ -211,10 +250,11 @@ make test
 
 | Parte | Comando | Qué cubre |
 | --- | --- | --- |
-| Backend | `cd backend && MOCK_AI=1 MOCK_AUTH=1 uv run pytest -q` (53 pruebas) | Toda acción con aprobación es rechazada sin `approval_id` válido, por REST y MCP (`test_approvals.py`); aprobación de otra herramienta, otros argumentos, rechazada o ya usada; no existe herramienta de aprobar; la tabla de autonomía cubre exactamente el registro y coincide con el contrato (`test_autonomy.py`); Agent Cards en la ruta well-known, descubrimiento sin rutas escritas a mano y secreto de socios (`test_discovery.py`); eventos válidos contra el esquema, etiquetas de superficie y eventos de clientes solo `message` sobre reclamos propios (`test_events.py`); MCP, REST y el agente Escudo actúan como el `customer_id` del token verificado y `/a2a/escudo` rechaza llamadas anónimas (`test_identity.py`); aprobar exige firma del dispositivo registrado de la clienta: sin dispositivo, dispositivo ajeno o desconocido, firma mala o para otra aprobación → 403 sin cambios, repetir → rechazado (`test_device_approvals.py`); chat: solo cabecera `Authorization`, herramientas por las capacidades, pausa en la aprobación y reanudación sola tras aprobar, la conversación sobrevive a una reconexión (`test_chat.py`); cada corrida es su propio cliente y `make reset` los borra sin tocar el teléfono del escenario (`test_runs.py`); llamadas de respaldo del perito (`test_hedging.py`); `make reset` (`test_reset.py`); el escenario completo por MCP con 3 aprobaciones (`test_scenario.py`) |
+| Backend | `cd backend && MOCK_AI=1 MOCK_AUTH=1 uv run pytest -q` (57 pruebas) | Toda acción con aprobación es rechazada sin `approval_id` válido, por REST y MCP (`test_approvals.py`); aprobación de otra herramienta, otros argumentos, rechazada o ya usada; no existe herramienta de aprobar; la tabla de autonomía cubre exactamente el registro y coincide con el contrato (`test_autonomy.py`); Agent Cards en la ruta well-known, descubrimiento sin rutas escritas a mano y secreto de socios (`test_discovery.py`); eventos válidos contra el esquema, etiquetas de superficie y eventos de clientes solo `message` sobre reclamos propios (`test_events.py`); MCP, REST y el agente Escudo actúan como el `customer_id` del token verificado y `/a2a/escudo` rechaza llamadas anónimas (`test_identity.py`); aprobar exige firma del dispositivo registrado de la clienta: sin dispositivo, dispositivo ajeno o desconocido, firma mala o para otra aprobación → 403 sin cambios, repetir → rechazado (`test_device_approvals.py`); chat: solo cabecera `Authorization`, herramientas por las capacidades, pausa en la aprobación y reanudación sola tras aprobar, la conversación sobrevive a una reconexión, el asistente simulado firma el reclamo con 3 aprobaciones y un agente no puede apuntar a un reclamo inventado (`test_chat.py`); los momentos de descubrimiento (Agent Card, `tools/list`) y los apartes de la misma clienta quedan en la línea de tiempo de su reclamo (`test_events.py`); cada corrida es su propio cliente y `make reset` los borra sin tocar el teléfono del escenario (`test_runs.py`); llamadas de respaldo del perito (`test_hedging.py`); `make reset` (`test_reset.py`); el escenario completo por MCP con 3 aprobaciones (`test_scenario.py`) |
 | Android | `make android-test` (sabores `fake` y `live`) | Mapeo de AppFunctions, `ApprovalFlow` y firma de aprobaciones, protocolo del chat, repositorio, cliente HTTP, push, línea de tiempo, mensajes de error |
-| Web | `cd web && npm test` (17 pruebas) | Línea de tiempo del presentador (incluida la selección de corrida con `?run=`) y herramientas WebMCP (exactamente cuatro, todas de solo lectura, ninguna aprueba) |
-| Web e2e | `cd web && npm run e2e` | Presentador en modo demo con Chrome: pausa en ámbar, 3 aprobaciones, el reloj se detiene al firmar |
+| Web | `cd web && npm test` (18 pruebas) | Línea de tiempo del presentador (selección de corrida con `?run=` y, sin él, la del reclamo activo; etiqueta «automático») y herramientas WebMCP (exactamente cuatro, todas de solo lectura, ninguna aprueba) |
+| Web e2e | `cd web && npm run e2e` | Presentador en modo demo con Chrome: rótulo REPETICIÓN GRABADA, pausa en ámbar, 3 aprobaciones, el reloj se detiene al firmar |
+| Sin red | `make up-offline`, luego `cd web && E2E_BASE_URL=http://127.0.0.1:3217 npx playwright test e2e/offline.spec.ts` | La repetición funciona con toda petición fuera de la laptop abortada, sin «en vivo» y sin pedidos externos |
 | WebMCP real | `cd web && E2E_WEBMCP=1 npm run e2e` | Chrome con el flag de WebMCP, contra el API desplegado: el portal registra cuatro herramientas y responden |
 | Escenario por MCP | `make scenario CLOUD=1` | El flujo completo contra el servicio desplegado, con su propio cliente, cronometrado (< 180 s, 3 aprobaciones) |
 | Escenario por chat | `make chat-scenario CLOUD=1` | El mismo flujo escribiéndole al asistente, con su propio cliente (< 180 s, 3 aprobaciones) |
@@ -331,7 +371,8 @@ adb shell "cmd app_function execute-app-function --package app.escudo.android \
   --function '$F#getClaimStatus' --parameters '{}' --brief-yaml"
 ```
 
-Cada llamada viaja con `X-Escudo-Surface: appfunctions`, así que aparece en `/presenter` con su insignia.
+Cada llamada viaja con `X-Escudo-Surface: appfunctions`, así que aparece en `/presenter` con su insignia
+y como **Agente externo** (quien la llama es `adb`, no Gemini).
 Para mostrar que una función se puede apagar:
 `adb shell cmd app_function set-enabled --package app.escudo.android --function "$F#reportAccident" --state disable`
 (y `--state default` para volver). Más detalle en [`android/APPFUNCTIONS.md`](../android/APPFUNCTIONS.md).
@@ -344,7 +385,8 @@ Para mostrar que una función se puede apagar:
    charla). El pie del portal dice «WebMCP · 4 herramientas disponibles…».
 3. DevTools (`⌥⌘I`) → **Application** → **WebMCP**: aparecen `getCoverage`, `getDeductible`,
    `findRepairShops` y `getClaimStatus` con su descripción y esquema. Elegir `getDeductible` → **Run tool**
-   → `{"deductible_usd": 500, …}`; `/presenter` muestra el paso con la insignia **WebMCP**.
+   → `{"deductible_usd": 500, …}`; `/presenter` muestra el paso con la insignia **WebMCP**, como
+   **Agente externo**, en la línea de tiempo del reclamo activo de Andrea.
 
 ## 10. Recorrido por el código: una llamada a través de todas las capas
 
@@ -426,7 +468,7 @@ el agente A2A (`agents/escudo_agent.build_a2a_agent`) o una AppFunction (que lla
 | --- | --- |
 | `RuntimeError: GEMINI_MODEL is not set (or run with MOCK_AI=1)` | Falta `.env` o la variable. `cp .env.example .env`, o usa `make up-mock` |
 | `make seed` falla con un error de cuota o de proyecto en Identity Toolkit | ADC de usuario sin proyecto de cuota: `gcloud auth application-default set-quota-project ai-experiments-487722` (o `GOOGLE_CLOUD_QUOTA_PROJECT` en `.env`) |
-| `make reset` → `reset falló: HTTP 401` | Token equivocado. Local con `make up-mock`: `make reset ADMIN_TOKEN=local-admin`. Nube: `make reset CLOUD=1` (lee `escudo-admin-token` de Secret Manager con tu gcloud; corre `infra/06-secrets.sh` si no existe) |
+| `make reset` → `reset falló: HTTP 401` | Token distinto entre el servidor y `make reset`. Local: los dos toman `ADMIN_TOKEN` del `Makefile` o de `.env`; si arrancaste el servidor con otro valor, reinícialo. Nube: `make reset CLOUD=1` (lee `escudo-admin-token` de Secret Manager con tu gcloud; corre `infra/06-secrets.sh` si no existe) |
 | `make reset` → `HTTP 000` | El API no está arriba en `ESCUDO_BASE_URL` |
 | `approval_invalid (wrong_args)` | El agente reintentó con otros argumentos (por ejemplo, otro horario). Hay que pedir una nueva aprobación; la anterior no se quemó |
 | `approval_invalid (not_approved)` | El agente reintentó antes de que la clienta aprobara. Esperar el aviso |
@@ -440,7 +482,9 @@ el agente A2A (`agents/escudo_agent.build_a2a_agent`) o una AppFunction (que lla
 | `/presenter` vacío en local | `make web` lee Firestore con tu ADC; usa `/presenter?demo=1` sin nube |
 | La evaluación de fotos tarda mucho | El perito lanza una llamada de respaldo cada 5 s (hasta 4, gana la primera; límite 45 s, después `assessment_unavailable`). Si `global` está lento para todos, ninguna gana antes: los tiempos quedan en los logs como `assessment_timing` |
 | El chat no sigue solo después de aprobar | La aprobación se decidió con otra conversación cerrada: reabre el chat con la cabecera `X-Escudo-Chat-Session` (la app la guarda) o escribe «sigue» |
-| `make scenario` → 401 en `/admin/runs` | Falta el token de admin: `ADMIN_TOKEN` en `.env` (local) o acceso a Secret Manager (`CLOUD=1`) |
+| `make scenario` → 401 en `/admin/runs` | Token de admin distinto al del servidor local (ver fila de `make reset`) o sin acceso a Secret Manager (`CLOUD=1`) |
+| `make up-offline` → `EADDRINUSE 127.0.0.1:3217` | `make web` (u otro `next-server`) ya usa el puerto: ciérralo o usa `PORT=3218 make up-offline` |
+| El chat se queda «pensando» más de 30 s | Gemini tardó; cada llamada se corta a los 30 s y se reintenta. Si se repite, `global` está lento: usa el respaldo (`make chat-scenario CLOUD=1` o `/presenter?demo=1`) |
 
 ## 12. Lista del día de la charla
 
@@ -461,7 +505,8 @@ el agente A2A (`agents/escudo_agent.build_a2a_agent`) o una AppFunction (que lla
 
 - [ ] `make reset CLOUD=1` (< 10 s).
 - [ ] `/presenter` abierto en Chrome a pantalla completa en el proyector; «Aprobaciones 0 de 3» (sin
-      `?run`, sigue la corrida más reciente: la del teléfono).
+      `?run`, sigue la corrida del reclamo más reciente: la del teléfono).
+- [ ] `make up-offline` probado en la laptop y `docs/escudo-chat-run.mp4` a mano.
 - [ ] Teléfono cargado, en no molestar salvo Escudo, chat del Asistente Escudo abierto.
 - [ ] Terminal con los comandos `adb … cmd app_function` listos (sección 9).
 - [ ] Si se quiere el espejo exacto: ventana `scrcpy --window-title "Escudo" --always-on-top` sobre el panel del teléfono.
@@ -470,9 +515,11 @@ el agente A2A (`agents/escudo_agent.build_a2a_agent`) o una AppFunction (que lla
 
 - Sin teléfono: `make chat-scenario CLOUD=1` (o `make scenario CLOUD=1 APPROVE_DELAY=4`) reproduce el
   flujo con su propio cliente; abre el `…/presenter?run=<id>` que imprime.
-- Sin red: `/presenter?demo=1` reproduce una corrida grabada.
+- Sin red: `make up-offline` y `http://127.0.0.1:3217/presenter?demo=1` (se ve **REPETICIÓN GRABADA**:
+  dilo en voz alta). Si tampoco hay laptop confiable, el video `docs/escudo-chat-run.mp4`.
 - Estado sucio: `make reset CLOUD=1`.
 
 **Después de la charla**
 
-- [ ] `make stage-off`: los dos servicios vuelven a `min-instances=0` (sin costo en reposo).
+- [ ] `make stage-off`: los dos servicios vuelven a `min-instances=0` (sin costo en reposo). Los
+      despliegues siguientes respetan ese estado.
