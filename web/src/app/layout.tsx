@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { Onest } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const onest = Onest({ subsets: ["latin"], variable: "--font-onest", display: "swap" });
+// Self-hosted (variable 100-900, SIL OFL: fonts/Onest-OFL.txt): the build and the stage need no network.
+const onest = localFont({ src: "./fonts/Onest-Variable.woff2", variable: "--font-onest", display: "swap", weight: "100 900" });
 
 export const metadata: Metadata = {
   title: { default: "Escudo", template: "%s · Escudo" },

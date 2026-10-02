@@ -1,6 +1,6 @@
 "use client";
 import { CLAIM_STEPS, SEVERITY_LABEL, slotLabel, usd } from "@/lib/labels";
-import type { Claim } from "@/lib/types";
+import type { Claim, TimelineItem } from "@/lib/types";
 import { useApi } from "@/lib/useApi";
 import { EmptyBlock, ErrorBlock, LoadingBlock } from "@/components/portal/States";
 import styles from "@/components/portal/portal.module.css";
@@ -17,10 +17,29 @@ const HEADLINE: Record<Claim["status"], string> = {
 // Status checks by agents repeat what the log already says.
 const QUIET_TOOLS = new Set(["get_claim_status", "get_policy", "check_coverage"]);
 
-// The customer reads her own log: no internal pauses or agent errors, and approvals in second person.
-const HIDDEN_KINDS = new Set(["tool_call", "approval_requested", "error"]);
-function forCustomer(summary: string): string {
-  return summary.replace(/^Aprobado por el cliente: /, "Aprobaste: ").replace(/^Rechazado por el cliente: /, "Rechazaste: ");
+// The customer reads her own log: no internal pauses, agent errors or discovery steps; her decisions in
+// second person and short (the step that follows already says what happened); no repeated lines.
+const HIDDEN_KINDS = new Set(["tool_call", "approval_requested", "error", "a2a_request"]);
+const DECISION: Record<string, string> = {
+  accept_deductible: "el deducible",
+  select_repair_shop: "la reserva del taller",
+  sign_claim: "la firma del reclamo",
+  request_rental_car: "la renta del auto",
+};
+function forCustomer(t: TimelineItem): string {
+  if (t.kind === "approval_granted") return `Aprobaste con tu huella ${DECISION[t.tool ?? ""] ?? "la acción"}.`;
+  if (t.kind === "approval_rejected") return `Rechazaste ${DECISION[t.tool ?? ""] ?? "la acción"}.`;
+  return t.summary;
+}
+function customerLog(items: TimelineItem[]): TimelineItem[] {
+  const seen = new Set<string>();
+  return items.filter((t) => {
+    if (HIDDEN_KINDS.has(t.kind) || (t.tool && QUIET_TOOLS.has(t.tool)) || t.summary.includes("Agent Card")) return false;
+    const key = forCustomer(t).toLowerCase().replace(/[^a-z0-9áéíóúñ]/g, "").slice(0, 40);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export default function ClaimPage() {
@@ -77,14 +96,13 @@ export default function ClaimPage() {
         </h2>
         {c.timeline && c.timeline.length > 0 ? (
           <ol className={styles.log}>
-            {c.timeline
-              .filter((t) => !HIDDEN_KINDS.has(t.kind) && !(t.tool && QUIET_TOOLS.has(t.tool)))
+            {customerLog(c.timeline)
               .slice(-10)
               .reverse()
               .map((t) => (
                 <li key={t.ts + t.summary}>
                   <time dateTime={t.ts}>{new Date(t.ts).toLocaleTimeString("es-GT", { hour: "numeric", minute: "2-digit" })}</time>
-                  <span>{forCustomer(t.summary)}</span>
+                  <span>{forCustomer(t)}</span>
                 </li>
               ))}
           </ol>

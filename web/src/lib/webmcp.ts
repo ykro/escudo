@@ -68,7 +68,7 @@ export function escudoTools(get: Fetcher): EscudoTool[] {
           deductible_usd: policy.deductible_usd,
           currency: "USD",
           rental_days: policy.rental_days,
-          notes: `Pagas ${policy.deductible_usd} USD por reclamo de daños propios; Escudo cubre el resto.`,
+          notes: `Pagas USD ${policy.deductible_usd} por reclamo de daños propios; Escudo cubre el resto.`,
         };
       },
     },

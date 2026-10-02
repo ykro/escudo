@@ -9,9 +9,10 @@ export class ApiError extends Error {
 }
 
 /** Who is calling, for the presenter timeline (X-Escudo-* headers, see contracts/tools.md). */
-export type Caller = { surface: "web" | "webmcp"; actor: "customer" | "gemini" };
+export type Caller = { surface: "web" | "webmcp"; actor: "customer" | "external_agent" };
 export const PORTAL: Caller = { surface: "web", actor: "customer" };
-export const WEBMCP: Caller = { surface: "webmcp", actor: "gemini" };
+// Whichever agent the browser runs: the page cannot know which model it is.
+export const WEBMCP: Caller = { surface: "webmcp", actor: "external_agent" };
 
 export async function api<T>(path: string, caller: Caller = PORTAL, init: RequestInit = {}): Promise<T> {
   const user = firebaseAuth().currentUser;

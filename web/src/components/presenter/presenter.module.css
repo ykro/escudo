@@ -39,9 +39,19 @@
   font-weight: 650;
   letter-spacing: -0.015em;
 }
-.title { display: flex; align-items: baseline; gap: 28px; min-width: 0; }
-.title h1 { font-size: 60px; font-weight: 600; letter-spacing: -0.02em; }
-.claimId { color: var(--muted); font-size: 32px; font-variant-numeric: tabular-nums; }
+.title { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 28px; row-gap: 10px; min-width: 0; }
+.title h1 { font-size: 60px; font-weight: 600; letter-spacing: -0.02em; white-space: nowrap; }
+.claimId { color: var(--muted); font-size: 32px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.replay {
+  font-size: 24px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  background: var(--sand);
+  border-radius: var(--r-pill);
+  padding: 6px 20px;
+  white-space: nowrap;
+}
 
 .meters { display: flex; align-items: center; gap: 72px; }
 .approvals { display: flex; flex-direction: column; align-items: flex-end; }
@@ -87,8 +97,7 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  /* older steps fade out under the header */
-  mask-image: linear-gradient(to bottom, transparent 0, #000 120px);
+  /* rows that do not fit whole are hidden (Timeline.tsx), so nothing is cut in half */
 }
 
 .rows {
@@ -301,7 +310,7 @@
   padding-top: 14px;
 }
 .phoneFact strong { font-size: 32px; color: var(--ink); font-weight: 600; }
-.phoneCaption { font-size: 32px; color: var(--muted); }
+.phoneCaption { font-size: 30px; color: var(--muted); white-space: nowrap; }
 
 /* ---------- finale: the claim is signed ---------- */
 .done {
@@ -324,5 +333,19 @@
   display: grid;
   place-items: center;
 }
-.doneText { font-size: 52px; font-weight: 600; letter-spacing: -0.015em; line-height: 1.15; }
-.doneMuted { font-weight: 400; font-size: 36px; opacity: 0.9; }
+.doneText { font-size: 56px; font-weight: 600; letter-spacing: -0.015em; line-height: 1.1; white-space: nowrap; }
+.doneMuted { font-weight: 400; font-size: 34px; opacity: 0.92; margin-top: 4px; }
+
+/* "automático": what the agent may do alone, the counterpart of the amber pauses */
+.autoTag {
+  display: inline-block;
+  margin-left: 14px;
+  padding: 2px 14px;
+  border: 2px solid var(--line);
+  border-radius: var(--r-pill);
+  font-size: 26px;
+  font-weight: 500;
+  color: var(--muted);
+  vertical-align: 4px;
+  white-space: nowrap;
+}

@@ -52,7 +52,7 @@ export function PresenterView({ demo, run }: { demo: boolean; run?: string }) {
       <main
         className={styles.stage}
         style={{ transform: `translate(-50%, -50%) scale(${scale})` }}
-        aria-label="Vista del presentador: reclamo en vivo"
+        aria-label={demo ? "Vista del presentador: repetición grabada" : "Vista del presentador: reclamo en vivo"}
       >
         <header className={styles.header}>
           <div className={styles.brand}>
@@ -60,8 +60,9 @@ export function PresenterView({ demo, run }: { demo: boolean; run?: string }) {
             <span>Escudo</span>
           </div>
           <div className={styles.title}>
-            <h1>Reclamo en vivo</h1>
+            <h1>{demo ? "Reclamo grabado" : "Reclamo en vivo"}</h1>
             {state.claimId && <p className={styles.claimId}>{state.claimId}</p>}
+            {demo && <span className={styles.replay}>REPETICIÓN GRABADA</span>}
           </div>
           <div className={styles.meters} aria-live="polite">
             <div className={styles.approvals}>
@@ -94,7 +95,7 @@ export function PresenterView({ demo, run }: { demo: boolean; run?: string }) {
               </p>
             )}
           </section>
-          <PhoneMirror screen={phone} />
+          <PhoneMirror screen={phone} replay={demo} />
         </div>
       </main>
     </div>

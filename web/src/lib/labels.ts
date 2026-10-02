@@ -13,12 +13,13 @@ export const SURFACE_LABEL: Record<string, string> = {
 
 export const ACTOR_LABEL: Record<string, string> = {
   customer: "Andrea",
-  escudo_assistant: "Escudo Assistant",
+  escudo_assistant: "Asistente Escudo",
   escudo_agent: "Agente Escudo",
   tow_agent: "Agente de grúa",
   repair_agent: "Agente de talleres",
   damage_assessor: "Perito IA",
   gemini: "Gemini",
+  external_agent: "Agente externo",
   backend: "Escudo",
 };
 
@@ -55,6 +56,7 @@ export function slotLabel(iso: string): string {
   return `${DAYS[weekday]} ${+d} de ${MONTHS[+mo - 1]}, ${+h}:${mi}`;
 }
 
+/** One currency format everywhere (backend, app and web): "USD 500". */
 export function usd(n: number): string {
-  return `${n.toLocaleString("es-GT", { maximumFractionDigits: 0 })} USD`;
+  return `USD ${n.toLocaleString("es-GT", { maximumFractionDigits: 0 })}`;
 }

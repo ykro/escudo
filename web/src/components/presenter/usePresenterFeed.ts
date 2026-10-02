@@ -55,7 +55,7 @@ function replayDemo(setFeed: (f: Feed) => void): () => void {
       claim_id: e.claim_id ?? null,
       tool: e.tool ?? "",
       reason: e.reason ?? "",
-      summary: e.summary.replace(/^Esperando aprobación del cliente: /, ""),
+      summary: e.summary.replace(/^Esperando aprobación de(l| la) client[ea]: /, ""),
       amount_usd: e.tool === "accept_deductible" ? 500 : null,
       status: "pending",
       created_at: e.ts,

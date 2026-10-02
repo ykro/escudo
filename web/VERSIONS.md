@@ -9,4 +9,4 @@
 | WebMCP in Chrome | verified on **Chrome 154.0.8037.59** (stable) | Behind `chrome://flags/#enable-webmcp-testing` (Chrome 150+ moved the API from `navigator.modelContext` to `document.modelContext`; we fall back to the old one). `document.modelContext.getTools()` / `executeTool(tool, jsonString)` exist for testing. DevTools → Application → **WebMCP** lists the tools and can run them |
 | Playwright | 1.63.0 | e2e with the installed Chrome (`channel: "chrome"`) |
 | Vitest | 5.0.3 | unit tests (jsdom) |
-| Font | Onest (Google Fonts via `next/font`, self-hosted at build) | tokens: `src/brand/tokens.json` (direction "A · Sereno") |
+| Font | Onest variable WOFF2 committed in `src/app/fonts/` (`next/font/local`): no network at build or run time (`make up-offline`) | tokens: `src/brand/tokens.json` (direction "A · Sereno") |

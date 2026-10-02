@@ -31,6 +31,7 @@ export type Row = {
   actorLabel: string;
   text: string;
   tone: RowTone;
+  automatic: boolean; // the agent did it alone (autonomy table): shown so autonomy reads on both sides
 };
 
 export type Pause = { approvalId: string; title: string; detail: string; reason: string; tool: string | null; since: string };
@@ -66,7 +67,7 @@ function lowerFirst(s: string): string {
 function approvalTitle(tool: string | null | undefined, summary: string): string {
   const title = (tool && APPROVAL_TITLE[tool]) ?? "Aprobar acción";
   const amount = tool === "accept_deductible" ? summary.match(/USD ([\d,.]+)/)?.[1] : undefined;
-  return amount ? `${title} de ${amount} USD` : title;
+  return amount ? `${title} de USD ${amount}` : title;
 }
 
 export function clock(fromIso: string, toIso: string): string {
@@ -81,7 +82,10 @@ export function clock(fromIso: string, toIso: string): string {
  * run has its own customer and run id (X-Escudo-Run-Id), so concurrent runs never mix on screen.
  */
 export function selectRun(events: EscudoEvent[], run?: string | null): { runId: string | null; events: EscudoEvent[] } {
-  const runId = run || [...events].sort((a, b) => b.ts.localeCompare(a.ts))[0]?.run_id || null;
+  // Without ?run, stick to the run of the active claim (the newest event that belongs to a claim), so an
+  // aside without a claim (another customer browsing, a getCoverage) never pulls the stage away.
+  const newest = [...events].sort((a, b) => b.ts.localeCompare(a.ts));
+  const runId = run || newest.find((e) => e.claim_id)?.run_id || newest[0]?.run_id || null;
   return { runId, events: runId ? events.filter((e) => e.run_id === runId) : [] };
 }
 
@@ -108,6 +112,7 @@ export function buildPresenterState(input: EscudoEvent[]): PresenterState {
       surface: e.surface,
       surfaceLabel: SURFACE_LABEL[e.surface] ?? e.surface,
       actorLabel: ACTOR_LABEL[e.actor] ?? e.actor,
+      automatic: e.autonomy === "automatic",
     };
     switch (e.kind) {
       case "tool_result":
@@ -131,7 +136,7 @@ export function buildPresenterState(input: EscudoEvent[]): PresenterState {
         break;
       case "approval_requested":
         if (e.approval_id && !decided.has(e.approval_id)) {
-          const detail = e.summary.replace(/^Esperando aprobación del cliente: /, "");
+          const detail = e.summary.replace(/^Esperando aprobación de(l| la) client[ea]: /, "");
           pause = {
             approvalId: e.approval_id,
             title: approvalTitle(e.tool, detail),

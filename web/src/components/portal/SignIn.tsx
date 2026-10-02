@@ -66,9 +66,6 @@ function SignInForm() {
             {busy ? "Entrando…" : "Entrar"}
           </button>
         </form>
-        <p className={styles.signinHint}>
-          ¿Ensayando la charla? La cuenta de Andrea está en <code>.env.local</code> (la crea <code>make seed</code>).
-        </p>
       </div>
     </main>
   );

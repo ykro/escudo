@@ -39,16 +39,16 @@ describe("buildPresenterState", () => {
 
   it("holds an approval pause until the customer decides, then counts it", () => {
     const requested = ev({ kind: "approval_requested", actor: "backend", tool: "accept_deductible", approval_id: "apr_1",
-      summary: "Esperando aprobación del cliente: Aceptar pagar el deducible de USD 500", reason: "Te compromete a pagar el deducible." });
+      summary: "Esperando aprobación de la clienta: Aceptar pagar el deducible de USD 500", reason: "Te compromete a pagar el deducible." });
     const paused = buildPresenterState([requested]);
-    expect(paused.pause).toMatchObject({ approvalId: "apr_1", title: "Aceptar deducible de 500 USD", detail: "Aceptar pagar el deducible de USD 500", reason: "Te compromete a pagar el deducible." });
+    expect(paused.pause).toMatchObject({ approvalId: "apr_1", title: "Aceptar deducible de USD 500", detail: "Aceptar pagar el deducible de USD 500", reason: "Te compromete a pagar el deducible." });
     expect(paused.approvalsGranted).toBe(0);
 
-    const granted = ev({ kind: "approval_granted", actor: "customer", surface: "android", tool: "accept_deductible", approval_id: "apr_1", summary: "Aprobado por el cliente: Aceptar pagar el deducible de USD 500" });
+    const granted = ev({ kind: "approval_granted", actor: "customer", surface: "android", tool: "accept_deductible", approval_id: "apr_1", summary: "Aprobado por la clienta: Aceptar pagar el deducible de USD 500" });
     const after = buildPresenterState([requested, granted]);
     expect(after.pause).toBeNull();
     expect(after.approvalsGranted).toBe(1);
-    expect(after.rows.at(-1)).toMatchObject({ tone: "approved", surfaceLabel: "Android", text: "Aprobó con huella: aceptar deducible de 500 USD" });
+    expect(after.rows.at(-1)).toMatchObject({ tone: "approved", surfaceLabel: "Android", text: "Aprobó con huella: aceptar deducible de USD 500" });
   });
 
   it("lets the partner agent tell the tow story instead of repeating the tool result", () => {
@@ -93,6 +93,10 @@ describe("selectRun", () => {
   it("defaults to the run of the newest event", () => {
     expect(selectRun([a1, b1, a2]).runId).toBe("run-a");
     expect(selectRun([a1, b1, a2]).events).toEqual([a1, a2]);
+  });
+  it("sticks to the active claim's run when a newer event has no claim", () => {
+    const aside = ev({ run_id: "cus_other", claim_id: null, ts: "2026-10-01T10:00:30Z" });
+    expect(selectRun([a1, b1, a2, aside]).runId).toBe("run-a");
   });
   it("is empty without events", () => {
     expect(selectRun([])).toEqual({ runId: null, events: [] });

@@ -9,7 +9,7 @@ import styles from "./presenter.module.css";
  * backend state the app reads (pending approval first, then the claim). No capture pipeline
  * to fail on stage; for pixel-exact mirroring place a scrcpy window over this panel (see docs).
  */
-export function PhoneMirror({ screen }: { screen: PhoneScreen }) {
+export function PhoneMirror({ screen, replay = false }: { screen: PhoneScreen; replay?: boolean }) {
   return (
     <aside className={styles.phoneCol} aria-label="Pantalla del teléfono de la clienta">
       <div className={styles.phone}>
@@ -21,7 +21,7 @@ export function PhoneMirror({ screen }: { screen: PhoneScreen }) {
           <Screen screen={screen} />
         </div>
       </div>
-      <p className={styles.phoneCaption}>Teléfono de Andrea · en vivo</p>
+      <p className={styles.phoneCaption}>Teléfono de Andrea · {replay ? "grabado" : "en vivo"}</p>
     </aside>
   );
 }

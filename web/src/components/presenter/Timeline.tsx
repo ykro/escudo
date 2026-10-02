@@ -1,4 +1,5 @@
 "use client";
+import { useLayoutEffect, useRef } from "react";
 import type { Pause, Row } from "@/lib/timeline";
 import styles from "./presenter.module.css";
 
@@ -8,9 +9,27 @@ const KEEP_ROWS = 10;
 
 export function Timeline({ rows, pause, done }: { rows: Row[]; pause: Pause | null; done: { elapsed: string; approvals: number } | null }) {
   const visible = rows.slice(-KEEP_ROWS);
+  const clip = useRef<HTMLDivElement>(null);
+
+  // Show only rows that fit entirely: the oldest ones leave whole, never half-cut under the header.
+  useLayoutEffect(() => {
+    const box = clip.current;
+    if (!box) return;
+    const fit = () => {
+      const top = box.getBoundingClientRect().top;
+      box.querySelectorAll<HTMLElement>("li").forEach((li) => {
+        li.style.visibility = li.getBoundingClientRect().top < top - 1 ? "hidden" : "visible";
+      });
+    };
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, [visible, pause]);
+
   return (
     <div className={styles.timeline}>
-      <div className={styles.rowsClip}>
+      <div className={styles.rowsClip} ref={clip}>
         <ol className={styles.rows} aria-live="polite">
         {visible.map((row) => (
           <li key={row.id} className={`${styles.row} ${styles[`tone_${row.tone}`]}`}>
@@ -28,6 +47,7 @@ export function Timeline({ rows, pause, done }: { rows: Row[]; pause: Pause | nu
               <span aria-hidden> — </span>
               <span className="visually-hidden">: </span>
               {row.text}
+              {row.automatic && <span className={styles.autoTag}>automático</span>}
             </span>
           </li>
         ))}
@@ -55,9 +75,10 @@ export function Timeline({ rows, pause, done }: { rows: Row[]; pause: Pause | nu
               <path d="M6 12.5l4 4L18 8" stroke="currentColor" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </span>
-          <p className={styles.doneText}>
-            Reclamo firmado en {done.elapsed} <span className={styles.doneMuted}>· {done.approvals} aprobaciones, todas de Andrea</span>
-          </p>
+          <div>
+            <p className={styles.doneText}>Reclamo firmado en {done.elapsed}</p>
+            <p className={styles.doneMuted}>{done.approvals} aprobaciones, todas de Andrea en su teléfono</p>
+          </div>
         </div>
       )}
     </div>

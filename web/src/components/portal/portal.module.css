@@ -237,8 +237,6 @@
   font-weight: 400;
 }
 .field input:focus-visible { outline: 3px solid var(--pine); outline-offset: 1px; border-color: var(--pine); }
-.signinHint { color: var(--muted); font-size: 14px; margin-top: var(--s3); }
-.signinHint code { font-size: 13px; background: var(--pine-soft); padding: 1px 6px; border-radius: 6px; }
 
 @media (max-width: 860px) {
   .policyGrid, .claimLayout { grid-template-columns: 1fr; }
