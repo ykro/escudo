@@ -137,7 +137,12 @@ async def create_run(repo: Repository, auth) -> dict:  # noqa: ANN001
         repo.store.set(POLICIES, policy["policy_id"], policy),
         repo.store.set(RUNS, run_id, {"run_id": run_id, "customer_id": customer_id, "uid": f"run_{run_id}", "created_at": now_iso()}),
     )
-    return {"run_id": run_id, "customer_id": customer_id, "email": email, "password": password}
+    run = {"run_id": run_id, "customer_id": customer_id, "email": email, "password": password}
+    if auth.mock:  # offline: no Firebase user exists; this token acts as the run customer under MOCK_AUTH
+        from .auth import MOCK_CUSTOMER_PREFIX
+
+        run["token"] = MOCK_CUSTOMER_PREFIX + customer_id
+    return run
 
 
 async def drop_run_customers(repo: Repository, auth) -> int:  # noqa: ANN001

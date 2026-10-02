@@ -67,9 +67,9 @@ async def redeem(repo: Repository, approval_id: str, *, tool: str, args: dict[st
         if status == "used":
             raise ApprovalInvalid("already_used", "Esa aprobación ya se usó. Cada aprobación sirve una sola vez.")
         if status == "rejected":
-            raise ApprovalInvalid("rejected", "El cliente rechazó esta acción.")
+            raise ApprovalInvalid("rejected", "La clienta rechazó esta acción.")
         if status != "approved":
-            raise ApprovalInvalid("not_approved", "El cliente todavía no ha aprobado esta acción en su teléfono.")
+            raise ApprovalInvalid("not_approved", "La clienta todavía no ha aprobado esta acción en su teléfono.")
         return {"status": "used", "used_at": now_iso()}
 
     return await repo.mutate_approval(approval_id, check_and_use)

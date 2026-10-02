@@ -120,6 +120,42 @@ class ScriptedAssistant(BaseAgent):
             return result
 
         events: list[Event] = []
+        history = " ".join(e.content.parts[0].text or "" for e in ctx.session.events
+                           if e.author == "user" and e.content and e.content.parts).lower()
+        # "Ayúdame con todo" / "adelante": walk every pending step, pausing at each approval.
+        auto = any(w in text or w in history for w in ("con todo", "adelante", "ayúdame"))
+
+        async def plan() -> str:
+            """The next pending step(s), in the scenario's order, until an approval pause or the end."""
+            for _ in range(8):
+                claim = await self.services.repo.active_claim(caller.customer_id)
+                if claim is None:
+                    return "Primero reporta el choque desde la app con tus fotos."
+                cid = claim.claim_id
+                if claim.assessment is None:
+                    return "Sube las fotos del daño desde la app y sigo con todo."
+                if claim.tow is None:
+                    result = await tool("request_tow", {"claim_id": cid})
+                elif claim.repair is None:
+                    options = (await tool("list_repair_options", {"claim_id": cid})).get("options", [])
+                    if not options:
+                        return "No encontré talleres con cupo."
+                    best = max(options, key=lambda o: o["rating"])
+                    result = await tool("select_repair_shop", {"claim_id": cid, "shop_id": best["shop_id"], "slot": best["slots"][0]})
+                elif claim.rental is None:
+                    result = await tool("request_rental_car", {"claim_id": cid})
+                elif not claim.deductible_accepted:
+                    result = await tool("accept_deductible", {"claim_id": cid})
+                elif claim.status != "signed":
+                    result = await tool("sign_claim", {"claim_id": cid})
+                else:
+                    return f"¡Listo! Tu reclamo {cid} quedó firmado y enviado."
+                if pending := _pending_reply(result):
+                    return pending
+                if "error" in result:
+                    return f"No se pudo: {result.get('message')}"
+            return "Sigo en eso."
+
         reply = "¿En qué te ayudo con tu póliza o tu reclamo?"
         if match := re.search(r"aprob[oó] (\w+).*approval_id=(\S+?)\.?(\s|$)", raw):
             tool_name, approval_id = match.group(1), match.group(2)
@@ -127,7 +163,9 @@ class ScriptedAssistant(BaseAgent):
             args = dict(getattr(approval, "args", None) or (approval.model_extra or {}).get("args", {})) if approval else {}
             result = await tool(tool_name, args, approval_id)
             reply = "Listo, quedó hecho." if "error" not in result else f"No se pudo: {result.get('message')}"
-        else:
+            if auto and "error" not in result:
+                reply = await plan()
+        elif not auto:  # one explicit request (status, shop, deductible, signature)
             claim = await tool("get_claim_status", {})
             claim_id = claim.get("claim_id")
             if "taller" in text and claim_id:
@@ -142,6 +180,8 @@ class ScriptedAssistant(BaseAgent):
                 reply = _pending_reply(await tool("sign_claim", {"claim_id": claim_id})) or "Reclamo firmado."
             elif claim_id:
                 reply = f"Tu reclamo {claim_id} está {claim.get('status_label', 'en proceso')}."
+        else:
+            reply = await plan()
         for event in events:
             yield event
         yield Event(author=self.name, invocation_id=ctx.invocation_id,
@@ -173,10 +213,14 @@ async def run_turn(ws: WebSocket, services: Services, session: dict[str, Any], i
         await sessions.append_event(adk_session, Event(author=author, content=types.Content(role=role, parts=[types.Part(text=message["text"])])))
 
     session["messages"].append({"role": "user", "text": user_text, "ts": now_iso()})
+    # Ground every turn in the real claim (the server also corrects invented ids, gateway.py).
+    active = await services.repo.active_claim(identity.customer_id)
+    context = (f"[Contexto de Escudo: reclamo activo {active.claim_id}, estado {active.status}. Usa este claim_id.]\n"
+               if active else "[Contexto de Escudo: la clienta no tiene reclamos todavía.]\n")
     full_text, pending = "", None
     async for event in runner.run_async(
         user_id=identity.customer_id, session_id=session["session_id"],
-        new_message=types.Content(role="user", parts=[types.Part(text=user_text)]),
+        new_message=types.Content(role="user", parts=[types.Part(text=context + user_text)]),
         run_config=RunConfig(streaming_mode=StreamingMode.SSE),
     ):
         for part in (event.content.parts if event.content else []):

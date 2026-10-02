@@ -62,6 +62,7 @@ class EscudoAgent:
             timeout=A2A_TIMEOUT_SECONDS, headers=headers
         )
         self.peers = PeerDirectory(settings.a2a_peers, lambda: self.client_factory())
+        self._announced: set[tuple[str, str]] = set()
 
     async def warm_up(self) -> None:
         """Pay the one-time cost (card resolution, A2A client and runner setup: 3-7 s measured) at
@@ -111,9 +112,19 @@ class EscudoAgent:
         card = await self.peers.find(skill_id)
         url = card.supported_interfaces[0].url if card.supported_interfaces else ""
         partner = _partner_name(card)
+        if (claim.claim_id, skill_id) not in self._announced:
+            # The discovery moment: Escudo only knew a base URL; the card told it who answers and how.
+            self._announced.add((claim.claim_id, skill_id))
+            skill = next((sk for sk in card.skills if sk.id == skill_id), None)
+            await self._events.emit(
+                actor="escudo_agent", surface="a2a", kind="message", tool=_tool_for(skill_id),
+                summary=f"Descubre a {partner} por su Agent Card: ofrece «{skill.name if skill else skill_id}»",
+                run_id=caller.timeline_run_id, claim_id=claim.claim_id,
+                data={"peer": card.name, "partner": partner, "skill": skill_id, "rpc_url": url},
+            )
         await self._events.emit(
             actor="escudo_agent", surface="a2a", kind="a2a_request", tool=_tool_for(skill_id),
-            summary=f"{summary} a {partner} (vía su Agent Card)", run_id=caller.run_id or claim.claim_id, claim_id=claim.claim_id,
+            summary=f"{summary} a {partner} por A2A", run_id=caller.timeline_run_id, claim_id=claim.claim_id,
             data={"peer": card.name, "partner": partner, "skill": skill_id, "rpc_url": url, "discovered_via": "agent_card"},
         )
         last_error: Exception | None = None
@@ -156,7 +167,7 @@ class EscudoAgent:
     async def _emit_response(self, skill_id: str, claim: Claim, caller: Caller, summary: str, data: dict[str, Any]) -> None:
         await self._events.emit(
             actor=ACTOR_BY_SKILL[skill_id], surface="a2a", kind="a2a_response", tool=_tool_for(skill_id),
-            summary=summary, run_id=caller.run_id or claim.claim_id, claim_id=claim.claim_id, data=data,
+            summary=summary, run_id=caller.timeline_run_id, claim_id=claim.claim_id, data=data,
         )
 
 

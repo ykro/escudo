@@ -1,7 +1,7 @@
 """Device-bound approvals (`escudo-approval:v1`, contracts/tools.md).
 
 The customer's token says *who*; a signature from a key that lives in her phone's Keystore (unlocked
-by BiometricPrompt) says *she, on her phone, just now*. An agent that holds the token — MCP, voice,
+by BiometricPrompt) says *she, on her phone, just now*. An agent that holds the token — MCP, chat,
 A2A — has no such key, so it cannot approve on her behalf.
 """
 

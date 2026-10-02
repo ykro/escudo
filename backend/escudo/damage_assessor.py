@@ -31,7 +31,7 @@ Analiza las fotos de un choque y devuelve:
 - summary: una sola oración en español para la clienta, cálida y clara, en tuteo (tú, nunca usted),
   sin saludos ni fórmulas como «Estimado cliente». Ejemplo: «Tu auto tiene daño leve atrás y puede circular.»
 Si una foto no muestra un auto, ignórala. No inventes daños que no se ven.
-Vehículo asegurado: {vehicle}. Descripción del cliente: {description}"""
+Vehículo asegurado: {vehicle}. Descripción de la clienta: {description}"""
 
 
 # Measured 2026-09-30 (3 photos, one call): phone-size JPEGs (~1.5 MB, 4000 px) took 86-90 s;

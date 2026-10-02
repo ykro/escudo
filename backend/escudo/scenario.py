@@ -187,7 +187,7 @@ async def firebase_id_token(api_key: str, email: str | None, password: str | Non
 
     Only a token carrying the customer's `customer_id` claim can see her policy and claims."""
     if not (email and password):
-        raise SystemExit("Falta el login del cliente: corre `make seed` (escribe ESCUDO_CUSTOMER_EMAIL/PASSWORD en .env.local)")
+        raise SystemExit("Falta el login de la clienta: corre `make seed` (escribe ESCUDO_CUSTOMER_EMAIL/PASSWORD en .env.local)")
     async with httpx2.AsyncClient(timeout=20) as client:
         r = await client.post(
             f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={api_key}",
@@ -208,7 +208,7 @@ class RunSession:
     run_id: str | None
     label: str
 
-    def headers(self, actor: str = "gemini") -> dict[str, str]:
+    def headers(self, actor: str = "external_agent") -> dict[str, str]:
         h = {"X-Escudo-Actor": actor}
         if self.token:
             h["Authorization"] = f"Bearer {self.token}"
@@ -224,16 +224,21 @@ async def prepare_run(base: str, *, isolated: bool, token: str | None = None) ->
     admin = os.environ.get("ADMIN_TOKEN")
     if token:
         return RunSession(token, None, "token dado")
-    if isolated and api_key and admin:
+    if isolated and admin and (api_key or _is_local(base)):
         async with httpx2.AsyncClient(base_url=base, timeout=60) as http:
             r = await http.post("/admin/runs", headers={"X-Admin-Token": admin})
             r.raise_for_status()
             run = r.json()
-        return RunSession(await firebase_id_token(api_key, run["email"], run["password"]), run["run_id"], f"cliente aislado {run['customer_id']}")
+        token = run.get("token") or await firebase_id_token(api_key, run["email"], run["password"])  # token: MOCK_AUTH
+        return RunSession(token, run["run_id"], f"cliente aislado {run['customer_id']}")
     if api_key:
         token = await firebase_id_token(api_key, os.environ.get("ESCUDO_CUSTOMER_EMAIL"), os.environ.get("ESCUDO_CUSTOMER_PASSWORD"))
         return RunSession(token, None, "clienta sembrada")
     return RunSession(None, None, "sin sesión (MOCK_AUTH)")
+
+
+def _is_local(base: str) -> bool:
+    return "127.0.0.1" in base or "localhost" in base
 
 
 async def main() -> int:

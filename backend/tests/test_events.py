@@ -85,3 +85,25 @@ def test_photos_are_downscaled_before_the_model_sees_them():
     Image.new("RGB", (4000, 3000), (200, 200, 205)).save(big, "PNG")
     small = Image.open(io.BytesIO(for_assessment(big.getvalue())))
     assert small.format == "JPEG" and max(small.size) == ASSESS_MAX_PX
+
+
+async def test_discovery_moments_are_on_the_timeline(mcp, http, services):
+    """The presenter shows how agents found Escudo's capabilities: MCP tools/list and partner Agent Cards."""
+    await mcp.list_tools()
+    await mcp.list_tools()
+    claim = await ready_claim(http)  # repair quotes: Escudo discovers the repair partner by its card
+    await http.post(f"/claims/{claim['claim_id']}/tow")
+    events = await services.repo.store.where(EVENTS)
+    tools_list = [e for e in events if "MCP tools/list" in e["summary"]]
+    assert len(tools_list) == 1 and tools_list[0]["surface"] == "mcp"  # once per run and actor
+    cards = [e["summary"] for e in events if "Agent Card" in e["summary"]]
+    assert any("Red de Talleres" in c for c in cards) and any("Grúas Aliadas" in c for c in cards)
+
+
+async def test_asides_stay_on_the_claims_timeline(http, services):
+    """No run header: a WebMCP aside and the claim's steps share the customer's run (presenter never jumps)."""
+    claim = await ready_claim(http)
+    await http.get("/policy", headers={"X-Escudo-Surface": "webmcp", "X-Escudo-Actor": "external_agent"})
+    await http.post(f"/claims/{claim['claim_id']}/tow", headers={"X-Escudo-Surface": "appfunctions", "X-Escudo-Actor": "external_agent"})
+    runs = {e["run_id"] for e in await services.repo.store.where(EVENTS)}
+    assert runs == {"cus_demo"}

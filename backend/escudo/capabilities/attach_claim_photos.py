@@ -83,7 +83,7 @@ async def run(inp: Input, ctx: Context) -> dict[str, Any]:
         surface=ctx.caller.surface,
         kind="message",
         summary=f"Daño {_SEVERITY[assessment.severity]} en {' y '.join(p.name for p in assessment.parts[:2])} · {usd(low)}–{usd(high)}",
-        run_id=ctx.caller.run_id or claim.claim_id,
+        run_id=ctx.caller.timeline_run_id,
         claim_id=claim.claim_id,
         tool="attach_claim_photos",
         data={"severity": assessment.severity, "cost_range_usd": [low, high], "drivable": assessment.drivable,

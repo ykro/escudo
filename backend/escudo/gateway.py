@@ -1,6 +1,6 @@
 """The one door into the domain.
 
-REST, MCP, A2A and the voice assistant all call `call_capability`. It validates
+REST, MCP, A2A and the chat assistant all call `call_capability`. It validates
 input, runs the capability's precheck, applies the autonomy table, runs the
 capability and writes the timeline events. Because there is exactly one door,
 there is exactly one place where "needs approval" can be enforced.
@@ -36,6 +36,8 @@ async def call_capability(
     args = dict(args or {})
     approval_id = approval_id or args.pop("approval_id", None)
     args.pop("approval_id", None)
+    if "claim_id" in capability.Input.model_fields and caller.actor != "customer":
+        args["claim_id"] = await _agent_claim_id(services, caller, args.get("claim_id"))
     try:
         inp = capability.Input.model_validate(args)
     except ValidationError as exc:
@@ -46,7 +48,7 @@ async def call_capability(
     ctx = Context(services=services, caller=caller)
     events = services.events if _worth_a_timeline_entry(name, caller) else _SILENT
     claim_id = getattr(inp, "claim_id", None)
-    run_id = caller.run_id or claim_id or "demo"
+    run_id = caller.timeline_run_id
     common = {"actor": caller.actor, "surface": caller.surface, "run_id": run_id, "claim_id": claim_id, "tool": name}
 
     try:
@@ -62,7 +64,7 @@ async def call_capability(
             pending = decision.pending
             await events.emit(
                 kind="approval_requested",
-                summary=f"Esperando aprobación del cliente: {pending.summary}",
+                summary=f"Esperando aprobación de la clienta: {pending.summary}",
                 autonomy=level.value,
                 approval_id=pending.approval_id,
                 reason=pending.reason,
@@ -87,7 +89,7 @@ async def call_capability(
         summary=capability.summarize(result),
         autonomy=decision.autonomy.value,
         approval_id=decision.approval.approval_id if decision.approval else None,
-        **{**common, "claim_id": result_claim, "run_id": caller.run_id or result_claim or "demo"},
+        **{**common, "claim_id": result_claim},
     )
     return result
 
@@ -107,6 +109,23 @@ class _Silent:
 
 
 _SILENT = _Silent()
+
+
+async def _agent_claim_id(services: "Services", caller: Caller, given: Any) -> Any:
+    """Models invent ids ("clm_96051512"). For agents, an unknown or missing claim id means the
+    customer's active claim — always looked up within the token's customer, never across customers."""
+    if isinstance(given, str) and given:
+        try:
+            await services.repo.get_claim(given, caller.customer_id)
+            return given
+        except EscudoError:
+            pass
+    active = await services.repo.active_claim(caller.customer_id)
+    if active is None:
+        return given
+    if given:
+        log.info("agent claim_id %r replaced by the active claim %s", given, active.claim_id)
+    return active.claim_id
 
 
 def _call_summary(name: str, approval_id: str | None) -> str:

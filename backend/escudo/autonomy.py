@@ -2,7 +2,7 @@
 
 The table is the policy; `enforce()` is the only code that applies it, and
 `gateway.call_capability` — the single entry point for REST, MCP, A2A and
-voice — calls it before any capability runs. A prompt can ask an agent to
+chat — calls it before any capability runs. A prompt can ask an agent to
 behave; this table makes it impossible to misbehave.
 
 Approving is deliberately *not* a capability: it only exists as a human

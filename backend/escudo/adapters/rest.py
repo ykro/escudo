@@ -171,8 +171,8 @@ async def _decide(approval_id: str, approve: bool, request: Request, caller: Cal
     surface = caller.surface if caller.surface != "rest" else "android"
     await services.events.emit(
         actor="customer", surface=surface, kind="approval_granted" if approve else "approval_rejected",
-        summary=("Aprobado por el cliente: " if approve else "Rechazado por el cliente: ") + approval.summary,
-        run_id=caller.run_id or approval.claim_id or "demo", claim_id=approval.claim_id, tool=approval.tool,
+        summary=("Aprobado por la clienta: " if approve else "Rechazado por la clienta: ") + approval.summary,
+        run_id=caller.timeline_run_id, claim_id=approval.claim_id, tool=approval.tool,
         autonomy="needs_approval", approval_id=approval.approval_id, data={"device_id": device_id} if device_id else {},
     )
     # A chat waiting on this approval notices it in Firestore and resumes (adapters/assistant_chat.py).

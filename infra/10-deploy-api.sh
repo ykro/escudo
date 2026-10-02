@@ -36,7 +36,11 @@ ENV_VARS+=",PUBLIC_BASE_URL=${URL},A2A_PEERS=${URL}/a2a/tow;${URL}/a2a/repair,MO
 # min-instances: 0 by default (scale to zero); `make stage-on` sets 1 on talk days, `make stage-off` back
 #   to 0. Up to 3 instances: chat transcripts and approval waits live in Firestore, so any instance can
 #   serve any request. no-cpu-throttling + 1 h timeout: chat WebSockets stay open during the talk.
-MIN_INSTANCES="${MIN_INSTANCES:-0}"
+# A deploy keeps the stage state: it reuses the service's current min-instances (1 after `make stage-on`,
+# 0 after `make stage-off`); a first deploy gets 0. MIN_INSTANCES=… overrides.
+CURRENT_MIN="$(gcloud run services describe "$SERVICE" --region "$REGION" \
+  --format='value(spec.template.metadata.annotations["autoscaling.knative.dev/minScale"])' 2>/dev/null || true)"
+MIN_INSTANCES="${MIN_INSTANCES:-${CURRENT_MIN:-0}}"
 deploy_run "$SERVICE" "$STAGE" \
   --service-account="$SA" \
   --allow-unauthenticated \

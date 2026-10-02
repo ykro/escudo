@@ -64,7 +64,7 @@ def create_app(services: Services | None = None) -> FastAPI:
     app = FastAPI(
         title="Escudo API",
         version="1.0.0",
-        description="Aseguradora de autos lista para agentes: REST, MCP, A2A y voz sobre las mismas capacidades.",
+        description="Aseguradora de autos lista para agentes: REST, MCP, A2A y chat sobre las mismas capacidades.",
         lifespan=lifespan,
     )
     app.state.services = services

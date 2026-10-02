@@ -8,6 +8,7 @@ on the phone.
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from mcp.server.auth.middleware.auth_context import get_access_token
@@ -17,12 +18,14 @@ from mcp.server.mcpserver import Context, MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from pydantic import Field
 
-from ..auth import MOCK_UID
+from ..auth import bearer
 from ..capabilities import REGISTRY, Caller
 from ..errors import ApprovalInvalid, EscudoError
 from ..gateway import call_capability
 from ..models import Location
 from ..services import Services
+
+log = logging.getLogger(__name__)
 
 INSTRUCTIONS = """Escudo is a car insurer. These tools act for the signed-in customer.
 Typical flow after a crash: get_policy -> open_claim -> attach_claim_photos -> request_tow ->
@@ -66,28 +69,56 @@ def build_mcp(services: Services) -> MCPServer:
         }
     mcp = MCPServer("Escudo", instructions=INSTRUCTIONS, version="1.0.0", **auth_kwargs)
 
-    def caller_for(ctx: Context) -> Caller:
-        headers = {k.lower(): v for k, v in (ctx.headers or {}).items()}
+    async def caller_for(ctx: Context) -> Caller:
+        return await caller_from_headers(ctx.headers)
+
+    async def caller_from_headers(raw_headers: Any) -> Caller:
+        headers = {k.lower(): v for k, v in (raw_headers or {}).items()}
         token = get_access_token()
         if token is not None:
             # The verified Firebase token says who this is; the agent acts as that customer.
             uid, customer_id = token.subject or "", (token.claims or {})["customer_id"]
         elif settings.mock_auth:
-            uid, customer_id = MOCK_UID, settings.demo_customer_id
+            # Same rule as REST under MOCK_AUTH: a run's mock token is that run's customer, else the demo one.
+            identity = await services.auth.verify(bearer(headers.get("authorization")))
+            uid, customer_id = identity.uid, identity.customer_id
         else:  # unreachable: without MOCK_AUTH the SDK's bearer middleware rejects the request first
             raise ToolError("unauthenticated: inicia sesión en Escudo para continuar.")
-        actor = headers.get("x-escudo-actor", "gemini")
+        actor = headers.get("x-escudo-actor", "external_agent")  # we cannot tell which model drives it
         return Caller(
             customer_id=customer_id,
             uid=uid,
-            actor=actor if actor in services.events.enum["actor"] else "gemini",
+            actor=actor if actor in services.events.enum["actor"] else "external_agent",
             surface="mcp",
             run_id=headers.get("x-escudo-run-id"),
         )
 
+    # The discovery moment, on the presenter: an agent asking Escudo what it can do (once per run and actor;
+    # the chat lists tools on every turn).
+    announced: set[tuple[str, str]] = set()
+
+    async def record_discovery(ctx, call_next):  # noqa: ANN001, ANN202
+        result = await call_next(ctx)
+        if ctx.method == "tools/list":
+            try:
+                caller = await caller_from_headers(getattr(ctx.request, "headers", None))
+                key = (caller.timeline_run_id, caller.actor)
+                if key not in announced:
+                    announced.add(key)
+                    await services.events.emit(
+                        actor=caller.actor, surface="mcp", kind="message", run_id=caller.timeline_run_id,
+                        summary=f"Descubre las {len(REGISTRY)} herramientas de Escudo (MCP tools/list)",
+                        data={"tools": len(REGISTRY)},
+                    )
+            except Exception:  # the timeline must never break discovery
+                log.exception("could not record tools/list")
+        return result
+
+    mcp.middleware.append(record_discovery)
+
     async def invoke(ctx: Context, name: str, args: dict[str, Any], approval_id: str | None = None) -> dict[str, Any]:
         try:
-            return await call_capability(services, caller_for(ctx), name, args, approval_id)
+            return await call_capability(services, await caller_for(ctx), name, args, approval_id)
         except ApprovalInvalid as exc:
             raise ToolError(f"approval_invalid ({exc.detail}): {exc.message}") from exc
         except EscudoError as exc:

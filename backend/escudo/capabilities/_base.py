@@ -31,6 +31,15 @@ class Caller:
     surface: str = "rest"
     run_id: str | None = None
 
+    @property
+    def timeline_run_id(self) -> str:
+        """The presenter run this call belongs to: X-Escudo-Run-Id if sent, else the customer's run
+        (a run customer's own run id, cus_run-ab12cd -> run-ab12cd; else the customer id), so asides
+        without a claim (getCoverage, get_policy) stay on the same timeline as the claim."""
+        if self.run_id:
+            return self.run_id
+        return self.customer_id[4:] if self.customer_id.startswith("cus_run-") else self.customer_id
+
 
 @dataclass(frozen=True)
 class Context:

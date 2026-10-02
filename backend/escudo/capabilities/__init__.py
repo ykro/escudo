@@ -1,4 +1,4 @@
-"""Escudo's capabilities: the single domain behind REST, MCP, A2A, voice, AppFunctions and WebMCP.
+"""Escudo's capabilities: the single domain behind REST, MCP, A2A, chat, AppFunctions and WebMCP.
 
 One module per capability. Adapters never call these directly; they go
 through `escudo.gateway.call_capability`, which applies the autonomy table.

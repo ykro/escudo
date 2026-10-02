@@ -62,7 +62,7 @@ async def main() -> int:
         say(f"reclamo {claim['claim_id']} abierto y evaluado por la app ({assessed.get('assessment_seconds', '?')} s)")
 
         ws_url = base.replace("http", "ws", 1) + "/assistant/chat"
-        ws_headers = {"Authorization": headers["Authorization"], **({"X-Escudo-Run-Id": session.run_id} if session.run_id else {})}
+        ws_headers = {k: v for k, v in headers.items() if k in ("Authorization", "X-Escudo-Run-Id")}  # no token under MOCK_AUTH
         async with websockets.connect(ws_url, additional_headers=ws_headers, max_size=None, open_timeout=30) as ws:
             ready = json.loads(await ws.recv())
             assert ready["type"] == "ready", ready

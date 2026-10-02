@@ -17,6 +17,7 @@ from .config import Settings
 from .errors import Unauthorized
 
 MOCK_UID = "mock-user"
+MOCK_CUSTOMER_PREFIX = "mock-customer:"
 
 
 @dataclass(frozen=True)
@@ -41,6 +42,10 @@ class Authenticator:
 
     async def verify(self, token: str | None) -> Identity:
         if self._settings.mock_auth:
+            # Offline rehearsals: a run customer's mock token (POST /admin/runs) keeps runs isolated.
+            if token and token.startswith(MOCK_CUSTOMER_PREFIX):
+                customer_id = token[len(MOCK_CUSTOMER_PREFIX):]
+                return Identity(uid=token, customer_id=customer_id)
             return Identity(uid=MOCK_UID, customer_id=self._settings.demo_customer_id)
         if not token:
             raise Unauthorized("unauthenticated", "Inicia sesión en Escudo para continuar.")

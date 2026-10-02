@@ -3,10 +3,11 @@ pause on approval and automatic resume once the phone approves. MOCK_AI: determi
 
 from __future__ import annotations
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from conftest import make_settings, tiny_jpeg
+from conftest import BASE, make_settings, tiny_jpeg
 from escudo.adapters import assistant_chat
 from escudo.main import create_app
 from escudo.services import build_services
@@ -27,7 +28,9 @@ def client(monkeypatch):
         return TOKENS[token]
 
     services.auth._verified_claims = fake_claims  # type: ignore[method-assign]
-    with TestClient(create_app(services)) as c:
+    app = create_app(services)
+    services.escudo_agent.client_factory = lambda: httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=BASE, timeout=30)
+    with TestClient(app) as c:
         yield c
 
 
@@ -101,3 +104,42 @@ def test_conversation_survives_a_reconnect(client):
         assert ws.receive_json()["session_id"] == session_id
     stored = client.app.state.services.repo.store._data["chat_sessions"][session_id]  # type: ignore[attr-defined]
     assert [m["role"] for m in stored["messages"]] == ["user", "assistant"]
+
+
+def test_mock_assistant_runs_the_whole_claim_with_three_approvals(client):
+    """Offline rehearsal (MOCK_AI): 'ayúdame con todo' walks every step and pauses at each approval."""
+    claim_id = claim_with_photos(client)
+    phone = TestDevice("andrea-phone")
+    client.post("/devices", json=phone.registration(), headers=AUTH)
+    approvals = []
+    with client.websocket_connect("/assistant/chat", headers=AUTH) as ws:
+        ws.receive_json()
+        ws.send_json({"type": "text", "text": "Ayúdame con todo: grúa, taller, auto, deducible y firma."})
+        for _ in range(4):
+            frames = until(ws, "turn_complete")
+            pause = next((f for f in frames if f["type"] == "approval_required"), None)
+            if pause is None:
+                break
+            approvals.append(pause["tool"])
+            client.post(f"/approvals/{pause['approval_id']}/approve", json=phone.decision(pause["approval_id"], pause["args_hash"]), headers=AUTH)
+    assert approvals == ["select_repair_shop", "accept_deductible", "sign_claim"]
+    assert client.get(f"/claims/{claim_id}", headers=AUTH).json()["status"] == "signed"
+
+
+def test_agents_cannot_point_at_an_invented_claim(client):
+    """The model said 'clm_96051512': the server uses the customer's active claim instead."""
+    claim_id = claim_with_photos(client)
+    app = client.app
+    import asyncio
+
+    from escudo.capabilities import Caller
+    from escudo.gateway import call_capability
+
+    caller = Caller(customer_id="cus_demo", uid="u", actor="escudo_assistant", surface="mcp")
+    status = asyncio.run(call_capability(app.state.services, caller, "get_claim_status", {"claim_id": "clm_96051512"}))
+    assert status["claim_id"] == claim_id
+    pending = asyncio.run(call_capability(app.state.services, caller, "accept_deductible", {"claim_id": "clm_96051512"}))
+    approval = asyncio.run(app.state.services.repo.get_approval(pending["approval_id"]))
+    assert approval.claim_id == claim_id
+    # the app (actor customer) still gets a clean 404 for a wrong id
+    assert client.get("/claims/clm_96051512", headers=AUTH).status_code == 404

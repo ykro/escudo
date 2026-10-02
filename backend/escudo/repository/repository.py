@@ -33,7 +33,7 @@ class Repository:
     async def get_policy_for_customer(self, customer_id: str) -> Policy:
         docs = await self.store.where(POLICIES, customer_id=customer_id)
         if not docs:
-            raise NotFound("policy_not_found", "No encontramos una póliza activa para este cliente.")
+            raise NotFound("policy_not_found", "No encontramos una póliza activa para esta cuenta.")
         return Policy.model_validate(docs[0])
 
     async def list_shops(self) -> list[dict[str, Any]]:
@@ -59,6 +59,13 @@ class Repository:
         if not docs:
             raise NotFound("no_claims", "Todavía no tienes reclamos.")
         return Claim.model_validate(max(docs, key=lambda d: d["created_at"]))
+
+    async def active_claim(self, customer_id: str) -> Claim | None:
+        """The claim a conversation is about: newest not yet signed, else newest."""
+        docs = sorted(await self.store.where(CLAIMS, customer_id=customer_id), key=lambda d: d["created_at"], reverse=True)
+        open_ = [d for d in docs if d.get("status") != "signed"]
+        chosen = (open_ or docs or [None])[0]
+        return Claim.model_validate(chosen) if chosen else None
 
     async def update_claim(self, claim_id: str, patch: dict[str, Any]) -> None:
         await self.store.update(CLAIMS, claim_id, patch)
