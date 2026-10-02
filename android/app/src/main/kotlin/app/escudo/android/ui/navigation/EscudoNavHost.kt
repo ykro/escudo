@@ -83,6 +83,8 @@ fun EscudoNavHost(
   onDeepLinkHandled: () -> Unit,
   debugChatMessage: String? = null,
   onDebugChatHandled: () -> Unit = {},
+  debugReportDescription: String? = null,
+  onDebugReportHandled: () -> Unit = {},
 ) {
   val nav = rememberNavController()
   val snackbar = remember { SnackbarHostState() }
@@ -92,6 +94,8 @@ fun EscudoNavHost(
   var pendingApprovals by remember { mutableIntStateOf(0) }
   // Debug only: a chat message from the scenario script (intent extra), sent as if typed.
   var messageForAssistant by remember { mutableStateOf<String?>(null) }
+  // Debug only: the accident description the scenario script puts in the report form.
+  var reportPrefill by remember { mutableStateOf<String?>(null) }
 
   fun openTab(route: Any) = nav.navigate(route) {
     popUpTo(nav.graph.findStartDestination().id) { saveState = true }
@@ -110,6 +114,13 @@ fun EscudoNavHost(
       messageForAssistant = debugChatMessage
       openTab(AssistantRoute)
       onDebugChatHandled()
+    }
+  }
+  LaunchedEffect(debugReportDescription) {
+    if (debugReportDescription != null) {
+      reportPrefill = debugReportDescription
+      if (!onReport) nav.navigate(ReportRoute)
+      onDebugReportHandled()
     }
   }
   // Badge on the Approvals tab: the agent can ask at any moment, whatever screen is open.
@@ -182,7 +193,7 @@ fun EscudoNavHost(
         )
       }
       composable<ReportRoute> {
-        ReportAccidentScreen(container, onSeeClaim = { nav.popBackStack(); openTab(ClaimRoute) })
+        ReportAccidentScreen(container, onSeeClaim = { nav.popBackStack(); openTab(ClaimRoute) }, prefillDescription = reportPrefill)
       }
     }
   }

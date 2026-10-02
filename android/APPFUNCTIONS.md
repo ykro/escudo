@@ -53,7 +53,7 @@ adb shell "cmd app_function execute-app-function --package app.escudo.android \
 
 adb shell "cmd app_function execute-app-function --package app.escudo.android \
   --function '$F#reportAccident' \
-  --parameters '{\"description\": \"Me chocaron por detrás en un semáforo\", \"recentPhotoCount\": 1, \"locationLabel\": \"Calzada Roosevelt, zona 11\"}' \
+  --parameters '{\"description\": \"Choque menor: me chocaron por detrás mientras esperaba en el semáforo. Nadie salió herido.\", \"recentPhotoCount\": 1, \"locationLabel\": \"Calzada Roosevelt, zona 11\"}' \
   --brief-yaml"
 
 adb shell "cmd app_function execute-app-function --package app.escudo.android \

@@ -20,13 +20,13 @@ class EscudoRepositoryTest {
   @Test
   fun `report accident opens a claim and assesses the photos`() = runTest {
     val report = repository.reportAccident(
-      description = "  Me chocaron por detrás en un semáforo  ",
+      description = "  Choque menor: me chocaron por detrás mientras esperaba en el semáforo. Nadie salió herido.  ",
       photos = listOf(photo("a.jpg"), photo("b.jpg")),
       location = Location(label = "Zona 10"),
     )
 
     assertEquals(ClaimStatus.ASSESSED, report.claim.status)
-    assertEquals("Me chocaron por detrás en un semáforo", report.claim.description)
+    assertEquals("Choque menor: me chocaron por detrás mientras esperaba en el semáforo. Nadie salió herido.", report.claim.description)
     assertEquals(2, report.claim.photos.size)
     assertNotNull(report.assessment)
     assertEquals(report.claim.claimId, repository.claim()?.claimId)

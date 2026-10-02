@@ -24,6 +24,7 @@ class MainActivity : FragmentActivity() {
   private var deepLinkApprovalId by mutableStateOf<String?>(null)
   private var deepLinkNonce by mutableIntStateOf(0)
   private var debugChatMessage by mutableStateOf<String?>(null)
+  private var debugReportDescription by mutableStateOf<String?>(null)
 
   private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
@@ -41,6 +42,8 @@ class MainActivity : FragmentActivity() {
           onDeepLinkHandled = { deepLinkApprovalId = null },
           debugChatMessage = debugChatMessage,
           onDebugChatHandled = { debugChatMessage = null },
+          debugReportDescription = debugReportDescription,
+          onDebugReportHandled = { debugReportDescription = null },
         )
       }
     }
@@ -59,8 +62,11 @@ class MainActivity : FragmentActivity() {
     intent ?: return
     // Debug builds: `adb shell am start -n app.escudo.android/.MainActivity --es chat_message '…'`
     // sends that message in the assistant chat as if typed (scripts/chat_scenario.sh).
+    // `--es report_description '…'` opens "Reportar accidente" with that text in "¿Qué pasó?"
+    // (adb `input text` cannot type accents).
     if (BuildConfig.DEBUG) {
       intent.getStringExtra(EXTRA_CHAT_MESSAGE)?.let { debugChatMessage = it }
+      intent.getStringExtra(EXTRA_REPORT_DESCRIPTION)?.let { debugReportDescription = it }
     }
     val data = intent.data
     val fromLink = data?.takeIf { it.scheme == "escudo" && it.host == "approvals" }
@@ -72,6 +78,7 @@ class MainActivity : FragmentActivity() {
 
   companion object {
     const val EXTRA_CHAT_MESSAGE = "chat_message"
+    const val EXTRA_REPORT_DESCRIPTION = "report_description"
   }
 
   private fun requestNotificationPermission() {

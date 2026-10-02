@@ -92,7 +92,8 @@ los WebSockets a los 60 min), la app se reconecta con el mismo `session_id` y la
 - Escenario completo cronometrado: `make chat-scenario` (`scripts/chat_scenario.sh`). Reporta el
   accidente con 3 fotos, escribe al asistente (extra de depuración
   `adb shell am start -n app.escudo.android/.MainActivity --es chat_message '…'`, el mismo camino que el
-  teclado) y aprueba cada pausa con la huella virtual (`adb emu finger touch 1`) hasta el reclamo
+  teclado; la descripción del accidente entra con `--es report_description '…'`, porque `adb input text`
+  no escribe acentos) y aprueba cada pausa con la huella virtual (`adb emu finger touch 1`) hasta el reclamo
   firmado. Espera marcadores `EscudoScenario` de logcat, no tiempos fijos. Antes: `make reset CLOUD=1`
   en la raíz. Medido el 2026-10-01: **106 s** (35 s son automatización de la UI del reporte),
   3 aprobaciones firmadas con huella.

@@ -99,11 +99,12 @@ class ReportAccidentViewModel(private val container: AppContainer) : ViewModel()
 }
 
 @Composable
-fun ReportAccidentScreen(container: AppContainer, onSeeClaim: () -> Unit) {
+fun ReportAccidentScreen(container: AppContainer, onSeeClaim: () -> Unit, prefillDescription: String? = null) {
   val vm = viewModel { ReportAccidentViewModel(container) }
   val state by vm.state.collectAsStateWithLifecycle()
   var description by rememberSaveable { mutableStateOf("") }
   var location by rememberSaveable { mutableStateOf("") }
+  LaunchedEffect(prefillDescription) { prefillDescription?.let { description = it } }
   var photos by rememberSaveable { mutableStateOf(listOf<Uri>()) }
   // System photo picker: no storage permission needed for what the customer picks.
   val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(maxItems = 5)) { picked ->

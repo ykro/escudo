@@ -25,6 +25,7 @@ MESSAGES=(
   "Firma el reclamo, por favor."
 )
 APPROVALS_NEEDED=3
+DESCRIPTION="Choque menor: me chocaron por detrás mientras esperaba en el semáforo. Nadie salió herido."
 TURN_TIMEOUT=90
 
 adb() { "$ADB_BIN" -s "$SERIAL" "$@"; }
@@ -100,9 +101,9 @@ report_accident() {
   d=$(dump_until 'text="Reportar accidente"' 30); ftap $(centers_in "$d" 'text="Reportar accidente"')
   d=$(dump_until 'class="android.widget.EditText"')
   local photos_button; photos_button=$(centers_in "$d" 'text="Elegir fotos de la galería"')
-  ftap $(centers_in "$d" 'class="android.widget.EditText"')
-  adb shell input text "Choque%smenor:%sme%spegaron%satras%sen%sun%ssemaforo."
-  hide_keyboard
+  # The description goes in through the debug extra: adb `input text` cannot type accents.
+  adb shell am start -n "$PKG/.MainActivity" --es report_description "'$DESCRIPTION'" >/dev/null 2>&1
+  d=$(dump_until 'text="Choque menor' 10)
   ftap $photos_button
   # Thumbnails in the system photo picker, newest first; wait until the layout settles.
   local start; start=$(date +%s); local photos="" previous="-"
