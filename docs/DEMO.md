@@ -1,13 +1,16 @@
 # Escudo: guion de la demo
 
 El recorrido en vivo de la charla, pantalla por pantalla: de «tuve un choque» al reclamo firmado, con
-exactamente tres aprobaciones con huella. Al final vienen dos apartes cortos (AppFunctions y WebMCP).
-Las capturas son de una corrida real contra la nube (2026-10-02). El número de reclamo (`CLM-…`)
-cambia en cada corrida, y por eso algunas capturas del teléfono muestran otro.
+exactamente tres aprobaciones con huella. Al final vienen dos demostraciones adicionales de un minuto:
+la app y el sitio como herramientas para cualquier agente (AppFunctions y WebMCP).
+Las capturas son de una corrida real contra la nube (2026-10-02, reclamo `CLM-AIMROD`); el número de
+reclamo cambia en cada corrida.
 
 Duración del recorrido principal: **unos 2 minutos** de sistema (en la corrida grabada: evaluación
-6 s, primera pausa 11 s después del mensaje, el resto de 4 a 40 s según lo que tarde Gemini) más lo
-que hables. Preparación técnica completa: [ONBOARDING.md](ONBOARDING.md).
+8 s, primera pausa 12 s después del mensaje, de 7 a 23 s entre cada huella y la siguiente pausa, según
+lo que tarde Gemini) más lo que hables. Preparación técnica completa: [ONBOARDING.md](ONBOARDING.md).
+
+[![Qué se prueba en la demo](diagrams/demo-coverage.png)](diagrams/demo-coverage.svg)
 
 ## Antes de la demo
 
@@ -27,7 +30,7 @@ Ventanas:
 | Proyector, pantalla completa | Chrome: https://escudo-web-611681112050.us-central1.run.app/presenter (sin `?run`: sigue el reclamo activo) |
 | Laptop, mitad izquierda | Ventana del emulador (o el teléfono con `scrcpy`), a tamaño legible |
 | Laptop, mitad derecha arriba | Terminal con los comandos de la huella y de AppFunctions ya escritos |
-| Laptop, mitad derecha abajo | Chrome con el portal (`/reclamo`) y DevTools cerrado, para el aparte de WebMCP |
+| Laptop, mitad derecha abajo | Chrome con el portal (`/reclamo`) y DevTools cerrado, para la demostración de WebMCP |
 
 ![Presentador listo](demo/01-presentador-listo.png)
 
@@ -50,7 +53,7 @@ Ventanas:
 - **Haz:** toca **Reportar accidente** y escribe en «¿Qué pasó?»:
 
   ```text
-  Choque menor: me dieron por la cola en un alto. Nadie herido.
+  Choque menor: me chocaron por detrás mientras esperaba en el semáforo. Nadie salió herido.
   ```
 
   En «¿Dónde fue?»:
@@ -92,8 +95,9 @@ Ventanas:
   ![Presentador en la primera pausa](demo/09-presentador-pausa-taller.png)
 
 - **Señala**, en este orden:
-  1. *Agent Card*: «Agente Escudo — Descubre a Red de Talleres por su Agent Card». El agente no conocía
-     al socio: lo encontró por su tarjeta en `/.well-known/agent-card.json`.
+  1. *Agent Card*: justo antes de las filas A2A pasa «Agente Escudo — Descubre a Red de Talleres por su
+     Agent Card» (en la captura ya subió de la pantalla). El agente no conocía al socio: lo encontró por
+     su tarjeta en `/.well-known/agent-card.json`.
   2. *MCP frente a A2A*: el asistente usa herramientas por **MCP** (grúa, talleres, auto); el trabajo de
      otras empresas (Grúas Aliadas, Red de Talleres) va de agente a agente por **A2A**.
   3. *Autonomía frente a aprobación*: grúa, cotizaciones y auto de reemplazo fueron automáticos. Reservar
@@ -159,7 +163,10 @@ adb -s emulator-5556 emu finger touch 1
 - **Haz:** muestra la pestaña **Reclamo** («Reclamo firmado y enviado»).
 - **Señala:** el reloj se detuvo; el banner verde dice «3 aprobaciones, todas de Andrea en su teléfono».
 
-## Dos apartes cortos
+## Demostraciones adicionales (1 min cada una): la app y el sitio como herramientas para cualquier agente
+
+Muestran las mismas capacidades expuestas fuera del chat: con AppFunctions, Android ofrece funciones
+de la app a los agentes del sistema; con WebMCP, el sitio ofrece herramientas al agente del navegador.
 
 ### AppFunctions: la app como herramienta del sistema (1 min)
 
@@ -254,7 +261,7 @@ androidAppfunctionsReturnValue:
 | Gemini lento o caído | https://escudo-web-611681112050.us-central1.run.app/presenter?demo=1: corrida real grabada, rotulada **REPETICIÓN GRABADA**. Dilo en voz alta |
 | Sin red | `make up-offline` y http://127.0.0.1:3217/presenter?demo=1 (todo local, fuentes incluidas) |
 | Sin red ni laptop confiable | El video [`escudo-chat-run.mp4`](escudo-chat-run.mp4) (83 s, también rotulado como repetición) |
-| El portal dice «No pudimos iniciar sesión» | Revisa los referrers de la «Escudo web key» (ONBOARDING §11); mientras tanto, salta el aparte de WebMCP |
+| El portal dice «No pudimos iniciar sesión» | Revisa los referrers de la «Escudo web key» (ONBOARDING §11); mientras tanto, salta la demostración de WebMCP |
 
 ## Después de la demo
 

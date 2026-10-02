@@ -24,7 +24,7 @@ import websockets
 from .scenario import BUDGET_SECONDS, EXPECTED_APPROVALS, LOCATION, PHOTOS_DIR, WEB_URL, prepare_run
 from .test_device import TestDevice
 
-OPENING = ("Tuve un choque menor, me pegaron atrás en un semáforo. Ya abrí el reclamo y subí las fotos en la app. "
+OPENING = ("Tuve un choque menor: me chocaron por detrás mientras esperaba en el semáforo. Ya abrí el reclamo y subí las fotos en la app. "
            "Ayúdame con todo: la grúa, el taller mejor calificado con su primer horario, el auto de reemplazo, "
            "el deducible y firmar el reclamo.")
 NUDGE = "Sí, adelante con todo lo que falta."

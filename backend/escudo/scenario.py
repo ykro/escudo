@@ -38,7 +38,7 @@ BUDGET_SECONDS = 180
 ASSESS_TARGET_SECONDS = 15
 EXPECTED_APPROVALS = 3
 LOCATION = {"lat": 14.5995, "lng": -90.5102, "label": "Av. La Reforma y 12 calle, zona 10"}
-DESCRIPTION = "Tuve un choque menor: me pegaron atrás en un semáforo. Nadie salió herido."
+DESCRIPTION = "Choque menor: me chocaron por detrás mientras esperaba en el semáforo. Nadie salió herido."
 
 
 @dataclass

@@ -1,7 +1,7 @@
 # Escudo — guía de incorporación
 
 Todo lo necesario para correr, probar, desplegar y ensayar Escudo desde cero. Para el panorama
-(qué enseña, arquitectura, decisiones) lee primero el [README](../README.md). Los contratos
+(qué enseña, arquitectura, decisiones) lee primero el [README](../README.md), [ARQUITECTURA.md](ARQUITECTURA.md) y [DECISIONES.md](DECISIONES.md). Los contratos
 (`contracts/tools.md`, `contracts/openapi.yaml`, `contracts/events.schema.json`) son la fuente de verdad
 de lo que hablan las tres partes.
 
@@ -194,7 +194,7 @@ a cero al terminar (sección 12). Un despliegue no cambia ese estado: `infra/10`
 `min-instances` actual del servicio y lo vuelven a aplicar, así que desplegar la víspera después de
 `make stage-on` deja la instancia caliente, y desplegar otro día deja el servicio en cero.
 
-URLs resultantes: ver la tabla «URLs desplegadas» del README.
+URLs resultantes: ver «URLs desplegadas» en [ARQUITECTURA.md](ARQUITECTURA.md#urls-desplegadas).
 
 ## 6. Correr en local o en la nube
 
@@ -228,7 +228,7 @@ Notas:
   (`repository.active_claim`; queda en el log «agent claim_id … replaced by the active claim …»). Un id inventado como
   `clm_96051512` ya no rompe la corrida.
 - Línea de tiempo coherente: cada evento lleva el `run_id` de la corrida (`X-Escudo-Run-Id`) o, si no
-  viene, el de la clienta (`Caller.timeline_run_id`), así que un aparte por MCP, WebMCP o AppFunctions
+  viene, el de la clienta (`Caller.timeline_run_id`), así que una llamada suelta por MCP, WebMCP o AppFunctions
   con la misma clienta cae en la misma línea de tiempo. `/presenter` sin `?run` sigue la corrida del
   reclamo más reciente y no salta a otra por un evento suelto.
 - Cada llamada al modelo del chat tiene un límite de 30 s (`CHAT_MODEL_TIMEOUT_SECONDS`, con reintentos):
@@ -260,7 +260,7 @@ make test
 
 | Parte | Comando | Qué cubre |
 | --- | --- | --- |
-| Backend | `cd backend && MOCK_AI=1 MOCK_AUTH=1 uv run pytest -q` (57 pruebas) | Toda acción con aprobación es rechazada sin `approval_id` válido, por REST y MCP (`test_approvals.py`); aprobación de otra herramienta, otros argumentos, rechazada o ya usada; no existe herramienta de aprobar; la tabla de autonomía cubre exactamente el registro y coincide con el contrato (`test_autonomy.py`); Agent Cards en la ruta well-known, descubrimiento sin rutas escritas a mano y secreto de socios (`test_discovery.py`); eventos válidos contra el esquema, etiquetas de superficie y eventos de clientes solo `message` sobre reclamos propios (`test_events.py`); MCP, REST y el agente Escudo actúan como el `customer_id` del token verificado y `/a2a/escudo` rechaza llamadas anónimas (`test_identity.py`); aprobar exige firma del dispositivo registrado de la clienta: sin dispositivo, dispositivo ajeno o desconocido, firma mala o para otra aprobación → 403 sin cambios, repetir → rechazado (`test_device_approvals.py`); chat: solo cabecera `Authorization`, herramientas por las capacidades, pausa en la aprobación y reanudación sola tras aprobar, la conversación sobrevive a una reconexión, el asistente simulado firma el reclamo con 3 aprobaciones y un agente no puede apuntar a un reclamo inventado (`test_chat.py`); los momentos de descubrimiento (Agent Card, `tools/list`) y los apartes de la misma clienta quedan en la línea de tiempo de su reclamo (`test_events.py`); cada corrida es su propio cliente y `make reset` los borra sin tocar el teléfono del escenario (`test_runs.py`); llamadas de respaldo del perito (`test_hedging.py`); `make reset` (`test_reset.py`); el escenario completo por MCP con 3 aprobaciones (`test_scenario.py`) |
+| Backend | `cd backend && MOCK_AI=1 MOCK_AUTH=1 uv run pytest -q` (57 pruebas) | Toda acción con aprobación es rechazada sin `approval_id` válido, por REST y MCP (`test_approvals.py`); aprobación de otra herramienta, otros argumentos, rechazada o ya usada; no existe herramienta de aprobar; la tabla de autonomía cubre exactamente el registro y coincide con el contrato (`test_autonomy.py`); Agent Cards en la ruta well-known, descubrimiento sin rutas escritas a mano y secreto de socios (`test_discovery.py`); eventos válidos contra el esquema, etiquetas de superficie y eventos de clientes solo `message` sobre reclamos propios (`test_events.py`); MCP, REST y el agente Escudo actúan como el `customer_id` del token verificado y `/a2a/escudo` rechaza llamadas anónimas (`test_identity.py`); aprobar exige firma del dispositivo registrado de la clienta: sin dispositivo, dispositivo ajeno o desconocido, firma mala o para otra aprobación → 403 sin cambios, repetir → rechazado (`test_device_approvals.py`); chat: solo cabecera `Authorization`, herramientas por las capacidades, pausa en la aprobación y reanudación sola tras aprobar, la conversación sobrevive a una reconexión, el asistente simulado firma el reclamo con 3 aprobaciones y un agente no puede apuntar a un reclamo inventado (`test_chat.py`); los momentos de descubrimiento (Agent Card, `tools/list`) y las llamadas sueltas de la misma clienta quedan en la línea de tiempo de su reclamo (`test_events.py`); cada corrida es su propio cliente y `make reset` los borra sin tocar el teléfono del escenario (`test_runs.py`); llamadas de respaldo del perito (`test_hedging.py`); `make reset` (`test_reset.py`); el escenario completo por MCP con 3 aprobaciones (`test_scenario.py`) |
 | Android | `make android-test` (sabores `fake` y `live`) | Mapeo de AppFunctions, `ApprovalFlow` y firma de aprobaciones, protocolo del chat, repositorio, cliente HTTP, push, línea de tiempo, mensajes de error |
 | Web | `cd web && npm test` (18 pruebas) | Línea de tiempo del presentador (selección de corrida con `?run=` y, sin él, la del reclamo activo; etiqueta «automático») y herramientas WebMCP (exactamente cuatro, todas de solo lectura, ninguna aprueba) |
 | Web e2e | `cd web && npm run e2e` | Presentador en modo demo con Chrome: rótulo REPETICIÓN GRABADA, pausa en ámbar, 3 aprobaciones, el reloj se detiene al firmar |
@@ -374,7 +374,7 @@ adb shell "cmd app_function execute-app-function --package app.escudo.android \
 
 adb shell "cmd app_function execute-app-function --package app.escudo.android \
   --function '$F#reportAccident' \
-  --parameters '{\"description\": \"Me chocaron por detrás en un semáforo\", \"recentPhotoCount\": 1, \"locationLabel\": \"Calzada Roosevelt, zona 11\"}' \
+  --parameters '{\"description\": \"Choque menor: me chocaron por detrás mientras esperaba en el semáforo. Nadie salió herido.\", \"recentPhotoCount\": 1, \"locationLabel\": \"Calzada Roosevelt, zona 11\"}' \
   --brief-yaml"
 
 adb shell "cmd app_function execute-app-function --package app.escudo.android \
