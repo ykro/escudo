@@ -26,7 +26,7 @@ Escudo is a fictional car insurer whose capabilities are usable by AI agents fro
 | Asistente Escudo | The customer's chat agent: ADK + `GEMINI_MODEL`, uses the MCP tools; typed chat over a WebSocket (`/assistant/chat`), transcript in Firestore | Inside the backend (WebSocket), chat from the Android app |
 | Escudo / Tow / Repair agents | ADK agents, each with its own A2A endpoint and Agent Card | Inside the backend, separate mount paths |
 | Damage assessor | Gemini multimodal (`GEMINI_MODEL`): damaged parts, severity, cost range | Inside the backend |
-| Escudo for Android (`android/`) | Kotlin, Compose, Material 3, Jetpack AppFunctions, Firebase Auth, FCM, BiometricPrompt | Presenter's phone |
+| Escudo for Android (`android/`) | Kotlin, Compose, Material 3, Jetpack AppFunctions, Firebase Auth, FCM, BiometricPrompt | `Pixel_9_API_36_1` emulator on the presenter's laptop (no physical phone) |
 | Escudo web (`web/`) | Next.js, Firebase Auth, WebMCP tools, presenter view | Cloud Run service `escudo-web` |
 
 Tow and repair live in the same service for simplicity, but they only talk to the Escudo agent over A2A, exactly as if they belonged to other companies.
@@ -35,7 +35,7 @@ Tow and repair live in the same service for simplicity, but they only talk to th
 
 - One customer with an active policy: own damage, towing included, replacement car for 7 days, USD 500 deductible.
 - Three repair shops with open slots and two tow providers with simulated arrival times based on location.
-- Three sample photos of a minor crash generated with `IMAGE_MODEL` (script + prompt committed) for rehearsals; new photos from the phone also work.
+- Three sample photos of a minor crash generated with `IMAGE_MODEL` (script + prompt committed) for rehearsals; other photos added to the emulator's gallery also work.
 
 ## Tools
 

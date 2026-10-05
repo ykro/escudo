@@ -38,7 +38,7 @@ Versiones con las que se construyó y probó el proyecto (2026-09-30). Las libre
 | Google Cloud SDK | probado con 587.0.0 | ADC, `infra/*.sh`, Cloud Build, Cloud Run |
 | Firebase CLI | probado con 15.6.0 | `make -C android google-services` |
 | Google Chrome | 150 o más (probado con 154.0.8037.59) | WebMCP y la vista del presentador |
-| scrcpy | opcional | Solo si se quiere el espejo píxel a píxel del teléfono |
+| scrcpy | opcional | Solo si se quiere el espejo píxel a píxel de la app en el proyector (se conecta al emulador) |
 
 `make test` corre las pruebas de Android, así que también necesita JDK 17 y el Android SDK con
 `sdk.dir` configurado (sección 2, antes de la primera prueba). En GitHub,
@@ -154,7 +154,7 @@ cualquier otro llamador es `DEMO_CUSTOMER_ID`.
 El servicio desplegado además siembra una base vacía al arrancar (`seed.seed_if_empty`).
 
 **Reiniciar** la demo (borra reclamos, aprobaciones y eventos y vuelve a sembrar; los dispositivos
-registrados se conservan para que el teléfono no tenga que volver a registrarse):
+registrados se conservan para que el emulador no tenga que volver a registrarse):
 
 ```bash
 make reset CLOUD=1    # servicio desplegado (lee escudo-admin-token de Secret Manager)
@@ -233,7 +233,7 @@ Notas:
   reclamo más reciente y no salta a otra por un evento suelto.
 - Cada llamada al modelo del chat tiene un límite de 30 s (`CHAT_MODEL_TIMEOUT_SECONDS`, con reintentos):
   si Gemini se queda colgado, el turno reintenta en vez de detener el escenario.
-- `make scenario-live` usa la clienta sembrada (`--shared`) y espera a que apruebes en el teléfono
+- `make scenario-live` usa la clienta sembrada (`--shared`) y espera a que apruebes en la app del emulador
   (sondea `GET /approvals`).
 - Web local: `make web` levanta el portal en `http://localhost:3217`. `/presenter` lee Firestore en el
   servidor con tu ADC; `/presenter?demo=1` reproduce una corrida real por chat grabada
@@ -249,7 +249,7 @@ Notas:
 - App contra backend local: sabor `live` con `escudo.apiUrl=http://10.0.2.2:8080` y
   `escudo.mockAuth=true` en `local.properties` (solo debug permite HTTP a `10.0.2.2`). O el sabor `fake`
   (`make android-install FLAVOR=fake`), que no usa red.
-- Hablar con el asistente sin teléfono: `make chat-scenario CLOUD=1` (o cualquier cliente WebSocket con
+- Hablar con el asistente sin la app: `make chat-scenario CLOUD=1` (o cualquier cliente WebSocket con
   `Authorization: Bearer <ID token>` y los frames de `contracts/tools.md`).
 
 ## 7. Pruebas
@@ -260,7 +260,7 @@ make test
 
 | Parte | Comando | Qué cubre |
 | --- | --- | --- |
-| Backend | `cd backend && MOCK_AI=1 MOCK_AUTH=1 uv run pytest -q` (57 pruebas) | Toda acción con aprobación es rechazada sin `approval_id` válido, por REST y MCP (`test_approvals.py`); aprobación de otra herramienta, otros argumentos, rechazada o ya usada; no existe herramienta de aprobar; la tabla de autonomía cubre exactamente el registro y coincide con el contrato (`test_autonomy.py`); Agent Cards en la ruta well-known, descubrimiento sin rutas escritas a mano y secreto de socios (`test_discovery.py`); eventos válidos contra el esquema, etiquetas de superficie y eventos de clientes solo `message` sobre reclamos propios (`test_events.py`); MCP, REST y el agente Escudo actúan como el `customer_id` del token verificado y `/a2a/escudo` rechaza llamadas anónimas (`test_identity.py`); aprobar exige firma del dispositivo registrado de la clienta: sin dispositivo, dispositivo ajeno o desconocido, firma mala o para otra aprobación → 403 sin cambios, repetir → rechazado (`test_device_approvals.py`); chat: solo cabecera `Authorization`, herramientas por las capacidades, pausa en la aprobación y reanudación sola tras aprobar, la conversación sobrevive a una reconexión, el asistente simulado firma el reclamo con 3 aprobaciones y un agente no puede apuntar a un reclamo inventado (`test_chat.py`); los momentos de descubrimiento (Agent Card, `tools/list`) y las llamadas sueltas de la misma clienta quedan en la línea de tiempo de su reclamo (`test_events.py`); cada corrida es su propio cliente y `make reset` los borra sin tocar el teléfono del escenario (`test_runs.py`); llamadas de respaldo del perito (`test_hedging.py`); `make reset` (`test_reset.py`); el escenario completo por MCP con 3 aprobaciones (`test_scenario.py`) |
+| Backend | `cd backend && MOCK_AI=1 MOCK_AUTH=1 uv run pytest -q` (57 pruebas) | Toda acción con aprobación es rechazada sin `approval_id` válido, por REST y MCP (`test_approvals.py`); aprobación de otra herramienta, otros argumentos, rechazada o ya usada; no existe herramienta de aprobar; la tabla de autonomía cubre exactamente el registro y coincide con el contrato (`test_autonomy.py`); Agent Cards en la ruta well-known, descubrimiento sin rutas escritas a mano y secreto de socios (`test_discovery.py`); eventos válidos contra el esquema, etiquetas de superficie y eventos de clientes solo `message` sobre reclamos propios (`test_events.py`); MCP, REST y el agente Escudo actúan como el `customer_id` del token verificado y `/a2a/escudo` rechaza llamadas anónimas (`test_identity.py`); aprobar exige firma del dispositivo registrado de la clienta: sin dispositivo, dispositivo ajeno o desconocido, firma mala o para otra aprobación → 403 sin cambios, repetir → rechazado (`test_device_approvals.py`); chat: solo cabecera `Authorization`, herramientas por las capacidades, pausa en la aprobación y reanudación sola tras aprobar, la conversación sobrevive a una reconexión, el asistente simulado firma el reclamo con 3 aprobaciones y un agente no puede apuntar a un reclamo inventado (`test_chat.py`); los momentos de descubrimiento (Agent Card, `tools/list`) y las llamadas sueltas de la misma clienta quedan en la línea de tiempo de su reclamo (`test_events.py`); cada corrida es su propio cliente y `make reset` los borra sin tocar el dispositivo del escenario (`test_runs.py`); llamadas de respaldo del perito (`test_hedging.py`); `make reset` (`test_reset.py`); el escenario completo por MCP con 3 aprobaciones (`test_scenario.py`) |
 | Android | `make android-test` (sabores `fake` y `live`) | Mapeo de AppFunctions, `ApprovalFlow` y firma de aprobaciones, protocolo del chat, repositorio, cliente HTTP, push, línea de tiempo, mensajes de error |
 | Web | `cd web && npm test` (18 pruebas) | Línea de tiempo del presentador (selección de corrida con `?run=` y, sin él, la del reclamo activo; etiqueta «automático») y herramientas WebMCP (exactamente cuatro, todas de solo lectura, ninguna aprueba) |
 | Web e2e | `cd web && npm run e2e` | Presentador en modo demo con Chrome: rótulo REPETICIÓN GRABADA, pausa en ámbar, 3 aprobaciones, el reloj se detiene al firmar |
@@ -273,6 +273,9 @@ make test
 Las pruebas que necesitan nube están fuera de `make test`; `make test` corre sin red.
 
 ## 8. Emulador Android
+
+En la charla no hay teléfono físico: el emulador `Pixel_9_API_36_1` es el dispositivo del escenario,
+no un respaldo. Todo lo de esta sección se hace en él.
 
 ### 8.1 Crear el AVD (una vez)
 
@@ -507,25 +510,31 @@ el agente A2A (`agents/escudo_agent.build_a2a_agent`) o una AppFunction (que lla
 - [ ] `curl https://escudo-api-611681112050.us-central1.run.app/health` → `{"status":"ok"}`; Agent Cards responden.
 - [ ] `make reset CLOUD=1`, `make scenario CLOUD=1 APPROVE_DELAY=4` y `make chat-scenario CLOUD=1`:
       «aprobaciones: 3 (esperadas 3) · OK» en ambos.
-- [ ] Teléfono: app `live` instalada, sesión iniciada, notificaciones permitidas, huella registrada,
-      `READ_MEDIA_IMAGES` concedido, fotos del choque en la galería.
-- [ ] Un push de prueba llega al teléfono (correr `make scenario-live` y aprobar una vez).
+- [ ] Emulador `Pixel_9_API_36_1` (el dispositivo del escenario): app `live` instalada, sesión iniciada,
+      notificaciones permitidas, huella registrada, `READ_MEDIA_IMAGES` concedido, fotos del choque en la galería.
+- [ ] Un push de prueba llega al emulador (correr `make scenario-live` y aprobar una vez con
+      `adb emu finger touch 1`).
+- [ ] `make -C android chat-scenario` completo una vez en el emulador; después, `make reset CLOUD=1`.
 - [ ] Chrome: flag de WebMCP activo; portal con sesión; DevTools → Application → WebMCP lista 4 herramientas.
-- [ ] Emulador de respaldo listo (`make -C android chat-scenario` completo una vez).
 
 **Antes de subir**
 
 - [ ] `make warmup` → `warmup OK`, luego `make reset CLOUD=1` (< 10 s).
 - [ ] `/presenter` abierto en Chrome a pantalla completa en el proyector; «Aprobaciones 0 de 3» (sin
-      `?run`, sigue la corrida del reclamo más reciente: la del teléfono).
+      `?run`, sigue la corrida del reclamo más reciente: la del emulador).
 - [ ] `make up-offline` probado en la laptop y `docs/escudo-chat-run.mp4` a mano.
-- [ ] Teléfono cargado, en no molestar salvo Escudo, chat del Asistente Escudo abierto.
-- [ ] Terminal con los comandos `adb … cmd app_function` listos (sección 9).
-- [ ] Si se quiere el espejo exacto: ventana `scrcpy --window-title "Escudo" --always-on-top` sobre el panel del teléfono.
+- [ ] Laptop conectada a la corriente y en No molestar (que no aparezcan avisos en el proyector).
+- [ ] Emulador corriendo (`make android-emulator`), ventana a tamaño legible, app abierta en **Póliza**
+      (el guion empieza ahí, ver [DEMO.md](DEMO.md)).
+- [ ] Terminal en la raíz del repo con `export ANDROID_SERIAL=$(make -s android-serial)` y los comandos
+      de la huella y de `adb … cmd app_function` listos (sección 9).
+- [ ] Si se quiere el espejo exacto: ventana `scrcpy --serial "$(make -s android-serial)" --window-title "Escudo" --always-on-top`
+      sobre el panel del espejo en `/presenter`.
 
 **Si algo falla en vivo**
 
-- Sin teléfono: `make chat-scenario CLOUD=1` (o `make scenario CLOUD=1 APPROVE_DELAY=4`) reproduce el
+- El emulador se cuelga o no arranca a tiempo: `make chat-scenario CLOUD=1` (o
+  `make scenario CLOUD=1 APPROVE_DELAY=4`) reproduce el
   flujo con su propio cliente; abre el `…/presenter?run=<id>` que imprime.
 - Sin red: `make up-offline` y `http://127.0.0.1:3217/presenter?demo=1` (se ve **REPETICIÓN GRABADA**:
   dilo en voz alta). Si tampoco hay laptop confiable, el video `docs/escudo-chat-run.mp4`.

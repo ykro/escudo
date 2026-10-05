@@ -47,7 +47,7 @@ Desde la raíz del repo (`make help` los lista todos):
 | `make test` | `pytest` del backend con `MOCK_AI=1 MOCK_AUTH=1`, unitarias de Android y `vitest` de la web |
 | `make scenario` | Escenario completo por MCP en modo prueba, con un cliente propio (`POST /admin/runs`) y un dispositivo de prueba que firma las 3 aprobaciones; `CLOUD=1`, `APPROVE_DELAY=4`. Imprime `…/presenter?run=<id>` |
 | `make chat-scenario` | Escenario por chat escrito: cliente propio, reclamo y 3 fotos por REST (como la app) y luego el chat; 3 aprobaciones firmadas; < 3 min. Contra `make up-mock` responde el asistente simulado; `CLOUD=1`, Gemini |
-| `make scenario-live` | El escenario por MCP con la clienta sembrada (`--shared`); espera a que apruebe cada paso en el teléfono |
+| `make scenario-live` | El escenario por MCP con la clienta sembrada (`--shared`); espera a que apruebe cada paso en la app del emulador |
 | `make infra` | Crea o verifica todo en GCP desde un proyecto vacío: `infra/01..07` (APIs, base `escudo`, bucket, Artifact Registry, Firebase Auth por API, cuentas de servicio, Secret Manager, llave web propia de Firebase) |
 | `make deploy` | `deploy-api` + `deploy-web`; conservan el `min-instances` actual de cada servicio |
 | `make deploy-api` | `infra/10-deploy-api.sh`: construye y despliega `escudo-api` |

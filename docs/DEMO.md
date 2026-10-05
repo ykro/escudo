@@ -17,9 +17,11 @@ lo que tarde Gemini) más lo que hables. Preparación técnica completa: [ONBOAR
 - [ ] `make stage-on`: `escudo-api` y `escudo-web` con una instancia caliente.
 - [ ] `make warmup`: toca API, Agent Cards, portal y `/presenter`; debe terminar con `warmup OK`.
 - [ ] `make reset CLOUD=1`: «Aprobaciones 0 de 3» y nada en la línea de tiempo.
-- [ ] Emulador `Pixel_9_API_36_1` corriendo (`make android-emulator`; su serial con `make android-serial`,
-      en estas notas `emulator-5556`), con la app `live` instalada (`make android-install`), sesión
-      iniciada, huella registrada y las tres fotos del choque en la galería (ONBOARDING §8).
+- [ ] Emulador `Pixel_9_API_36_1` corriendo (`make android-emulator`): es el dispositivo del escenario.
+      La app `live` instalada (`make android-install`), sesión iniciada, huella registrada y las tres
+      fotos del choque en la galería (ONBOARDING §8).
+- [ ] En la terminal de la demo, desde la raíz del repo, `export ANDROID_SERIAL=$(make -s android-serial)`:
+      `adb` usa ese serial, así que los comandos de abajo no lo escriben (el puerto cambia entre arranques).
 - [ ] La app abierta en **Póliza**. Ningún reporte a medias.
 - [ ] Chrome con el flag de WebMCP y el portal con la sesión de Andrea ya iniciada (ONBOARDING §9).
 
@@ -28,7 +30,7 @@ Ventanas:
 | Dónde | Qué |
 | --- | --- |
 | Proyector, pantalla completa | Chrome: https://escudo-web-611681112050.us-central1.run.app/presenter (sin `?run`: sigue el reclamo activo) |
-| Laptop, mitad izquierda | Ventana del emulador (o el teléfono con `scrcpy`), a tamaño legible |
+| Laptop, mitad izquierda | Ventana del emulador, a tamaño legible |
 | Laptop, mitad derecha arriba | Terminal con los comandos de la huella y de AppFunctions ya escritos |
 | Laptop, mitad derecha abajo | Chrome con el portal (`/reclamo`) y DevTools cerrado, para la demostración de WebMCP |
 
@@ -68,7 +70,7 @@ Ventanas:
 
 ### 3. Evaluación de daños (6 a 15 s)
 
-| Teléfono | Presentador |
+| App | Presentador |
 | --- | --- |
 | ![Evaluación en la app](demo/05-evaluacion.png) | ![Presentador con el perito](demo/06-presentador-evaluacion.png) |
 
@@ -108,11 +110,11 @@ Ventanas:
 Cada una sigue el mismo patrón: llega un push, la tarjeta de aprobación muestra exactamente lo que se
 va a hacer, apruebas con la huella y el asistente sigue solo, sin que escribas nada.
 
-Huella en el emulador (en una terminal; si no responde a la primera, repítelo: el sensor empieza a
-escuchar un instante después de que aparece el diálogo):
+Huella en el emulador (en la terminal con `ANDROID_SERIAL` exportado; si no responde a la primera,
+repítelo: el sensor empieza a escuchar un instante después de que aparece el diálogo):
 
 ```bash
-adb -s emulator-5556 emu finger touch 1
+adb emu finger touch 1
 ```
 
 ### 5. Aprobación 1: reservar taller (unos 15 s, hasta 40 s si Gemini tarda)
@@ -136,7 +138,7 @@ adb -s emulator-5556 emu finger touch 1
 | --- | --- |
 | ![Chat en el deducible](demo/13-chat-deducible.png) | ![Aprobación del deducible](demo/14-aprobacion-deducible.png) |
 
-- **Haz:** **Revisar y aprobar** → **Aprobar con huella** → `adb -s emulator-5556 emu finger touch 1`.
+- **Haz:** **Revisar y aprobar** → **Aprobar con huella** → `adb emu finger touch 1`.
 - **Señala:** el monto (USD 500) está en la tarjeta del teléfono, no en el chat: el humano aprueba lo
   que el servidor va a ejecutar, no lo que el modelo dice.
 - **En el presentador:** **2 de 3**, «Deducible de USD 500 aceptado» y la pausa de la firma:
@@ -149,7 +151,7 @@ adb -s emulator-5556 emu finger touch 1
 | --- | --- |
 | ![Chat en la firma](demo/16-chat-firma.png) | ![Aprobación de la firma](demo/17-aprobacion-firma.png) |
 
-- **Haz:** **Revisar y aprobar** → **Aprobar con huella** → `adb -s emulator-5556 emu finger touch 1`.
+- **Haz:** **Revisar y aprobar** → **Aprobar con huella** → `adb emu finger touch 1`.
 - **Señala:** tres acciones con consecuencias, tres huellas. Todo lo demás lo hizo el agente solo.
 
 ### 8. Reclamo firmado
@@ -170,7 +172,7 @@ de la app a los agentes del sistema; con WebMCP, el sitio ofrece herramientas al
 
 ### AppFunctions: la app como herramienta del sistema (1 min)
 
-En la terminal (la app instalada, Android 16 QPR2):
+En la terminal con `ANDROID_SERIAL` exportado (la app instalada, Android 16 QPR2):
 
 ```bash
 make -C android appfunctions
@@ -184,7 +186,7 @@ make -C android appfunctions
 
 ```bash
 F=app.escudo.android.appfunctions.BaseEscudoAppFunctionService
-adb -s emulator-5556 shell "cmd app_function execute-app-function --package app.escudo.android \
+adb shell "cmd app_function execute-app-function --package app.escudo.android \
   --function '$F#getCoverage' --parameters '{\"incidentType\": \"collision\"}' --brief-yaml"
 ```
 
@@ -208,7 +210,7 @@ androidAppfunctionsReturnValue:
 ```
 
 ```bash
-adb -s emulator-5556 shell "cmd app_function execute-app-function --package app.escudo.android \
+adb shell "cmd app_function execute-app-function --package app.escudo.android \
   --function '$F#getClaimStatus' --parameters '{}' --brief-yaml"
 ```
 
@@ -254,10 +256,10 @@ androidAppfunctionsReturnValue:
 | --- | --- |
 | El presentador dice «Sin conexión con Escudo. Reintentando…» o se queda vacío | Recarga la pestaña; se reconecta solo por SSE. Si no vuelve: `make warmup` en la terminal |
 | El chat dice «Reconectando» o no responde en 30 s | Sal y vuelve a la pestaña **Asistente**: la conversación sigue (vive en Firestore). Si se quedó callado tras una aprobación, escribe `sigue` |
-| La huella no responde | Repite `adb -s emulator-5556 emu finger touch 1`; si no hay diálogo, toca otra vez **Aprobar con huella** |
+| La huella no responde | Repite `adb emu finger touch 1`; si no hay diálogo, toca otra vez **Aprobar con huella** |
 | No llega el push | Abre la pestaña **Aprobaciones**: la pendiente está ahí |
 | Estado sucio (reclamo viejo, contador raro) | `make reset CLOUD=1` (< 10 s) y empieza de nuevo |
-| Sin teléfono o emulador | `make chat-scenario CLOUD=1`: el mismo flujo con su propio cliente; abre el `…/presenter?run=<id>` que imprime |
+| El emulador se cuelga o no arranca a tiempo | `make chat-scenario CLOUD=1`: el mismo flujo con su propio cliente; abre el `…/presenter?run=<id>` que imprime |
 | Gemini lento o caído | https://escudo-web-611681112050.us-central1.run.app/presenter?demo=1: corrida real grabada, rotulada **REPETICIÓN GRABADA**. Dilo en voz alta |
 | Sin red | `make up-offline` y http://127.0.0.1:3217/presenter?demo=1 (todo local, fuentes incluidas) |
 | Sin red ni laptop confiable | El video [`escudo-chat-run.mp4`](escudo-chat-run.mp4) (83 s, también rotulado como repetición) |

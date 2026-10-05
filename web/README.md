@@ -52,5 +52,5 @@ Server-Sent Events (`/api/presenter/stream`): el navegador no necesita login ni 
 El panel derecho dibuja lo que muestra la app de Escudo **a partir del mismo estado del backend** que
 lee la app (aprobación pendiente primero, luego el reclamo). No depende de USB, del emulador ni de un
 proceso de captura que pueda caerse en el escenario, y siempre coincide con la línea de tiempo.
-Si se quiere el píxel exacto, `scrcpy --window-title "Escudo" --always-on-top` y se coloca esa
-ventana sobre el panel; la vista no cambia.
+Si se quiere el píxel exacto, `scrcpy --serial "$(make -s android-serial)" --window-title "Escudo" --always-on-top`
+(desde la raíz del repo, contra el emulador) y se coloca esa ventana sobre el panel; la vista no cambia.
