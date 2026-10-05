@@ -29,7 +29,7 @@
 | `escudo-web` (portal, WebMCP, `/presenter`) | Cloud Run `us-central1`, 0–2 instancias (1 con `make stage-on`), cuenta de servicio `escudo-web` (Firestore solo lectura) | El presentador no necesita login: el servidor lee Firestore y envía SSE |
 | Firestore, Storage, Auth, FCM | Firebase (proyecto `ai-experiments-487722`, base `escudo`) | Usados como SDKs, nunca Firebase Hosting |
 | Gemini (perito, chat, agente Escudo) | Vertex AI (`global`) | Modelos por variable de entorno |
-| Escudo para Android | El emulador `Pixel_9_API_36_1` en la laptop de la presentadora, en ensayos y en el escenario (no hay teléfono físico); la huella se toca con `adb emu finger touch 1` | La huella y las AppFunctions son del dispositivo; la imagen 36.1 con Play trae `cmd app_function` y FCM |
+| Escudo para Android | El emulador `Pixel_9_API_36_1` en la laptop de quien presenta, en ensayos y en el escenario (no hay teléfono físico); la huella se toca con `adb emu finger touch 1` | La huella y las AppFunctions son del dispositivo; la imagen 36.1 con Play trae `cmd app_function` y FCM |
 | Laptop | Un navegador (Chrome con `/presenter` y el portal con WebMCP) y el emulador `Pixel_9_API_36_1` | Ni el backend ni la web corren en la laptop, salvo el respaldo sin red (`make up-offline`); solo la app, dentro del emulador |
 
 ## Versiones de las APIs en vista previa

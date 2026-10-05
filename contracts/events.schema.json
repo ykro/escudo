@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://escudo.example/contracts/events.schema.json",
+  "$id": "https://github.com/ykro/escudo/blob/main/contracts/events.schema.json",
   "title": "EscudoEvent",
   "description": "One step in the presenter timeline. Every component (backend, agents, Android, web) writes events with this shape to Firestore db `escudo`, collection `events`.",
   "type": "object",

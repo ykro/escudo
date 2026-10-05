@@ -7,7 +7,7 @@ then prints a timing table. Acceptance: < 3 minutes, exactly 3 approvals.
     uv run python -m escudo.scenario --base-url URL --test-mode --auto-approve    # rehearsal: approves via the human endpoint
 
 Each `--auto-approve` run gets its own isolated customer (POST /admin/runs: policy, login, run id),
-so runs never collide with each other or with the stage phone; `--shared` uses the seeded customer.
+so runs never collide with each other or with the stage emulator; `--shared` uses the seeded customer.
 `--auto-approve` plays the customer's phone: it registers a fresh software test device
 (escudo/test_device.py) for the run and signs each decision with it,
 exactly like the app (escudo-approval:v1). Refused unless `--test-mode` is set: in a
@@ -223,7 +223,7 @@ class RunSession:
 
 async def prepare_run(base: str, *, isolated: bool, token: str | None = None) -> RunSession:
     """With an admin token + Firebase web key: a brand-new customer for this run, so concurrent runs
-    (and the stage phone) never collide. Otherwise the seeded customer (.env.local)."""
+    (and the stage emulator) never collide. Otherwise the seeded customer (.env.local)."""
     api_key = os.environ.get("FIREBASE_WEB_API_KEY")
     admin = os.environ.get("ADMIN_TOKEN")
     if token:

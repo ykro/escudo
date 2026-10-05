@@ -18,8 +18,8 @@ EVENTS = "events"
 DEVICES = "devices"
 DEVICE_AUDIT = "device_audit"
 
-# What `make reset` wipes. Devices survive a reset on purpose: the presenter's
-# phone registers its FCM token once, before the talk.
+# What `make reset` wipes. Devices survive a reset on purpose: the stage emulator's app
+# registers its FCM token once, before the talk (`make android-prep`).
 CHAT_SESSIONS = "chat_sessions"
 RUNS = "runs"
 RESETTABLE = (CLAIMS, APPROVALS, EVENTS, POLICIES, CUSTOMERS, SHOPS, TOW_PROVIDERS, CHAT_SESSIONS, RUNS)
