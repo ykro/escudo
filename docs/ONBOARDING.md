@@ -62,7 +62,7 @@ cd web && npm ci && cp .env.example .env.local && cd ..
 - `web/.env.local` (no se versiona): configuración pública del portal (`NEXT_PUBLIC_ESCUDO_API_URL`,
   `NEXT_PUBLIC_FIREBASE_API_KEY`, …) y, para el feed del presentador en el servidor, `GOOGLE_CLOUD_PROJECT`
   y `FIRESTORE_DATABASE`.
-- `android/local.properties` (no se versiona): las claves de la app están en la [sección 8](#8-emulador-android).
+- `android/local.properties` (no se versiona): `make android-prep` lo escribe completo desde `.env.local` ([sección 8.3](#83-dejarlo-listo-make-android-prep)).
 
 **Android SDK antes de `make test`.** Gradle necesita saber dónde está el SDK. Con Android Studio
 instalado basta con:
@@ -260,7 +260,7 @@ make test
 
 | Parte | Comando | Qué cubre |
 | --- | --- | --- |
-| Backend | `cd backend && MOCK_AI=1 MOCK_AUTH=1 uv run pytest -q` (57 pruebas) | Toda acción con aprobación es rechazada sin `approval_id` válido, por REST y MCP (`test_approvals.py`); aprobación de otra herramienta, otros argumentos, rechazada o ya usada; no existe herramienta de aprobar; la tabla de autonomía cubre exactamente el registro y coincide con el contrato (`test_autonomy.py`); Agent Cards en la ruta well-known, descubrimiento sin rutas escritas a mano y secreto de socios (`test_discovery.py`); eventos válidos contra el esquema, etiquetas de superficie y eventos de clientes solo `message` sobre reclamos propios (`test_events.py`); MCP, REST y el agente Escudo actúan como el `customer_id` del token verificado y `/a2a/escudo` rechaza llamadas anónimas (`test_identity.py`); aprobar exige firma del dispositivo registrado de la clienta: sin dispositivo, dispositivo ajeno o desconocido, firma mala o para otra aprobación → 403 sin cambios, repetir → rechazado (`test_device_approvals.py`); chat: solo cabecera `Authorization`, herramientas por las capacidades, pausa en la aprobación y reanudación sola tras aprobar, la conversación sobrevive a una reconexión, el asistente simulado firma el reclamo con 3 aprobaciones y un agente no puede apuntar a un reclamo inventado (`test_chat.py`); los momentos de descubrimiento (Agent Card, `tools/list`) y las llamadas sueltas de la misma clienta quedan en la línea de tiempo de su reclamo (`test_events.py`); cada corrida es su propio cliente y `make reset` los borra sin tocar el dispositivo del escenario (`test_runs.py`); llamadas de respaldo del perito (`test_hedging.py`); `make reset` (`test_reset.py`); el escenario completo por MCP con 3 aprobaciones (`test_scenario.py`) |
+| Backend | `cd backend && MOCK_AI=1 MOCK_AUTH=1 uv run pytest -q` (64 pruebas) | Toda acción con aprobación es rechazada sin `approval_id` válido, por REST y MCP (`test_approvals.py`); aprobación de otra herramienta, otros argumentos, rechazada o ya usada; no existe herramienta de aprobar; la tabla de autonomía cubre exactamente el registro y coincide con el contrato (`test_autonomy.py`); Agent Cards en la ruta well-known, descubrimiento sin rutas escritas a mano y secreto de socios (`test_discovery.py`); eventos válidos contra el esquema, etiquetas de superficie y eventos de clientes solo `message` sobre reclamos propios (`test_events.py`); MCP, REST y el agente Escudo actúan como el `customer_id` del token verificado y `/a2a/escudo` rechaza llamadas anónimas (`test_identity.py`); aprobar exige firma del dispositivo registrado de la clienta: sin dispositivo, dispositivo ajeno o desconocido, firma mala o para otra aprobación → 403 sin cambios, repetir → rechazado (`test_device_approvals.py`); chat: solo cabecera `Authorization`, herramientas por las capacidades, pausa en la aprobación y reanudación sola tras aprobar, la conversación sobrevive a una reconexión, el asistente simulado firma el reclamo con 3 aprobaciones y un agente no puede apuntar a un reclamo inventado (`test_chat.py`); los momentos de descubrimiento (Agent Card, `tools/list`) y las llamadas sueltas de la misma clienta quedan en la línea de tiempo de su reclamo (`test_events.py`); cada corrida es su propio cliente y `make reset` los borra sin tocar el dispositivo del escenario (`test_runs.py`); llamadas de respaldo del perito (`test_hedging.py`); `make reset` (`test_reset.py`); el escenario completo por MCP con 3 aprobaciones (`test_scenario.py`); `make preflight`: lectura de la salida de adb (permisos, huellas, galería, bloqueo, `device_id`) y las revisiones de Firestore (seed, reclamos sobrantes, dispositivo registrado) (`test_preflight.py`) |
 | Android | `make android-test` (sabores `fake` y `live`) | Mapeo de AppFunctions, `ApprovalFlow` y firma de aprobaciones, protocolo del chat, repositorio, cliente HTTP, push, línea de tiempo, mensajes de error |
 | Web | `cd web && npm test` (18 pruebas) | Línea de tiempo del presentador (selección de corrida con `?run=` y, sin él, la del reclamo activo; etiqueta «automático») y herramientas WebMCP (exactamente cuatro, todas de solo lectura, ninguna aprueba) |
 | Web e2e | `cd web && npm run e2e` | Presentador en modo demo con Chrome: rótulo REPETICIÓN GRABADA, pausa en ámbar, 3 aprobaciones, el reloj se detiene al firmar |
@@ -297,60 +297,49 @@ Todos los comandos de Android (`android-install`, `make -C android chat-scenario
 del emulador `Pixel_9_API_36_1` en ejecución (`android/scripts/emulator_serial.sh`), así que da igual en
 qué puerto arrancó. `make android-serial` lo muestra; `ANDROID_SERIAL=…` lo fuerza.
 
-### 8.3 PIN y huella (una vez)
+### 8.3 Dejarlo listo: `make android-prep`
 
 ```bash
-adb shell locksettings set-pin 1234
-adb shell am start -a android.settings.FINGERPRINT_ENROLL
-# en la pantalla de registro, toca el sensor virtual hasta «Fingerprint added»:
-adb emu finger touch 1     # repetir varias veces
+make seed            # una vez: escribe en .env.local el correo y la contraseña de la clienta
+make android-prep    # arranca el emulador y lo prepara; idempotente, se puede repetir
 ```
 
-`BiometricVerifier` acepta biometría fuerte con el PIN como respaldo; el escenario del emulador aprueba
-tocando el sensor con `adb emu finger touch 1`.
+`android/scripts/prep_emulator.sh` revisa cada paso y solo hace lo que falta:
 
-### 8.4 `google-services.json` y `local.properties`
+| Paso | Cómo |
+| --- | --- |
+| PIN `1234` y pantalla desbloqueada | `locksettings set-pin` si no hay PIN; despierta, quita el bloqueo y escribe el PIN; la pantalla no se apaga en 30 min |
+| `android/local.properties` | Lo escribe desde `.env.local` (`sdk.dir`, URL del API desplegado, correo y contraseña de la clienta) si no tiene la contraseña |
+| `google-services.json` | `make -C android google-services` si no existe (`firebase apps:sdkconfig ANDROID …`). Sin ese archivo la app compila, pero solo sirve el sabor `fake` (sin Auth ni FCM) |
+| App `live` | `./gradlew installLiveDebug` (Gradle no hace nada si no hubo cambios) |
+| Permisos | `pm grant` de `POST_NOTIFICATIONS` y `READ_MEDIA_IMAGES` (este último para `reportAccident` con `recentPhotoCount`) |
+| Fotos del choque | Copia `backend/samples/photos/crash_1..3.jpg` a `Pictures/escudo_crash_1..3.jpg` si no están en la galería y la vuelve a escanear |
+| Huella | Si no hay ninguna: abre el registro de Ajustes, escribe el PIN, acepta y toca el sensor virtual (`adb emu finger touch 1`) hasta que queda registrada |
+| Token | Reinicia la app: inicia sesión sola con la clienta y registra su token FCM y su llave de aprobación (`POST /devices`); espera la línea `Device registered for approval pushes` en logcat |
 
-```bash
-make -C android google-services      # firebase apps:sdkconfig ANDROID … -o app/google-services.json
-```
+`BiometricVerifier` acepta biometría fuerte con el PIN como respaldo; en el escenario se aprueba tocando
+el sensor con `adb emu finger touch 1`. En la charla no hay pantalla de login.
 
-Sin ese archivo la app compila igual, pero solo sirve el sabor `fake` (sin Auth ni FCM).
+Para un backend local con `MOCK_AUTH=1` (`make up-mock`), agrega a `android/local.properties`
+`escudo.apiUrl=http://10.0.2.2:8080` y `escudo.mockAuth=true`. También se aceptan las variables
+`ESCUDO_API_URL`, `ESCUDO_CUSTOMER_EMAIL`, `ESCUDO_CUSTOMER_PASSWORD` y `ESCUDO_MOCK_AUTH`. La URL del chat
+se deriva de `escudo.apiUrl` (`wss://…/assistant/chat`).
 
-`android/local.properties` (copia correo y contraseña de `.env.local`, que escribe `make seed`):
+### 8.4 Verificar: `make preflight`
 
-```properties
-sdk.dir=/Users/<tú>/Library/Android/sdk
-escudo.apiUrl=https://escudo-api-611681112050.us-central1.run.app
-escudo.customerEmail=andrea.morales@example.com
-escudo.customerPassword=<ESCUDO_CUSTOMER_PASSWORD de .env.local>
-# Solo para un backend local con MOCK_AUTH=1 (make up-mock), desde el emulador:
-# escudo.apiUrl=http://10.0.2.2:8080
-# escudo.mockAuth=true
-```
+`make preflight` (`backend/escudo/preflight.py`) revisa en una pasada lo que la charla necesita y sale con
+error si algo falta; cada falla imprime el comando que la arregla:
 
-También se aceptan las variables `ESCUDO_API_URL`, `ESCUDO_CUSTOMER_EMAIL`, `ESCUDO_CUSTOMER_PASSWORD`
-y `ESCUDO_MOCK_AUTH`. La URL del chat se deriva de `escudo.apiUrl` (`wss://…/assistant/chat`).
+- Nube: `escudo-api` y `escudo-web` con `min-instances=1`; `/health`, la Agent Card y `/presenter` responden
+  200 en menos de 2 s.
+- Emulador: corriendo, arranque completo, desbloqueado, app instalada, los dos permisos, al menos una huella
+  y las tres fotos en la galería.
+- Firestore: póliza `POL-GT-2027-0042` activa, 3 talleres con horarios, 2 grúas, y `cus_demo` sin reclamos
+  ni aprobaciones (estado de `make reset CLOUD=1`).
+- Registro: el `device_id` de la app (sus `shared_prefs`) está en `devices`, a nombre de `cus_demo`, activo,
+  con token FCM y llave de aprobación.
 
-### 8.5 Instalar y preparar
-
-```bash
-make android-install                                   # sabor live, abre la app
-adb shell pm grant app.escudo.android android.permission.POST_NOTIFICATIONS
-adb shell pm grant app.escudo.android android.permission.READ_MEDIA_IMAGES   # reportAccident con recentPhotoCount
-```
-
-Al abrirla la primera vez, la app inicia sesión sola con la clienta, registra su token FCM
-(`POST /devices`) y pide permiso de notificaciones. En la charla no hay pantalla de login.
-
-Las tres fotos de ensayo en la galería (las usa el reporte del escenario en el emulador):
-
-```bash
-adb push backend/samples/photos/crash_1.jpg backend/samples/photos/crash_2.jpg backend/samples/photos/crash_3.jpg /sdcard/Pictures/
-adb shell content call --uri content://media --method scan_volume --arg external_primary
-```
-
-### 8.6 Escenario por chat en el emulador
+### 8.5 Escenario por chat en el emulador
 
 ```bash
 make reset CLOUD=1
@@ -488,9 +477,9 @@ el agente A2A (`agents/escudo_agent.build_a2a_agent`) o una AppFunction (que lla
 | No llega el push de aprobación | La app no registró su token (abrirla una vez con sesión iniciada), falta `google-services.json`, falta el permiso de notificaciones, o el emulador no es una imagen *Play*. Mientras tanto, la pestaña Aprobaciones también muestra la pendiente |
 | «Ningún socio disponible ofrece ese servicio» (`peer_unavailable`) | `A2A_PEERS` no apunta a las Agent Cards (`{base}/.well-known/agent-card.json`) o el secreto `X-Escudo-A2A-Key` no coincide |
 | `adb shell cmd app_function` → `No shell command implementation.` | Imagen API 36.0. Usa `Pixel_9_API_36_1` (36.1) |
-| `reportAccident` por AppFunction: «Escudo cannot read the gallery yet» | `adb shell pm grant app.escudo.android android.permission.READ_MEDIA_IMAGES` |
+| `reportAccident` por AppFunction: «Escudo cannot read the gallery yet» | `make android-prep` (concede `READ_MEDIA_IMAGES`) |
 | `make -C android chat-scenario` → «No running emulator for AVD Pixel_9_API_36_1» o «not on screen» | Arranca el emulador con `make android-emulator` (otro AVD no cuenta). Revisa también que haya tres fotos en la galería y que la app esté instalada con sesión iniciada |
-| `make -C android chat-scenario` → «no biometric prompt» o «approval not granted» | No hay huella registrada (sección 8.3) |
+| `make -C android chat-scenario` → «no biometric prompt» o «approval not granted» | No hay huella registrada: `make android-prep` (sección 8.3) |
 | El portal dice «WebMCP no está activo en este navegador» | Activa `chrome://flags/#enable-webmcp-testing` y relanza Chrome 150+ |
 | `/presenter` vacío en local | `make web` lee Firestore con tu ADC; usa `/presenter?demo=1` sin nube |
 | La evaluación de fotos tarda mucho | El perito lanza una llamada de respaldo cada 5 s (hasta 4, gana la primera; límite 45 s, después `assessment_unavailable`). Si `global` está lento para todos, ninguna gana antes: los tiempos quedan en los logs como `assessment_timing` |
@@ -510,8 +499,8 @@ el agente A2A (`agents/escudo_agent.build_a2a_agent`) o una AppFunction (que lla
 - [ ] `curl https://escudo-api-611681112050.us-central1.run.app/health` → `{"status":"ok"}`; Agent Cards responden.
 - [ ] `make reset CLOUD=1`, `make scenario CLOUD=1 APPROVE_DELAY=4` y `make chat-scenario CLOUD=1`:
       «aprobaciones: 3 (esperadas 3) · OK» en ambos.
-- [ ] Emulador `Pixel_9_API_36_1` (el dispositivo del escenario): app `live` instalada, sesión iniciada,
-      notificaciones permitidas, huella registrada, `READ_MEDIA_IMAGES` concedido, fotos del choque en la galería.
+- [ ] `make android-prep`: el emulador `Pixel_9_API_36_1` (el dispositivo del escenario) queda con la app
+      `live`, sesión, permisos, huella, las fotos del choque y su token registrado (sección 8.3).
 - [ ] Un push de prueba llega al emulador (correr `make scenario-live` y aprobar una vez con
       `adb emu finger touch 1`).
 - [ ] `make -C android chat-scenario` completo una vez en el emulador; después, `make reset CLOUD=1`.
@@ -519,12 +508,18 @@ el agente A2A (`agents/escudo_agent.build_a2a_agent`) o una AppFunction (que lla
 
 **Antes de subir**
 
-- [ ] `make warmup` → `warmup OK`, luego `make reset CLOUD=1` (< 10 s).
+En este orden (`make stage-on` despliega una revisión nueva, así que el warmup va después):
+
+- [ ] `make stage-on` (si no quedó de la víspera).
+- [ ] `make android-prep`: arranca el emulador si no corre y repite lo que falte.
+- [ ] `make warmup` → `warmup OK`.
+- [ ] `make reset CLOUD=1` (< 10 s).
+- [ ] `make preflight` → `preflight OK` (sección 8.4).
 - [ ] `/presenter` abierto en Chrome a pantalla completa en el proyector; «Aprobaciones 0 de 3» (sin
       `?run`, sigue la corrida del reclamo más reciente: la del emulador).
 - [ ] `make up-offline` probado en la laptop y `docs/escudo-chat-run.mp4` a mano.
 - [ ] Laptop conectada a la corriente y en No molestar (que no aparezcan avisos en el proyector).
-- [ ] Emulador corriendo (`make android-emulator`), ventana a tamaño legible, app abierta en **Póliza**
+- [ ] Ventana del emulador a tamaño legible, app abierta en **Póliza**
       (el guion empieza ahí, ver [DEMO.md](DEMO.md)).
 - [ ] Terminal en la raíz del repo con `export ANDROID_SERIAL=$(make -s android-serial)` y los comandos
       de la huella y de `adb … cmd app_function` listos (sección 9).

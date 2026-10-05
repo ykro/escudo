@@ -22,8 +22,8 @@ ENV_FILE := $(if $(wildcard .env),--env-file ../.env,)
 ANDROID_AVD ?= Pixel_9_API_36_1
 EMULATOR := $${ANDROID_HOME:-$$HOME/Library/Android/sdk}/emulator/emulator
 
-.PHONY: help up up-mock up-offline web seed reset test scenario chat-scenario scenario-live stage-on stage-off warmup infra deploy deploy-api deploy-web \
-	photos brand android-build android-test android-install android-emulator android-serial
+.PHONY: help up up-mock up-offline web seed reset test scenario chat-scenario scenario-live stage-on stage-off warmup preflight infra deploy deploy-api deploy-web \
+	photos brand android-build android-test android-install android-emulator android-serial android-prep
 
 help: ## Lista todos los comandos
 	@grep -hE '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | sed -E 's/:.*## /\t/' | awk -F'\t' '{printf "  make %-18s %s\n", $$1, $$2}'
@@ -76,7 +76,7 @@ scenario: ## Escenario completo vía MCP con su propio cliente, aprobaciones fir
 chat-scenario: ## Escenario por chat escrito con su propio cliente: 3 aprobaciones firmadas, < 3 min (CLOUD=1)
 	cd $(BACKEND) && ADMIN_TOKEN=$(RUN_ADMIN) FIREBASE_WEB_API_KEY=$(RUN_WEB_KEY) uv run $(ENV_FILE) python -m escudo.chat_scenario --base-url $(ESCUDO_BASE_URL) --test-mode
 
-scenario-live: ## Mismo escenario, pero espera a que apruebes cada paso en el teléfono
+scenario-live: ## Mismo escenario con la clienta sembrada; espera a que apruebes cada paso en la app del emulador
 	cd $(BACKEND) && FIREBASE_WEB_API_KEY=$(RUN_WEB_KEY) uv run $(ENV_FILE) python -m escudo.scenario --base-url $(ESCUDO_BASE_URL) --shared
 
 # --- cloud ------------------------------------------------------------------------
@@ -113,6 +113,11 @@ warmup: ## Antes de subir: toca API, Agent Cards, portal y /presenter desplegado
 	done; \
 	if [ $$fail = 0 ]; then echo "warmup OK"; else echo "warmup: algo no respondió 200"; exit 1; fi
 
+# Last check before going on stage: cloud warm, Firestore in its initial state, emulator ready and
+# its device registered. Each failure prints the command that fixes it (backend/escudo/preflight.py).
+preflight: ## Antes de subir: nube caliente, Firestore en estado inicial, emulador listo y registrado
+	cd $(BACKEND) && ANDROID_AVD=$(ANDROID_AVD) uv run $(ENV_FILE) python -m escudo.preflight
+
 # --- Android (escudo/android has its own Makefile) -------------------------------
 android-build: ## APKs de depuración (sabores fake y live)
 	$(MAKE) -C android build
@@ -128,6 +133,9 @@ android-emulator: ## Arranca (o reutiliza) el emulador Pixel_9_API_36_1 y muestr
 		$(EMULATOR) -avd $(ANDROID_AVD) -no-snapshot-save >/dev/null 2>&1 & \
 	fi; \
 	android/scripts/emulator_serial.sh --wait 180 $(ANDROID_AVD)
+
+android-prep: android-emulator ## Deja el emulador listo sin pasos manuales: PIN, app live, permisos, fotos, huella y registro del token (idempotente)
+	@ANDROID_AVD=$(ANDROID_AVD) android/scripts/prep_emulator.sh
 
 android-serial: ## Serial adb del emulador Pixel_9_API_36_1 en ejecución
 	@android/scripts/emulator_serial.sh $(ANDROID_AVD)

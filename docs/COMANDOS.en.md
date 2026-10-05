@@ -7,7 +7,7 @@
 No cloud (everything simulated: `MOCK_AI=1 MOCK_AUTH=1`, in-memory store, deterministic partner agents):
 
 ```bash
-echo "sdk.dir=$HOME/Library/Android/sdk" >> android/local.properties   # once: make test includes Android
+echo "sdk.dir=$HOME/Library/Android/sdk" >> android/local.properties   # once: make test includes Android (make android-prep writes the full file)
 make up-mock          # API at http://127.0.0.1:8080 (ADMIN_TOKEN=local-admin)
 make reset            # in another terminal: back to the initial state (same token)
 make scenario         # the whole scenario over MCP, the 3 approvals signed by a test device
@@ -27,6 +27,18 @@ make chat-scenario CLOUD=1              # the same, typing to the assistant in t
 Every `make scenario` and `make chat-scenario` run creates its own fictional customer
 (`POST /admin/runs`: policy, Firebase login and `run_id`), so concurrent runs never collide with each
 other or with the stage customer, who is the seeded one. `make reset` deletes those customers.
+
+Talk day, in this order (details in [DEMO.md](DEMO.md), in Spanish):
+
+```bash
+make stage-on         # escudo-api and escudo-web with one warm instance (deploys a new revision)
+make android-prep     # boots the emulator and gets it ready: PIN, live app, permissions, photos, fingerprint, token
+make warmup           # after stage-on: touches every public surface (all 200)
+make reset CLOUD=1    # initial state
+make preflight        # final check: warm cloud, initial Firestore, emulator ready and registered
+# … the talk …
+make stage-off        # min-instances=0
+```
 
 No network on stage: `make up-offline` serves the production web build from the laptop and
 `http://127.0.0.1:3217/presenter?demo=1` replays a real recorded run, labelled
@@ -54,6 +66,7 @@ From the repo root (`make help` lists them all):
 | `make deploy-web` | `infra/11-deploy-web.sh`: builds and deploys `escudo-web` |
 | `make warmup` | Before going on stage: touches the deployed API, Agent Cards, portal and `/presenter`, prints status and latency (fails unless all 200) |
 | `make stage-on` | Talk day: `min-instances=1` on `escudo-api` and `escudo-web` (no cold start) |
+| `make preflight` | Last check before going on stage: `min-instances=1` and a fast answer on both services, the seed in Firestore with no claims or approvals for `cus_demo`, the emulator unlocked with the app, permissions, fingerprint and photos, and its device registered in Firestore (FCM token + approval key). Every failure prints the command that fixes it |
 | `make stage-off` | Any other day: `min-instances=0` (scale to zero; later deploys keep it) |
 | `make photos` | Regenerates the rehearsal crash photos with `IMAGE_MODEL` |
 | `make brand` | Regenerates the "A · Sereno" logo and mockups with `IMAGE_MODEL` from `brand/prompts/` (`ARGS="--force logo"`) |
@@ -61,6 +74,7 @@ From the repo root (`make help` lists them all):
 | `make android-test` | Android unit tests (both flavors) |
 | `make android-install` | Installs and opens the app (`FLAVOR=live` by default, `FLAVOR=fake` for no network) |
 | `make android-emulator` | Starts (or reuses) the `Pixel_9_API_36_1` AVD (Android 16 QPR2, needed for `cmd app_function`) and prints its serial |
+| `make android-prep` | Boots the emulator and gets it ready with no manual steps (idempotent): PIN 1234 and screen unlocked, `android/local.properties` from `.env.local`, `google-services.json`, `live` app installed, notification and gallery permissions, the three photos as `escudo_crash_1..3.jpg`, one enrolled fingerprint (driving Settings' enrollment screen) and the app opened so it registers its token |
 | `make android-serial` | adb serial of that emulator; every Android target detects it on its own |
 
 `android/Makefile` adds `make -C android chat-scenario` (chat scenario on the emulator, with a virtual

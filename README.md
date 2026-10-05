@@ -29,6 +29,9 @@ make reset CLOUD=1           # nube: estado inicial (requiere ADC y .env)
 make chat-scenario CLOUD=1   # nube: imprime …/presenter?run=<id>
 ```
 
+Día de la charla: `make stage-on && make android-prep && make warmup && make reset CLOUD=1 && make preflight`;
+después, `make stage-off`. Guion: [docs/DEMO.md](docs/DEMO.md).
+
 ## URLs desplegadas
 
 | Qué | URL |

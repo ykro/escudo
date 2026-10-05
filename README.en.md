@@ -29,6 +29,9 @@ make reset CLOUD=1           # cloud: initial state (needs ADC and .env)
 make chat-scenario CLOUD=1   # cloud: prints …/presenter?run=<id>
 ```
 
+Talk day: `make stage-on && make android-prep && make warmup && make reset CLOUD=1 && make preflight`;
+afterwards, `make stage-off`. Script: [docs/DEMO.md](docs/DEMO.md) (Spanish).
+
 ## Deployed URLs
 
 | What | URL |

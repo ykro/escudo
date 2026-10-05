@@ -24,6 +24,7 @@ backend/                  Python 3.13 + uv
   escudo/scenario.py      corredor del escenario por MCP (un cliente propio por corrida)
   escudo/chat_scenario.py corredor del escenario por chat
   escudo/seed.py, admin.py   datos sintéticos, make seed / make reset
+  escudo/preflight.py     make preflight: nube, Firestore, emulador y registro del dispositivo
   samples/photos/         3 fotos de ensayo + prompts.json
   scripts/                generate_sample_photos.py
   tests/                  pytest (aprobaciones, firmas de dispositivo, autonomía, A2A, chat, corridas, eventos)
@@ -32,6 +33,7 @@ android/                  Kotlin + Compose + Material 3 (ver android/README.md)
   app/src/main/…/approvals/      ApprovalFlow + BiometricPrompt
   app/src/main/…/assistant/      chat con el asistente (ChatSession, ChatProtocol)
   scripts/chat_scenario.sh       escenario por chat en el emulador
+  scripts/prep_emulator.sh       make android-prep: deja el emulador listo para la charla
 .github/workflows/test.yml  CI: make test en cada push y PR, solo modos simulados
 web/                      Next.js 16 (ver web/README.md)
   src/lib/webmcp.ts       herramientas WebMCP

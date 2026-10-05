@@ -24,6 +24,7 @@ backend/                  Python 3.13 + uv
   escudo/scenario.py      scenario runner over MCP (its own customer per run)
   escudo/chat_scenario.py scenario runner over the chat
   escudo/seed.py, admin.py   synthetic data, make seed / make reset
+  escudo/preflight.py     make preflight: cloud, Firestore, emulator and device registration
   samples/photos/         3 rehearsal photos + prompts.json
   scripts/                generate_sample_photos.py
   tests/                  pytest (approvals, device signatures, autonomy, A2A, chat, runs, events)
@@ -32,6 +33,7 @@ android/                  Kotlin + Compose + Material 3 (see android/README.md)
   app/src/main/…/approvals/      ApprovalFlow + BiometricPrompt
   app/src/main/…/assistant/      chat with the assistant (ChatSession, ChatProtocol)
   scripts/chat_scenario.sh       chat scenario on the emulator
+  scripts/prep_emulator.sh       make android-prep: gets the emulator ready for the talk
 .github/workflows/test.yml  CI: make test on every push and PR, mock modes only
 web/                      Next.js 16 (see web/README.md)
   src/lib/webmcp.ts       WebMCP tools

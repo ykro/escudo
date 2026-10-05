@@ -27,35 +27,30 @@ vectores, con versión monocromática.
   Un agente con el token del cliente no puede aprobar: no tiene la llave del teléfono (el servidor
   responde `403 approval_forbidden`). Aprobar nunca es una AppFunction.
 
-## Configuración (una vez, antes de la charla)
+## Configuración (antes de la charla)
 
-1. `google-services.json` (no se versiona):
+```bash
+make prep    # o `make android-prep` en la raíz, que además arranca el emulador
+```
 
-   ```bash
-   make google-services   # firebase apps:sdkconfig ANDROID <app id> --project ai-experiments-487722
-   ```
+`scripts/prep_emulator.sh` deja el emulador listo sin pasos manuales y solo hace lo que falta:
 
-   App registrada en Firebase: `app.escudo.android` (`1:611681112050:android:cecc13cdf49afe50f6e56b`).
-   Sin el archivo la app compila y corre con la API falsa, sin Auth ni FCM.
-   `app/google-services.json.example` muestra la forma.
+- PIN `1234` y pantalla desbloqueada (la huella necesita un PIN).
+- `local.properties` (no se versiona) escrito desde `../.env.local`, que crea `make seed` en la raíz:
+  `sdk.dir`, `escudo.apiUrl` (el API desplegado), `escudo.customerEmail` y `escudo.customerPassword`.
+- `app/google-services.json` (no se versiona) con `make google-services`
+  (`firebase apps:sdkconfig ANDROID 1:611681112050:android:cecc13cdf49afe50f6e56b --project ai-experiments-487722`).
+  Sin ese archivo la app compila y corre con la API falsa, sin Auth ni FCM.
+- App `live` instalada, permisos `POST_NOTIFICATIONS` y `READ_MEDIA_IMAGES`, las tres fotos del choque en
+  la galería (`escudo_crash_1..3.jpg`) y una huella registrada (maneja la pantalla de registro de Ajustes
+  con `adb emu finger touch 1`).
+- Abre la app: inicia sesión sola con la clienta y registra su token FCM y su llave de aprobación
+  (`POST /devices`). En el escenario no hay pantalla de login.
 
-2. `local.properties` (no se versiona):
-
-   ```properties
-   sdk.dir=/Users/<tú>/Library/Android/sdk
-   escudo.apiUrl=https://escudo-api-<hash>-uc.a.run.app
-   escudo.customerEmail=<correo del cliente sembrado>
-   escudo.customerPassword=<contraseña>
-   # Solo para un backend local con MOCK_AUTH=1 (make up-mock), desde el emulador:
-   # escudo.apiUrl=http://10.0.2.2:8080
-   # escudo.mockAuth=true
-   ```
-
-   También se aceptan las variables `ESCUDO_API_URL`, `ESCUDO_CUSTOMER_EMAIL`,
-   `ESCUDO_CUSTOMER_PASSWORD`, `ESCUDO_MOCK_AUTH`.
-
-3. Abrir la app una vez: inicia sesión sola con el correo del cliente, registra el token FCM
-   (`POST /devices`) y pide permiso de notificaciones. En el escenario no hay pantalla de login.
+Para un backend local con `MOCK_AUTH=1` (`make up-mock`), agrega a `local.properties`
+`escudo.apiUrl=http://10.0.2.2:8080` y `escudo.mockAuth=true`. También se aceptan las variables
+`ESCUDO_API_URL`, `ESCUDO_CUSTOMER_EMAIL`, `ESCUDO_CUSTOMER_PASSWORD`, `ESCUDO_MOCK_AUTH`.
+`make preflight` en la raíz verifica todo, incluido el registro del dispositivo en Firestore.
 
 ## Sabores
 
@@ -72,11 +67,12 @@ make test                  # ./gradlew testDebugUnitTest (ambos sabores)
 make install               # instala live y abre la app; FLAVOR=fake para la API falsa
 make appfunctions          # lista las AppFunctions de Escudo en el dispositivo (API 36.1+)
 make chat-scenario         # escenario completo por chat en el emulador contra la nube, cronometrado
+make prep                  # deja el emulador listo para la charla (idempotente)
 ```
 
 Ensayo de aprobación sin backend: sabor `fake`, reportar un accidente con foto crea una
 aprobación pendiente; `adb shell am start -d escudo://approvals/<id>` abre la pantalla como lo
-hace la notificación. En el emulador, PIN con `adb shell locksettings set-pin 1234`.
+hace la notificación.
 
 ## Asistente Escudo (chat escrito)
 
@@ -97,9 +93,7 @@ los WebSockets a los 60 min), la app se reconecta con el mismo `session_id` y la
   firmado. Espera marcadores `EscudoScenario` de logcat, no tiempos fijos. Antes: `make reset CLOUD=1`
   en la raíz. Medido el 2026-10-01: **106 s** (35 s son automatización de la UI del reporte),
   3 aprobaciones firmadas con huella.
-- Preparar la huella del emulador (una vez): PIN `adb shell locksettings set-pin 1234`, luego
-  `adb shell am start -a android.settings.FINGERPRINT_ENROLL` y tocar el sensor con
-  `adb emu finger touch 1` hasta «Fingerprint added».
+- PIN y huella del emulador: `make prep` (arriba).
 - Capturas: `docs/screenshots/chat/`.
 
 ## Protocolos con el backend

@@ -6,6 +6,7 @@
 #   make google-services       download app/google-services.json from Firebase
 #   make appfunctions          list Escudo's AppFunctions on the device (Android 16 QPR2+)
 #   make serial                adb serial of the running $(ANDROID_AVD) emulator
+#   make prep                  leave the emulator ready for the talk (PIN, app, permissions, photos, fingerprint, token)
 
 GRADLE  ?= ./gradlew --console=plain
 FLAVOR  ?= live
@@ -23,7 +24,7 @@ export ANDROID_SERIAL
 
 FLAVOR_CAP := $(shell echo $(FLAVOR) | awk '{print toupper(substr($$0,1,1)) substr($$0,2)}')
 
-.PHONY: build test chat-scenario install google-services appfunctions serial clean
+.PHONY: build test chat-scenario install google-services appfunctions serial prep clean
 
 build:
 	$(GRADLE) assembleDebug
@@ -48,6 +49,9 @@ appfunctions:
 
 serial:
 	@ADB=$(ADB) scripts/emulator_serial.sh $(ANDROID_AVD)
+
+prep:
+	ADB=$(ADB) scripts/prep_emulator.sh
 
 clean:
 	$(GRADLE) clean

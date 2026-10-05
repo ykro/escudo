@@ -14,12 +14,15 @@ lo que tarde Gemini) más lo que hables. Preparación técnica completa: [ONBOAR
 
 ## Antes de la demo
 
-- [ ] `make stage-on`: `escudo-api` y `escudo-web` con una instancia caliente.
+- [ ] `make stage-on`: `escudo-api` y `escudo-web` con una instancia caliente (despliega una revisión
+      nueva, por eso el warmup va después).
+- [ ] `make android-prep`: arranca el emulador `Pixel_9_API_36_1` (el dispositivo del escenario) y lo deja
+      listo sin pasos manuales: PIN y pantalla desbloqueada, app `live` instalada, permisos, las tres fotos
+      del choque en la galería, huella registrada y la app abierta, que registra su token.
 - [ ] `make warmup`: toca API, Agent Cards, portal y `/presenter`; debe terminar con `warmup OK`.
 - [ ] `make reset CLOUD=1`: «Aprobaciones 0 de 3» y nada en la línea de tiempo.
-- [ ] Emulador `Pixel_9_API_36_1` corriendo (`make android-emulator`): es el dispositivo del escenario.
-      La app `live` instalada (`make android-install`), sesión iniciada, huella registrada y las tres
-      fotos del choque en la galería (ONBOARDING §8).
+- [ ] `make preflight`: debe terminar con `preflight OK` (nube caliente, Firestore en estado inicial,
+      emulador listo y su dispositivo registrado). Cada falla dice qué comando la arregla.
 - [ ] En la terminal de la demo, desde la raíz del repo, `export ANDROID_SERIAL=$(make -s android-serial)`:
       `adb` usa ese serial, así que los comandos de abajo no lo escriben (el puerto cambia entre arranques).
 - [ ] La app abierta en **Póliza**. Ningún reporte a medias.
