@@ -22,7 +22,8 @@ APK="$CACHE/agent/app/build/outputs/apk/standard/debug/app-standard-debug.apk"
 adb() { "$ADB_BIN" -s "$SERIAL" "$@"; }
 ok() { printf '   %s\n' "$*"; }
 
-privileged() { adb shell dumpsys activity processes "$PKG" 2>/dev/null | grep -q "ShellIdentityInstrumentation.*mFinished=false"; }
+# Privileged = the agent's process runs under its instrumentation with a UiAutomation connection.
+privileged() { adb shell dumpsys activity processes "$PKG" 2>/dev/null | grep -q "$PKG/u0a[0-9]* (instrumentation)"; }
 
 if privileged; then
   ok "el agente de prueba de AppFunctions ya corre con permisos"
@@ -39,10 +40,10 @@ if [ ! -f "$APK" ]; then
 fi
 adb install -r "$APK" >/dev/null && ok "agente instalado ($PKG)"
 
-# Without -w the instrumentation keeps running after adb disconnects; the agent's process holds the
-# shell identity (EXECUTE_APP_FUNCTIONS) for as long as it lives.
+# -w keeps the UiAutomation connection the agent uses to adopt the shell identity
+# (EXECUTE_APP_FUNCTIONS); nohup, on the device, keeps it alive after adb disconnects.
 adb shell am force-stop "$PKG"
-adb shell "nohup am instrument $PKG/.ShellIdentityInstrumentation >/dev/null 2>&1 &"
+adb shell "nohup am instrument -w $PKG/.ShellIdentityInstrumentation >/dev/null 2>&1 &"
 for _ in $(seq 1 20); do
   privileged && break
   sleep 0.5
