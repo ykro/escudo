@@ -10,7 +10,7 @@
 #
 # Prerequisites (once): live debug build installed and signed in; 3 crash photos in the gallery
 # (backend/samples/photos); device PIN + one enrolled fingerprint (see README); backend reset
-# (`make reset CLOUD=1` at the repo root).
+# («Empezar de nuevo» in the app, or `make reset CLOUD=1` at the repo root).
 #
 # Usage: scripts/chat_scenario.sh            (ANDROID_SERIAL defaults to the running Pixel_9_API_36_1)
 set -euo pipefail

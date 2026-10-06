@@ -13,16 +13,15 @@ and call the same `EscudoRepository` as the screens.
 
 Nothing here can accept the deductible, book a shop, sign or approve: those stay behind the
 human approval in the app. Every API call made by an AppFunction carries
-`X-Escudo-Surface: appfunctions` and `X-Escudo-Actor: gemini`, so the backend's timeline events
-show the agent and the surface.
+`X-Escudo-Surface: appfunctions` and `X-Escudo-Actor: external_agent`, so the presenter shows the
+call as "Agente externo" with the AppFunctions badge.
 
 ## Requirements
 
 - Device or emulator on **Android 16 QPR2 (API 36.1) or newer**. The AppFunctions service exists
   on API 36.0, but the `cmd app_function` shell command does not (`No shell command implementation.`).
   Verified on AVD `Pixel_9_API_36_1` (`system-images;android-36.1;google_apis_playstore;arm64-v8a`, r4).
-- For `recentPhotoCount`, grant gallery access once before the talk:
-  `adb shell pm grant app.escudo.android android.permission.READ_MEDIA_IMAGES`.
+- For `recentPhotoCount`, gallery access (`READ_MEDIA_IMAGES`), granted by `make android-prep`.
 
 Create the emulator once:
 
@@ -87,11 +86,19 @@ adb shell cmd app_function set-enabled --package app.escudo.android --function "
 adb shell cmd app_function set-enabled --package app.escudo.android --function "$F#reportAccident" --state default
 ```
 
-## Other tools
+## On stage: Google's AppFunction Testing Agent
 
-- **AppFunctions Testing Agent** (`github.com/android/appfunctions`, folder `agent/`): a privileged
-  app (`./run_privileged.sh`) that lists and executes AppFunctions and can drive them from an LLM
-  conversation. The most "agent-like" option for the stage without Gemini.
-- **Gemini**: as of 2026-09-30, Gemini's integration with third-party AppFunctions is in private
-  preview (trusted testers / Early Access Program) and is not available to this app. The
-  on-stage agent is Asistente Escudo; AppFunctions are shown with the tools above.
+The talk shows the functions with Google's **AppFunction Testing Agent** (`github.com/android/appfunctions`,
+folder `agent/`, pinned commit in `scripts/prep_appfunctions_agent.sh`): an external app that lists every
+app's AppFunctions and runs them with inputs you type, all with taps. It needs the system permission
+`EXECUTE_APP_FUNCTIONS`, which it only holds when started through its `ShellIdentityInstrumentation`.
+`make prep` (or `make android-prep` at the repo root) installs it and starts it that way; the emulator's
+quick-boot snapshot keeps that process alive, so on talk day it is opened from recents or its icon:
+search → **Escudo** (pinned) → **getCoverage** with `incidentType` = `collision` → **Run**. Verified on
+2026-10-06 against the deployed `escudo-api`: the result shows the policy, vehicle, coverages and
+deductible, and the presenter shows the call as "Agente externo · AppFunctions".
+
+After a cold boot (no snapshot) the agent loses the permission; `make android-prep` starts it again.
+
+**Gemini**: as of 2026-10-06, Gemini's integration with third-party AppFunctions is in private preview
+(trusted testers / Early Access Program) and is not available to this app.

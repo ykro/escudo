@@ -43,6 +43,12 @@
     <string name="policy_rental_days">Auto de reemplazo</string>
     <string name="policy_rental_days_value">%1$d días</string>
     <string name="policy_report_accident">Reportar accidente</string>
+    <string name="restart_demo">Empezar de nuevo</string>
+    <string name="restart_demo_title">¿Empezar de nuevo?</string>
+    <string name="restart_demo_body">Se borran el reclamo, las aprobaciones y la conversación del asistente, y la vista del presentador vuelve a cero. La póliza no cambia.</string>
+    <string name="restart_demo_confirm">Empezar</string>
+    <string name="restart_demo_cancel">Cancelar</string>
+    <string name="restart_demo_failed">No se pudo empezar de nuevo. Revisa la conexión e inténtalo otra vez.</string>
     <string name="coverage_own_damage">Daños propios</string>
     <string name="coverage_third_party">Responsabilidad civil</string>
     <string name="coverage_towing">Grúa</string>

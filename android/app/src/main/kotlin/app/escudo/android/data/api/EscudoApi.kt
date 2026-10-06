@@ -34,6 +34,9 @@ interface EscudoApi {
 
   suspend fun registerDevice(fcmToken: String, deviceId: String, publicKey: String)
   suspend fun postEvent(event: EscudoEvent)
+
+  /** «Empezar de nuevo»: back to the demo's initial state (POST /demo/restart, stage customer only). */
+  suspend fun restartDemo()
 }
 
 /** Non-2xx answer from the API. [code] lets callers tell 404/409/403 apart. */

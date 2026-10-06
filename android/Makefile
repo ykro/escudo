@@ -6,7 +6,7 @@
 #   make google-services       download app/google-services.json from Firebase
 #   make appfunctions          list Escudo's AppFunctions on the device (Android 16 QPR2+)
 #   make serial                adb serial of the running $(ANDROID_AVD) emulator
-#   make prep                  leave the emulator ready for the talk (PIN, app, permissions, photos, fingerprint, token)
+#   make prep                  leave the emulator ready for the talk (PIN, app, permissions, photos, fingerprint, AppFunctions agent, token)
 
 GRADLE  ?= ./gradlew --console=plain
 FLAVOR  ?= live
@@ -33,7 +33,7 @@ test:
 	$(GRADLE) testDebugUnitTest
 
 # Typed-chat scenario on the emulator against the cloud, event-driven; prints the real time.
-# Reset the backend first: `make reset CLOUD=1` at the repo root.
+# Start from a clean backend first: «Empezar de nuevo» in the app, or `make reset CLOUD=1` at the repo root.
 chat-scenario:
 	ADB=$(ADB) scripts/chat_scenario.sh
 

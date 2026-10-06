@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import android.content.Intent
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -16,6 +18,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.app.NotificationManagerCompat
+import app.escudo.android.MainActivity
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -31,6 +39,7 @@ import app.escudo.android.data.model.Policy
 import app.escudo.android.ui.components.LoadState
 import app.escudo.android.ui.components.LoadStateContent
 import app.escudo.android.ui.components.PrimaryButton
+import app.escudo.android.ui.components.QuietButton
 import app.escudo.android.ui.components.SectionLabel
 import app.escudo.android.ui.components.SurfaceCard
 import app.escudo.android.ui.components.TonalCard
@@ -52,19 +61,62 @@ class PolicyViewModel(private val repository: EscudoRepository) : ViewModel() {
     _state.value = LoadState.Loading
     viewModelScope.launch { _state.value = runCatching { repository.policy() }.toLoadState() }
   }
+
+  private val _restart = MutableStateFlow<Restart>(Restart.Idle)
+  val restart: StateFlow<Restart> = _restart
+
+  /** «Empezar de nuevo»: the backend goes back to the initial state; [onDone] restarts the app's screens. */
+  fun restartDemo(onDone: () -> Unit) {
+    _restart.value = Restart.Running
+    viewModelScope.launch {
+      runCatching { repository.restartDemo() }
+        .onSuccess { _restart.value = Restart.Idle; onDone() }
+        .onFailure { _restart.value = Restart.Failed }
+    }
+  }
+
+  enum class Restart { Idle, Running, Failed }
 }
 
 @Composable
 fun PolicyScreen(repository: EscudoRepository, onReportAccident: () -> Unit) {
   val vm = viewModel { PolicyViewModel(repository) }
   val state by vm.state.collectAsStateWithLifecycle()
+  val restart by vm.restart.collectAsStateWithLifecycle()
+  val context = LocalContext.current
+  val onRestart = {
+    vm.restartDemo {
+      // A fresh task: every screen (chat included) starts empty, like the backend.
+      NotificationManagerCompat.from(context).cancelAll()
+      context.startActivity(
+        Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK),
+      )
+    }
+  }
   LoadStateContent(state, onRetry = vm::refresh, loadingLabel = R.string.loading_policy) { policy ->
-    PolicyContent(policy, onReportAccident)
+    PolicyContent(policy, onReportAccident, restart, onRestart)
   }
 }
 
 @Composable
-private fun PolicyContent(policy: Policy, onReportAccident: () -> Unit) {
+private fun PolicyContent(
+  policy: Policy,
+  onReportAccident: () -> Unit,
+  restart: PolicyViewModel.Restart,
+  onRestart: () -> Unit,
+) {
+  var confirming by remember { mutableStateOf(false) }
+  if (confirming) {
+    AlertDialog(
+      onDismissRequest = { confirming = false },
+      title = { Text(stringResource(R.string.restart_demo_title)) },
+      text = { Text(stringResource(R.string.restart_demo_body)) },
+      confirmButton = {
+        QuietButton(stringResource(R.string.restart_demo_confirm), onClick = { confirming = false; onRestart() })
+      },
+      dismissButton = { QuietButton(stringResource(R.string.restart_demo_cancel), onClick = { confirming = false }) },
+    )
+  }
   val active = policy.status == "active"
   Column(
     Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.m, vertical = Spacing.s),
@@ -104,8 +156,22 @@ private fun PolicyContent(policy: Policy, onReportAccident: () -> Unit) {
     PrimaryButton(
       stringResource(R.string.policy_report_accident),
       onClick = onReportAccident,
-      modifier = Modifier.fillMaxWidth().padding(top = Spacing.s, bottom = Spacing.m),
+      modifier = Modifier.fillMaxWidth().padding(top = Spacing.s),
     )
+    QuietButton(
+      stringResource(R.string.restart_demo),
+      onClick = { confirming = true },
+      enabled = restart != PolicyViewModel.Restart.Running,
+      modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = Spacing.m),
+    )
+    if (restart == PolicyViewModel.Restart.Failed) {
+      Text(
+        stringResource(R.string.restart_demo_failed),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.error,
+        modifier = Modifier.padding(bottom = Spacing.m),
+      )
+    }
   }
 }
 

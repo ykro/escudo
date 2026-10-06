@@ -7,8 +7,12 @@
 #   4. POST_NOTIFICATIONS and READ_MEDIA_IMAGES granted.
 #   5. The three crash photos (backend/samples/photos) in the gallery as escudo_crash_1..3.jpg.
 #   6. One enrolled fingerprint (Settings' enrollment screen driven over adb + `adb emu finger touch 1`).
-#   7. App opened: it signs in by itself and registers this install's FCM token and approval key
-#      (POST /devices). `make preflight` verifies the registration in Firestore.
+#   7. Google's AppFunction Testing Agent installed and running with system permissions
+#      (scripts/prep_appfunctions_agent.sh), for the AppFunctions part of the demo.
+#   8. App opened: it signs in by itself and registers this install's FCM token and approval key
+#      (POST /devices).
+# Then close the emulator normally: its quick-boot snapshot keeps all of this, so on talk day opening
+# the emulator is enough.
 #
 # Usage (from escudo/android, or `make android-prep` at the repo root, which boots the emulator first):
 #   scripts/prep_emulator.sh
@@ -131,6 +135,9 @@ else
   adb shell input keyevent KEYCODE_HOME
 fi
 
+step "Agente de prueba de AppFunctions"
+ANDROID_SERIAL="$SERIAL" ADB="$ADB_BIN" "$HERE/prep_appfunctions_agent.sh"
+
 step "Sesión y registro del dispositivo"
 adb logcat -c
 adb shell am force-stop "$PKG" # a fresh process: the Application registers the token on start
@@ -145,4 +152,4 @@ until adb logcat -d -s "DeviceRegistration:I" | grep -q "Device registered for a
 done
 ok "token FCM y llave de aprobación registrados (POST /devices)"
 
-printf '\nEmulador listo. Verificación completa: make preflight\n'
+printf '\nEmulador listo. Ciérralo normalmente para que su snapshot guarde este estado.\n'

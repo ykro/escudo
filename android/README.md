@@ -33,7 +33,9 @@ vectores, con versión monocromática.
 make prep    # o `make android-prep` en la raíz, que además arranca el emulador
 ```
 
-`scripts/prep_emulator.sh` deja el emulador listo sin pasos manuales y solo hace lo que falta:
+`scripts/prep_emulator.sh` deja el emulador listo para la charla y solo hace lo que falta (después se
+cierra el emulador normalmente: su snapshot de arranque rápido guarda todo, y el día de la charla basta
+con abrirlo):
 
 - PIN `1234` y pantalla desbloqueada (la huella necesita un PIN).
 - `local.properties` (no se versiona) escrito desde `../.env.local`, que crea `make seed` en la raíz:
@@ -44,13 +46,16 @@ make prep    # o `make android-prep` en la raíz, que además arranca el emulado
 - App `live` instalada, permisos `POST_NOTIFICATIONS` y `READ_MEDIA_IMAGES`, las tres fotos del choque en
   la galería (`escudo_crash_1..3.jpg`) y una huella registrada (maneja la pantalla de registro de Ajustes
   con `adb emu finger touch 1`).
+- El AppFunction Testing Agent de Google (`scripts/prep_appfunctions_agent.sh`) instalado y corriendo
+  con su `ShellIdentityInstrumentation`, que le da el permiso de sistema para llamar las AppFunctions de
+  Escudo con taps.
 - Abre la app: inicia sesión sola con la clienta y registra su token FCM y su llave de aprobación
-  (`POST /devices`). En el escenario no hay pantalla de login.
+  (`POST /devices`). La app lo vuelve a registrar cada vez que arranca. En el escenario no hay pantalla
+  de login.
 
 Para un backend local con `MOCK_AUTH=1` (`make up-mock`), agrega a `local.properties`
 `escudo.apiUrl=http://10.0.2.2:8080` y `escudo.mockAuth=true`. También se aceptan las variables
 `ESCUDO_API_URL`, `ESCUDO_CUSTOMER_EMAIL`, `ESCUDO_CUSTOMER_PASSWORD`, `ESCUDO_MOCK_AUTH`.
-`make preflight` en la raíz verifica todo, incluido el registro del dispositivo en Firestore.
 
 ## Sabores
 
@@ -90,8 +95,8 @@ los WebSockets a los 60 min), la app se reconecta con el mismo `session_id` y la
   `adb shell am start -n app.escudo.android/.MainActivity --es chat_message '…'`, el mismo camino que el
   teclado; la descripción del accidente entra con `--es report_description '…'`, porque `adb input text`
   no escribe acentos) y aprueba cada pausa con la huella virtual (`adb emu finger touch 1`) hasta el reclamo
-  firmado. Espera marcadores `EscudoScenario` de logcat, no tiempos fijos. Antes: `make reset CLOUD=1`
-  en la raíz. Medido el 2026-10-01: **106 s** (35 s son automatización de la UI del reporte),
+  firmado. Espera marcadores `EscudoScenario` de logcat, no tiempos fijos. Antes: **Empezar de nuevo**
+  en la pantalla Póliza (o `make reset CLOUD=1` en la raíz). Medido el 2026-10-01: **106 s** (35 s son automatización de la UI del reporte),
   3 aprobaciones firmadas con huella.
 - PIN y huella del emulador: `make prep` (arriba).
 - Capturas: `docs/screenshots/chat/`.

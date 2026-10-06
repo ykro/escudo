@@ -53,4 +53,6 @@ class EscudoRepository(private val api: EscudoApi) {
 
   suspend fun registerDevice(fcmToken: String, deviceId: String, publicKey: String) =
     api.registerDevice(fcmToken, deviceId, publicKey)
+
+  suspend fun restartDemo() = api.restartDemo()
 }

@@ -164,6 +164,12 @@ class FakeEscudoApi(
 
   override suspend fun postEvent(event: EscudoEvent) = mutex.withLock { events += event; Unit }
 
+  override suspend fun restartDemo() = simulate {
+    claims.clear()
+    approvals.clear()
+    events.clear()
+  }
+
   /** Test/rehearsal hook: add a pending approval as if the agent had requested one. */
   suspend fun seedApproval(approval: Approval) = mutex.withLock { approvals[approval.approvalId] = approval }
 

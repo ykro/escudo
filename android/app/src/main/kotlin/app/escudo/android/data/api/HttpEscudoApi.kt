@@ -12,10 +12,14 @@ import app.escudo.android.data.model.OpenClaimRequest
 import app.escudo.android.data.model.PhotoUpload
 import app.escudo.android.data.model.Policy
 import app.escudo.android.data.model.RegisterDeviceRequest
+import java.io.IOException
+import java.net.ConnectException
+import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import okhttp3.HttpUrl
@@ -85,6 +89,10 @@ class HttpEscudoApi(
     send("events", EscudoJson.encodeToString(EscudoEvent.serializer(), event).asJson())
   }
 
+  override suspend fun restartDemo() {
+    send("demo/restart", "{}".asJson())
+  }
+
   // --- plumbing -------------------------------------------------------------------------------
 
   private suspend inline fun <reified T> get(path: String, crossinline query: HttpUrl.Builder.() -> Unit = {}): T {
@@ -107,11 +115,24 @@ class HttpEscudoApi(
       .header("X-Escudo-Surface", caller.surface.wire)
       .header("X-Escudo-Actor", caller.actor)
       .build()
-    return withContext(io) {
-      client.newCall(request).execute().use { response ->
-        val text = response.body.string()
-        if (!response.isSuccessful) throw ApiException(response.code, "HTTP ${response.code} ${request.url.encodedPath}: $text")
-        text
+    return withContext(io) { executeRetryingLookups(request) }
+  }
+
+  private suspend fun executeRetryingLookups(request: Request): String {
+    var attempt = 0
+    while (true) {
+      try {
+        return client.newCall(request).execute().use { response ->
+          val text = response.body.string()
+          if (!response.isSuccessful) throw ApiException(response.code, "HTTP ${response.code} ${request.url.encodedPath}: $text")
+          text
+        }
+      } catch (e: IOException) {
+        // The emulator's DNS sometimes fails the first lookup after a while idle. A failed lookup or
+        // a refused connection means the request never reached the server, so retrying is safe even
+        // for single-use calls (approvals).
+        if (!(e is UnknownHostException || e is ConnectException) || ++attempt > 2) throw e
+        delay(1000L * attempt)
       }
     }
   }
