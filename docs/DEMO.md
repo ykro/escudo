@@ -1,43 +1,45 @@
 # Escudo: guion de la demo
 
 El recorrido en vivo de la charla, pantalla por pantalla: de «tuve un choque» al reclamo firmado, con
-exactamente tres aprobaciones con huella. Al final vienen dos demostraciones adicionales de un minuto:
-la app y el sitio como herramientas para cualquier agente (AppFunctions y WebMCP).
-Las capturas son de una corrida real contra la nube (2026-10-02, reclamo `CLM-AIMROD`); el número de
-reclamo cambia en cada corrida.
+exactamente tres aprobaciones con huella. Al final vienen dos demostraciones de un minuto: la app y el
+sitio como herramientas para cualquier agente (AppFunctions y WebMCP).
 
-Duración del recorrido principal: **unos 2 minutos** de sistema (en la corrida grabada: evaluación
-8 s, primera pausa 12 s después del mensaje, de 7 a 23 s entre cada huella y la siguiente pausa, según
-lo que tarde Gemini) más lo que hables. Preparación técnica completa: [ONBOARDING.md](ONBOARDING.md).
+El día de la charla no se ejecuta ningún comando: abres una página y el emulador, y todo lo demás pasa
+en la app, en el emulador y en Chrome. Las capturas son de una corrida contra la nube (el número de
+reclamo cambia en cada corrida).
+
+Duración del recorrido principal: **unos 2 minutos** de sistema más lo que hables (la evaluación de
+daños tarda de 6 a 15 s y cada paso del asistente de 7 a 25 s, según lo que tarde Gemini).
 
 [![Qué se prueba en la demo](diagrams/demo-coverage.png)](diagrams/demo-coverage.svg)
 
-## Antes de la demo
-
-- [ ] `make stage-on`: `escudo-api` y `escudo-web` con una instancia caliente (despliega una revisión
-      nueva, por eso el warmup va después).
-- [ ] `make android-prep`: arranca el emulador `Pixel_9_API_36_1` (el dispositivo del escenario) y lo deja
-      listo sin pasos manuales: PIN y pantalla desbloqueada, app `live` instalada, permisos, las tres fotos
-      del choque en la galería, huella registrada y la app abierta, que registra su token.
-- [ ] `make warmup`: toca API, Agent Cards, portal y `/presenter`; debe terminar con `warmup OK`.
-- [ ] `make reset CLOUD=1`: «Aprobaciones 0 de 3» y nada en la línea de tiempo.
-- [ ] `make preflight`: debe terminar con `preflight OK` (nube caliente, Firestore en estado inicial,
-      emulador listo y su dispositivo registrado). Cada falla dice qué comando la arregla.
-- [ ] En la terminal de la demo, desde la raíz del repo, `export ANDROID_SERIAL=$(make -s android-serial)`:
-      `adb` usa ese serial, así que los comandos de abajo no lo escriben (el puerto cambia entre arranques).
-- [ ] La app abierta en **Póliza**. Ningún reporte a medias.
-- [ ] Chrome con el flag de WebMCP y el portal con la sesión de Andrea ya iniciada (ONBOARDING §9).
-
-Ventanas:
+## Qué abres
 
 | Dónde | Qué |
 | --- | --- |
-| Proyector, pantalla completa | Chrome: https://escudo-web-611681112050.us-central1.run.app/presenter (sin `?run`: sigue el reclamo activo) |
-| Laptop, mitad izquierda | Ventana del emulador, a tamaño legible |
-| Laptop, mitad derecha arriba | Terminal con los comandos de la huella y de AppFunctions ya escritos |
-| Laptop, mitad derecha abajo | Chrome con el portal (`/reclamo`) y DevTools cerrado, para la demostración de WebMCP |
+| Proyector, pantalla completa | Chrome: https://escudo-web-611681112050.us-central1.run.app/presenter |
+| Laptop, mitad izquierda | El emulador **Pixel_9_API_36_1** (Android Studio → **Device Manager** → ▶). La app Escudo ya está instalada, con sesión, fotos del choque en la galería y una huella registrada |
+| Laptop, junto al emulador | Los controles extendidos del emulador (botón **⋯** de su barra lateral) en **Fingerprint**: ahí está el botón **Touch sensor**, que es la huella |
+| Laptop, mitad derecha | Chrome con el portal en https://escudo-web-611681112050.us-central1.run.app/reclamo, para WebMCP |
 
-![Presentador listo](demo/01-presentador-listo.png)
+Abre el presentador unos minutos antes de empezar. Los servicios en la nube se apagan solos cuando nadie
+los usa; al abrir la página dice **«Preparando Escudo…»** mientras los despierta (unos 20 segundos) y
+después **«Listo para empezar»**.
+
+| Mientras despierta | Listo |
+| --- | --- |
+| ![Preparando Escudo](demo/00-presentador-preparando.png) | ![Presentador listo](demo/01-presentador-listo.png) |
+
+El emulador abre tal como quedó: desbloqueado, con la app en la póliza. Si pide el PIN de pantalla, es
+**1234**.
+
+### Empezar desde cero
+
+Si el presentador muestra un reclamo de un ensayo anterior: en la app, pestaña **Póliza** → **Empezar de
+nuevo** → **Empezar**. Se borran el reclamo, las aprobaciones y la conversación; la app vuelve a la
+póliza y el presentador a «Listo para empezar». Tarda unos segundos.
+
+![Empezar de nuevo](demo/02b-empezar-de-nuevo.png)
 
 ## El recorrido
 
@@ -68,7 +70,7 @@ Ventanas:
   ```
 
   Toca **Elegir fotos de la galería** y marca **las tres fotos del Corolla gris** (las tres primeras
-  de la galería: `escudo_crash_1..3`), luego **Done**, y después **Enviar reporte**.
+  de la galería), luego **Done**, y después **Enviar reporte**.
 - **Señala:** la app reduce las fotos antes de subirlas; nadie llena formularios de daños.
 
 ### 3. Evaluación de daños (6 a 15 s)
@@ -101,8 +103,8 @@ Ventanas:
 
 - **Señala**, en este orden:
   1. *Agent Card*: justo antes de las filas A2A pasa «Agente Escudo — Descubre a Red de Talleres por su
-     Agent Card» (en la captura ya subió de la pantalla). El agente no conocía al socio: lo encontró por
-     su tarjeta en `/.well-known/agent-card.json`.
+     Agent Card». El agente no conocía al socio: lo encontró por su tarjeta en
+     `/.well-known/agent-card.json`.
   2. *MCP frente a A2A*: el asistente usa herramientas por **MCP** (grúa, talleres, auto); el trabajo de
      otras empresas (Grúas Aliadas, Red de Talleres) va de agente a agente por **A2A**.
   3. *Autonomía frente a aprobación*: grúa, cotizaciones y auto de reemplazo fueron automáticos. Reservar
@@ -113,12 +115,9 @@ Ventanas:
 Cada una sigue el mismo patrón: llega un push, la tarjeta de aprobación muestra exactamente lo que se
 va a hacer, apruebas con la huella y el asistente sigue solo, sin que escribas nada.
 
-Huella en el emulador (en la terminal con `ANDROID_SERIAL` exportado; si no responde a la primera,
-repítelo: el sensor empieza a escuchar un instante después de que aparece el diálogo):
-
-```bash
-adb emu finger touch 1
-```
+La huella: con el diálogo de huella en pantalla, pulsa **Touch sensor** en los controles extendidos del
+emulador (**⋯** → **Fingerprint**). Si no responde a la primera, púlsalo otra vez: el sensor empieza a
+escuchar un instante después de que aparece el diálogo.
 
 ### 5. Aprobación 1: reservar taller (unos 15 s, hasta 40 s si Gemini tarda)
 
@@ -127,7 +126,7 @@ adb emu finger touch 1
 | ![Aprobación del taller](demo/10-aprobacion-taller.png) | ![Diálogo de huella](demo/11-huella.png) |
 
 - **Haz:** en el chat toca **Revisar y aprobar** (o la notificación, o la pestaña **Aprobaciones**),
-  luego **Aprobar con huella**, y toca el sensor con el comando de arriba.
+  luego **Aprobar con huella**, y pulsa **Touch sensor**.
 - **Señala:** aprobar **no es una herramienta**. Solo existe `POST /approvals/{id}/approve`, firmado con
   la llave del teléfono, y la aprobación vale para *este* taller y *este* horario, una sola vez.
 - **En el presentador:** aparece «Andrea — Aprobó con huella: reservar taller» con insignia Android,
@@ -141,7 +140,7 @@ adb emu finger touch 1
 | --- | --- |
 | ![Chat en el deducible](demo/13-chat-deducible.png) | ![Aprobación del deducible](demo/14-aprobacion-deducible.png) |
 
-- **Haz:** **Revisar y aprobar** → **Aprobar con huella** → `adb emu finger touch 1`.
+- **Haz:** **Revisar y aprobar** → **Aprobar con huella** → **Touch sensor**.
 - **Señala:** el monto (USD 500) está en la tarjeta del teléfono, no en el chat: el humano aprueba lo
   que el servidor va a ejecutar, no lo que el modelo dice.
 - **En el presentador:** **2 de 3**, «Deducible de USD 500 aceptado» y la pausa de la firma:
@@ -154,7 +153,7 @@ adb emu finger touch 1
 | --- | --- |
 | ![Chat en la firma](demo/16-chat-firma.png) | ![Aprobación de la firma](demo/17-aprobacion-firma.png) |
 
-- **Haz:** **Revisar y aprobar** → **Aprobar con huella** → `adb emu finger touch 1`.
+- **Haz:** **Revisar y aprobar** → **Aprobar con huella** → **Touch sensor**.
 - **Señala:** tres acciones con consecuencias, tres huellas. Todo lo demás lo hizo el agente solo.
 
 ### 8. Reclamo firmado
@@ -170,78 +169,45 @@ adb emu finger touch 1
 
 ## Demostraciones adicionales (1 min cada una): la app y el sitio como herramientas para cualquier agente
 
-Muestran las mismas capacidades expuestas fuera del chat: con AppFunctions, Android ofrece funciones
-de la app a los agentes del sistema; con WebMCP, el sitio ofrece herramientas al agente del navegador.
+Muestran las mismas capacidades fuera del chat: con AppFunctions, Android ofrece funciones de la app a
+los agentes del sistema; con WebMCP, el sitio ofrece herramientas al agente del navegador.
 
 ### AppFunctions: la app como herramienta del sistema (1 min)
 
-En la terminal con `ANDROID_SERIAL` exportado (la app instalada, Android 16 QPR2):
+En el emulador ya corre el **AppFunction Testing Agent**, el agente de prueba de Google para
+AppFunctions (un agente externo a Escudo, con el permiso del sistema para llamar funciones de otras
+apps).
 
-```bash
-make -C android appfunctions
-```
+1. Ábrelo desde las apps recientes del emulador (desliza hacia arriba desde la barra inferior y
+   mantén) o desde su ícono **AppFunction Testing Agent**. Toca el buscador: Escudo aparece fijada
+   arriba; tócala.
+2. Aparecen las tres funciones que la app ofrece al sistema: `getClaimStatus`, `reportAccident` y
+   `getCoverage`.
 
-```text
-"app.escudo.android.appfunctions.BaseEscudoAppFunctionService#getClaimStatus"
-"app.escudo.android.appfunctions.BaseEscudoAppFunctionService#getCoverage"
-"app.escudo.android.appfunctions.BaseEscudoAppFunctionService#reportAccident"
-```
+   ![Funciones de Escudo en el agente de prueba](demo/21a-agente-funciones.png)
 
-```bash
-F=app.escudo.android.appfunctions.BaseEscudoAppFunctionService
-adb shell "cmd app_function execute-app-function --package app.escudo.android \
-  --function '$F#getCoverage' --parameters '{\"incidentType\": \"collision\"}' --brief-yaml"
-```
+3. Toca **getCoverage**, escribe `collision` en `incidentType` y toca **Run**. El agente muestra la
+   respuesta: póliza `POL-GT-2027-0042`, Andrea Morales, Toyota Corolla 2022, placa `P-512KLM` y las
+   coberturas; más abajo, el deducible de USD 500. **Confirm** cierra el resultado.
 
-```text
-androidAppfunctionsReturnValue:
-  rentalDays: 7
-  incidentType: collision
-  active: true
-  holderName: Andrea Morales
-  deductibleUsd: 500.0
-  notes: Cubierto por daños propios. Pagas un deducible de USD 500; Escudo cubre el resto.
-  plate: P-512KLM
-  vehicle: Toyota Corolla 2022
-  policyId: POL-GT-2027-0042
-  covered: true
-  coverages:
-    - own_damage
-    - third_party
-    - towing
-    - rental_car
-```
+   ![Resultado de getCoverage](demo/21b-agente-resultado.png)
 
-```bash
-adb shell "cmd app_function execute-app-function --package app.escudo.android \
-  --function '$F#getClaimStatus' --parameters '{}' --brief-yaml"
-```
-
-```text
-androidAppfunctionsReturnValue:
-  statusLabel: Reclamo firmado y enviado
-  signed: true
-  status: signed
-  claimId: CLM-…
-  repairShop: Taller Carrocería Diez
-  …
-```
+4. Repite con **getClaimStatus** (sin parámetros): «Reclamo firmado y enviado».
 
 ![AppFunctions en el presentador](demo/21-presentador-appfunctions.png)
 
-- **Señala:** quien llama es `adb`, así que el presentador dice **Agente externo** con insignia
-  **AppFunctions**, en la misma línea de tiempo del reclamo. Son las mismas funciones que la pantalla
-  Póliza. Solo hay funciones de lectura y de reporte: aprobar no existe como AppFunction.
+- **Señala:** el presentador dice **Agente externo** con insignia **AppFunctions**, en la misma línea de
+  tiempo del reclamo. Son las mismas funciones que la pantalla Póliza. Solo hay funciones de lectura y
+  de reporte: aprobar no existe como AppFunction.
 
 ### WebMCP: el sitio como herramienta del navegador (1 min)
 
-1. Una vez antes de la charla: `chrome://flags/#enable-webmcp-testing` → **Enabled** → relanzar Chrome.
-2. Abre https://escudo-web-611681112050.us-central1.run.app/reclamo con la sesión de Andrea. El pie dice
-   «WebMCP · 4 herramientas disponibles para el agente de tu navegador».
-3. DevTools (`⌥⌘I`) → pestaña **Application** → en la barra lateral, sección *Application*,
-   **WebMCP** (marcado *NEW*). Abajo, en **Available Tools**, aparecen `findRepairShops`,
-   `getClaimStatus`, `getCoverage` y `getDeductible`, cada una con su descripción.
-4. Elige **getDeductible**; en el panel **Details** baja a **Run Tool** y pulsa **Run Tool** (sin
+1. En Chrome, el portal https://escudo-web-611681112050.us-central1.run.app/reclamo con la sesión de
+   Andrea. El pie dice «WebMCP · 4 herramientas disponibles para el agente de tu navegador».
+2. DevTools (`⌥⌘I`) → pestaña **Application** → en la barra lateral, sección *Application*,
+   **WebMCP**. Abajo, en **Available Tools**, aparecen `findRepairShops`, `getClaimStatus`,
+   `getCoverage` y `getDeductible`, cada una con su descripción.
+3. Elige **getDeductible**; en el panel **Details** baja a **Run Tool** y pulsa **Run Tool** (sin
    entrada). Arriba, en la actividad, aparece `getDeductible · Completed`; en la pestaña **Output**:
 
    ```json
@@ -250,27 +216,26 @@ androidAppfunctionsReturnValue:
 
 ![WebMCP en DevTools: getDeductible ejecutada](demo/22-webmcp-devtools.png)
 
-- **Señala:** las cuatro tienen la marca `readOnly` (se ve en **Details → Flags**); ninguna aprueba. En el presentador aparece como
-  **Agente externo** con insignia **WebMCP**.
+- **Señala:** las cuatro tienen la marca `readOnly` (se ve en **Details → Flags**); ninguna aprueba. En
+  el presentador aparece como **Agente externo** con insignia **WebMCP**.
+
+Esta parte necesita, una sola vez en ese Chrome, el flag `chrome://flags/#enable-webmcp-testing` en
+**Enabled** y la sesión de Andrea iniciada en el portal (ver [ONBOARDING.md, sección
+9](ONBOARDING.md#9-mostrar-appfunctions-y-webmcp)). Las dos cosas quedan guardadas en el navegador.
 
 ## Si algo falla
 
 | Síntoma | Qué hacer |
 | --- | --- |
-| El presentador dice «Sin conexión con Escudo. Reintentando…» o se queda vacío | Recarga la pestaña; se reconecta solo por SSE. Si no vuelve: `make warmup` en la terminal |
-| El chat dice «Reconectando» o no responde en 30 s | Sal y vuelve a la pestaña **Asistente**: la conversación sigue (vive en Firestore). Si se quedó callado tras una aprobación, escribe `sigue` |
-| La huella no responde | Repite `adb emu finger touch 1`; si no hay diálogo, toca otra vez **Aprobar con huella** |
+| El presentador se queda en «Preparando Escudo…» más de un minuto | Recarga la pestaña. Si sigue, revisa la conexión a internet de la laptop |
+| El presentador dice «Sin conexión con Escudo. Reintentando…» | Se reconecta solo; si tarda, recarga la pestaña |
+| El chat dice «Reconectando» o no responde en 30 s | Sal y vuelve a la pestaña **Asistente**: la conversación sigue (vive en la nube). Si se quedó callado tras una aprobación, escribe `sigue` |
+| La huella no responde | Pulsa otra vez **Touch sensor**; si no hay diálogo, toca otra vez **Aprobar con huella** |
 | No llega el push | Abre la pestaña **Aprobaciones**: la pendiente está ahí |
-| Estado sucio (reclamo viejo, contador raro) | `make reset CLOUD=1` (< 10 s) y empieza de nuevo |
-| El emulador se cuelga o no arranca a tiempo | `make chat-scenario CLOUD=1`: el mismo flujo con su propio cliente; abre el `…/presenter?run=<id>` que imprime |
+| Estado sucio (reclamo viejo, contador raro) | **Póliza** → **Empezar de nuevo** → **Empezar** |
+| El agente de prueba de AppFunctions no aparece en recientes o no lista funciones | Salta esa demostración: el emulador arrancó desde cero y el agente necesita prepararse de nuevo (ONBOARDING, sección 9) |
 | Gemini lento o caído | https://escudo-web-611681112050.us-central1.run.app/presenter?demo=1: corrida real grabada, rotulada **REPETICIÓN GRABADA**. Dilo en voz alta |
-| Sin red | `make up-offline` y http://127.0.0.1:3217/presenter?demo=1 (todo local, fuentes incluidas) |
-| Sin red ni laptop confiable | El video [`escudo-chat-run.mp4`](escudo-chat-run.mp4) (83 s, también rotulado como repetición) |
-| El portal dice «No pudimos iniciar sesión» | Revisa los referrers de la «Escudo web key» (ONBOARDING §11); mientras tanto, salta la demostración de WebMCP |
+| Sin red | El video [`escudo-chat-run.mp4`](escudo-chat-run.mp4) (83 s, también rotulado como repetición) |
+| El portal dice «No pudimos iniciar sesión» | Salta la demostración de WebMCP |
 
-## Después de la demo
-
-```bash
-make reset CLOUD=1
-make stage-off
-```
+Después de la charla no hace falta nada: los servicios vuelven a apagarse solos cuando nadie los usa.

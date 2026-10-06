@@ -28,21 +28,16 @@ Every `make scenario` and `make chat-scenario` run creates its own fictional cus
 (`POST /admin/runs`: policy, Firebase login and `run_id`), so concurrent runs never collide with each
 other or with the stage customer, who is the seeded one. `make reset` deletes those customers.
 
-Talk day, in this order (details in [DEMO.md](DEMO.md), in Spanish):
+On talk day no command is run: you open the presenter and the emulator (see
+[DEMO.en.md](DEMO.en.md)). Beforehand, the developer gets the emulator ready once:
 
 ```bash
-make stage-on         # escudo-api and escudo-web with one warm instance (deploys a new revision)
-make android-prep     # boots the emulator and gets it ready: PIN, live app, permissions, photos, fingerprint, token
-make warmup           # after stage-on: touches every public surface (all 200)
-make reset CLOUD=1    # initial state
-make preflight        # final check: warm cloud, initial Firestore, emulator ready and registered
-# … the talk …
-make stage-off        # min-instances=0
+make android-prep     # boots the emulator and gets it ready: PIN, live app, permissions, photos, fingerprint, AppFunctions agent and token
+# … then closes it normally: its quick-boot snapshot keeps all of it
 ```
 
-No network on stage: `make up-offline` serves the production web build from the laptop and
-`http://127.0.0.1:3217/presenter?demo=1` replays a real recorded run, labelled
-**REPETICIÓN GRABADA** (recorded replay). Last resort: the video [`docs/escudo-chat-run.mp4`](escudo-chat-run.mp4).
+Fallbacks without commands: `/presenter?demo=1` replays a real recorded run, labelled
+**REPETICIÓN GRABADA** (recorded replay), and the video [`docs/escudo-chat-run.mp4`](escudo-chat-run.mp4).
 
 ## `make` commands
 
@@ -52,29 +47,24 @@ From the repo root (`make help` lists them all):
 | --- | --- |
 | `make up` | Local API on `:8080` against real Firestore, Storage and Gemini (ADC, `.env`) |
 | `make up-mock` | Local API without cloud (`MOCK_AI=1 MOCK_AUTH=1`, `ADMIN_TOKEN=local-admin`, the same one `make reset` uses) |
-| `make up-offline` | No-network fallback: production web build on `127.0.0.1:3217` with self-hosted fonts; `/presenter?demo=1` replays the recorded run |
 | `make web` | Local portal and `/presenter` on `:3217` (`npm run dev`, config in `web/.env.local`) |
 | `make seed` | Writes policy, shops and tow providers to Firestore and creates the customer's Firebase Auth login (credentials in `.env.local`) |
-| `make reset` | `POST /admin/reset` on `ESCUDO_BASE_URL` (< 10 s). `CLOUD=1` targets the deployed service and reads the token from Secret Manager (`escudo-admin-token`) |
+| `make reset` | `POST /admin/reset` on `ESCUDO_BASE_URL` (< 10 s). `CLOUD=1` targets the deployed service and reads the token from Secret Manager (`escudo-admin-token`). On stage, **Empezar de nuevo** (start over) in the app does the same |
 | `make test` | Backend `pytest` with `MOCK_AI=1 MOCK_AUTH=1`, Android unit tests and web `vitest` |
 | `make scenario` | Full scenario over MCP in test mode, with its own customer (`POST /admin/runs`) and a test device signing the 3 approvals; `CLOUD=1`, `APPROVE_DELAY=4`. Prints `…/presenter?run=<id>` |
 | `make chat-scenario` | Typed-chat scenario: own customer, claim and 3 photos over REST (as the app does), then the chat; 3 signed approvals; < 3 min. Against `make up-mock` the scripted assistant answers; `CLOUD=1`, Gemini |
 | `make scenario-live` | The MCP scenario with the seeded customer (`--shared`); waits for her to approve each step in the app on the emulator |
 | `make infra` | Creates or verifies everything in GCP from an empty project: `infra/01..07` (APIs, `escudo` database, bucket, Artifact Registry, Firebase Auth via API, service accounts, Secret Manager, Escudo's own Firebase web key) |
-| `make deploy` | `deploy-api` + `deploy-web`; each keeps the service's current `min-instances` |
+| `make deploy` | `deploy-api` + `deploy-web`; both scale to zero (`min-instances=0`) with startup CPU boost |
 | `make deploy-api` | `infra/10-deploy-api.sh`: builds and deploys `escudo-api` |
 | `make deploy-web` | `infra/11-deploy-web.sh`: builds and deploys `escudo-web` |
-| `make warmup` | Before going on stage: touches the deployed API, Agent Cards, portal and `/presenter`, prints status and latency (fails unless all 200) |
-| `make stage-on` | Talk day: `min-instances=1` on `escudo-api` and `escudo-web` (no cold start) |
-| `make preflight` | Last check before going on stage: `min-instances=1` and a fast answer on both services, the seed in Firestore with no claims or approvals for `cus_demo`, the emulator unlocked with the app, permissions, fingerprint and photos, and its device registered in Firestore (FCM token + approval key). Every failure prints the command that fixes it |
-| `make stage-off` | Any other day: `min-instances=0` (scale to zero; later deploys keep it) |
 | `make photos` | Regenerates the rehearsal crash photos with `IMAGE_MODEL` |
 | `make brand` | Regenerates the "A · Sereno" logo and mockups with `IMAGE_MODEL` from `brand/prompts/` (`ARGS="--force logo"`) |
 | `make android-build` | `./gradlew assembleDebug` (`live` and `fake` flavors) |
 | `make android-test` | Android unit tests (both flavors) |
 | `make android-install` | Installs and opens the app (`FLAVOR=live` by default, `FLAVOR=fake` for no network) |
 | `make android-emulator` | Starts (or reuses) the `Pixel_9_API_36_1` AVD (Android 16 QPR2, needed for `cmd app_function`) and prints its serial |
-| `make android-prep` | Boots the emulator and gets it ready with no manual steps (idempotent): PIN 1234 and screen unlocked, `android/local.properties` from `.env.local`, `google-services.json`, `live` app installed, notification and gallery permissions, the three photos as `escudo_crash_1..3.jpg`, one enrolled fingerprint (driving Settings' enrollment screen) and the app opened so it registers its token |
+| `make android-prep` | Boots the emulator and gets it ready with no manual steps (idempotent): PIN 1234 and screen unlocked, `android/local.properties` from `.env.local`, `google-services.json`, `live` app installed, notification and gallery permissions, the three photos as `escudo_crash_1..3.jpg`, one enrolled fingerprint (driving Settings' enrollment screen), Google's AppFunction Testing Agent running with its system permission, and the app opened so it registers its token. Then close the emulator normally so its snapshot keeps it |
 | `make android-serial` | adb serial of that emulator; every Android target detects it on its own |
 
 `android/Makefile` adds `make -C android chat-scenario` (chat scenario on the emulator, with a virtual

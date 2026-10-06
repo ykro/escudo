@@ -25,12 +25,13 @@ make up-mock                 # API sin nube en :8080
 make scenario                # otra terminal: el escenario por MCP, 3 aprobaciones
 make chat-scenario           # el mismo flujo por chat
 make test                    # backend, Android y web
-make reset CLOUD=1           # nube: estado inicial (requiere ADC y .env)
 make chat-scenario CLOUD=1   # nube: imprime …/presenter?run=<id>
 ```
 
-Día de la charla: `make stage-on && make android-prep && make warmup && make reset CLOUD=1 && make preflight`;
-después, `make stage-off`. Guion: [docs/DEMO.md](docs/DEMO.md).
+El día de la charla no se ejecuta nada: abres el [presentador](https://escudo-web-611681112050.us-central1.run.app/presenter)
+(despierta los servicios, que se apagan solos cuando nadie los usa) y el emulador `Pixel_9_API_36_1`, que
+ya tiene la app lista. **Empezar de nuevo**, en la pantalla Póliza de la app, vuelve todo al estado
+inicial. Guion: [docs/DEMO.md](docs/DEMO.md).
 
 ## URLs desplegadas
 
@@ -42,7 +43,7 @@ después, `make stage-off`. Guion: [docs/DEMO.md](docs/DEMO.md).
 
 ## Documentación
 
-- [Guion de la demo](docs/DEMO.md): paso a paso, con capturas
+- [Guion de la demo](docs/DEMO.md): paso a paso, con capturas ([English](docs/DEMO.en.md))
 - [Guía de incorporación](docs/ONBOARDING.md): instalación, nube, pruebas, problemas frecuentes
 - [Arquitectura](docs/ARQUITECTURA.md) · [Comandos](docs/COMANDOS.md) · [Estructura del repo](docs/ESTRUCTURA.md)
 - [Decisiones técnicas y versiones](docs/DECISIONES.md) · [Créditos y procedencia](docs/CREDITOS.md)

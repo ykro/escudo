@@ -25,12 +25,13 @@ make up-mock                 # cloud-free API on :8080
 make scenario                # another terminal: the scenario over MCP, 3 approvals
 make chat-scenario           # the same flow over the chat
 make test                    # backend, Android and web
-make reset CLOUD=1           # cloud: initial state (needs ADC and .env)
 make chat-scenario CLOUD=1   # cloud: prints …/presenter?run=<id>
 ```
 
-Talk day: `make stage-on && make android-prep && make warmup && make reset CLOUD=1 && make preflight`;
-afterwards, `make stage-off`. Script: [docs/DEMO.md](docs/DEMO.md) (Spanish).
+On talk day nothing is run: you open the [presenter](https://escudo-web-611681112050.us-central1.run.app/presenter)
+(it wakes the services, which shut down by themselves when nobody uses them) and the `Pixel_9_API_36_1`
+emulator, which already has the app ready. **Empezar de nuevo** (start over), on the app's Policy screen,
+puts everything back in its initial state. Script: [docs/DEMO.en.md](docs/DEMO.en.md).
 
 ## Deployed URLs
 
@@ -42,7 +43,7 @@ afterwards, `make stage-off`. Script: [docs/DEMO.md](docs/DEMO.md) (Spanish).
 
 ## Documentation
 
-- [Demo script (Spanish)](docs/DEMO.md): step by step, with screenshots
+- [Demo script](docs/DEMO.en.md): step by step, with screenshots ([Spanish](docs/DEMO.md))
 - [Onboarding guide (Spanish)](docs/ONBOARDING.md): setup, cloud, tests, troubleshooting
 - [Architecture](docs/ARQUITECTURA.en.md) · [Commands](docs/COMANDOS.en.md) · [Repo structure](docs/ESTRUCTURA.en.md)
 - [Technical decisions and versions](docs/DECISIONES.en.md) · [Credits and provenance](docs/CREDITOS.en.md)

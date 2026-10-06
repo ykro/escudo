@@ -151,15 +151,21 @@ no ve póliza ni reclamos. Solo con `MOCK_AUTH=1` (pruebas locales) no se verifi
 `mock-customer:<customer_id>` (el que devuelve `POST /admin/runs` en ese modo) actúa como ese cliente y
 cualquier otro llamador es `DEMO_CUSTOMER_ID`.
 
-El servicio desplegado además siembra una base vacía al arrancar (`seed.seed_if_empty`).
+El servicio además vuelve a escribir la siembra cada vez que arranca (`seed.write_seed`): siembra una
+base vacía, y los horarios de los talleres siempre empiezan mañana, aunque el servicio haya dormido
+semanas.
 
-**Reiniciar** la demo (borra reclamos, aprobaciones y eventos y vuelve a sembrar; los dispositivos
-registrados se conservan para que el emulador no tenga que volver a registrarse):
+**Reiniciar** la demo (borra reclamos, aprobaciones, eventos y conversaciones y vuelve a sembrar; los
+dispositivos registrados se conservan para que el emulador no tenga que volver a registrarse):
 
-```bash
-make reset CLOUD=1    # servicio desplegado (lee escudo-admin-token de Secret Manager)
-make reset            # API local en ESCUDO_BASE_URL (mismo ADMIN_TOKEN que make up-mock / make up)
-```
+- En la charla: en la app, **Póliza** → **Empezar de nuevo** → **Empezar** (`POST /demo/restart`, que
+  solo acepta a la clienta sembrada `DEMO_CUSTOMER_ID`).
+- En desarrollo, con el token de admin:
+
+  ```bash
+  make reset CLOUD=1    # servicio desplegado (lee escudo-admin-token de Secret Manager)
+  make reset            # API local en ESCUDO_BASE_URL (mismo ADMIN_TOKEN que make up-mock / make up)
+  ```
 
 ## 5. Google Cloud con `infra/`
 
@@ -183,16 +189,16 @@ En orden:
 | 7 | `bash infra/07-web-api-key.sh` | Llave web de Firebase «Escudo web key» (APIs y referrers restringidos) y su valor en el secreto `escudo-web-api-key` (sección 3) |
 | 8 | `make seed` | Datos y login de la clienta (sección 4) |
 | 9 | `make deploy-api` (`infra/10-deploy-api.sh`) | Prepara un contexto con `backend/` + `contracts/`, construye con Cloud Build y despliega `escudo-api`: `--max-instances=3 --concurrency=80 --cpu=1 --memory=1Gi --no-cpu-throttling --timeout=3600 --session-affinity`; `--min-instances` conserva el valor actual del servicio (0 si es nuevo; `MIN_INSTANCES=…` lo fuerza). Monta `ADMIN_TOKEN` y `A2A_SHARED_SECRET` desde Secret Manager (`--set-secrets`) y fija `PUBLIC_BASE_URL` y `A2A_PEERS` a la URL determinista del servicio |
-| 10 | `make deploy-web` (`infra/11-deploy-web.sh`) | Escribe `.env.production` con la configuración pública (`NEXT_PUBLIC_*`, la llave web desde `escudo-web-api-key`), construye y despliega `escudo-web` (`--max-instances=2`, 3600 s de timeout para el stream SSE; `--min-instances` también conserva el valor actual) |
+| 10 | `make deploy-web` (`infra/11-deploy-web.sh`) | Escribe `.env.production` con la configuración pública (`NEXT_PUBLIC_*`, la llave web desde `escudo-web-api-key`), construye y despliega `escudo-web` (`--max-instances=2`, 3600 s de timeout para el stream SSE) |
 
 `make deploy` corre los pasos 9 y 10. Los modelos y datos que se pasan al servicio salen de
 `.env.example` y, encima, de `.env`.
 
-Los dos servicios escalan a cero cuando nadie los usa. El día de la charla, `make stage-on` deja una
-instancia caliente de cada uno (`min-instances=1`, sin arranque en frío) y `make stage-off` los vuelve
-a cero al terminar (sección 12). Un despliegue no cambia ese estado: `infra/10` e `infra/11` leen el
-`min-instances` actual del servicio y lo vuelven a aplicar, así que desplegar la víspera después de
-`make stage-on` deja la instancia caliente, y desplegar otro día deja el servicio en cero.
+Los dos servicios escalan a cero cuando nadie los usa (`min-instances=0`, sin costo en reposo) y
+arrancan con *startup CPU boost*. Abrir `/presenter` los despierta: la página llama a
+`/api/presenter/wake` (`web/src/app/api/presenter/wake/route.ts`), que toca `/health` y las tres
+Agent Cards del API, y muestra «Preparando Escudo…» hasta que responden (unos 20 s en frío, porque el
+API también despierta a sus socios A2A al arrancar). Nadie tiene que calentar nada el día de la charla.
 
 URLs resultantes: ver «URLs desplegadas» en [ARQUITECTURA.md](ARQUITECTURA.md#urls-desplegadas).
 
@@ -239,11 +245,8 @@ Notas:
   servidor con tu ADC; `/presenter?demo=1` reproduce una corrida real por chat grabada
   (`web/src/lib/fixtures/scenario-events.json`, corrida `run-6958m5`) sin nube, rotulada
   **REPETICIÓN GRABADA** («Reclamo grabado», teléfono «grabado»): nunca dice «en vivo».
-- Respaldo sin red: `make up-offline` construye la web en modo producción y la sirve desde la laptop en
-  `http://127.0.0.1:3217` (`web/scripts/serve-offline.sh`). Las fuentes son propias
-  (`web/src/app/fonts/`), así que ni la página ni el build piden nada a internet; abre
-  `/presenter?demo=1`. `web/e2e/offline.spec.ts` lo comprueba con toda petición externa bloqueada. El
-  último respaldo es el video `docs/escudo-chat-run.mp4` (83 s: la misma corrida grabada, también rotulada REPETICIÓN GRABADA).
+- Respaldo sin red: el video `docs/escudo-chat-run.mp4` (83 s: la misma corrida grabada, también
+  rotulada REPETICIÓN GRABADA).
 - Cuenta para el portal: correo y contraseña de Andrea están en `.env.local` (los escribe `make seed`).
   La pantalla de entrada no lo menciona a propósito: es la de una aseguradora, no la de un ensayo.
 - App contra backend local: sabor `live` con `escudo.apiUrl=http://10.0.2.2:8080` y
@@ -260,11 +263,10 @@ make test
 
 | Parte | Comando | Qué cubre |
 | --- | --- | --- |
-| Backend | `cd backend && MOCK_AI=1 MOCK_AUTH=1 uv run pytest -q` (64 pruebas) | Toda acción con aprobación es rechazada sin `approval_id` válido, por REST y MCP (`test_approvals.py`); aprobación de otra herramienta, otros argumentos, rechazada o ya usada; no existe herramienta de aprobar; la tabla de autonomía cubre exactamente el registro y coincide con el contrato (`test_autonomy.py`); Agent Cards en la ruta well-known, descubrimiento sin rutas escritas a mano y secreto de socios (`test_discovery.py`); eventos válidos contra el esquema, etiquetas de superficie y eventos de clientes solo `message` sobre reclamos propios (`test_events.py`); MCP, REST y el agente Escudo actúan como el `customer_id` del token verificado y `/a2a/escudo` rechaza llamadas anónimas (`test_identity.py`); aprobar exige firma del dispositivo registrado de la clienta: sin dispositivo, dispositivo ajeno o desconocido, firma mala o para otra aprobación → 403 sin cambios, repetir → rechazado (`test_device_approvals.py`); chat: solo cabecera `Authorization`, herramientas por las capacidades, pausa en la aprobación y reanudación sola tras aprobar, la conversación sobrevive a una reconexión, el asistente simulado firma el reclamo con 3 aprobaciones y un agente no puede apuntar a un reclamo inventado (`test_chat.py`); los momentos de descubrimiento (Agent Card, `tools/list`) y las llamadas sueltas de la misma clienta quedan en la línea de tiempo de su reclamo (`test_events.py`); cada corrida es su propio cliente y `make reset` los borra sin tocar el dispositivo del escenario (`test_runs.py`); llamadas de respaldo del perito (`test_hedging.py`); `make reset` (`test_reset.py`); el escenario completo por MCP con 3 aprobaciones (`test_scenario.py`); `make preflight`: lectura de la salida de adb (permisos, huellas, galería, bloqueo, `device_id`) y las revisiones de Firestore (seed, reclamos sobrantes, dispositivo registrado) (`test_preflight.py`) |
+| Backend | `cd backend && MOCK_AI=1 MOCK_AUTH=1 uv run pytest -q` (59 pruebas) | Toda acción con aprobación es rechazada sin `approval_id` válido, por REST y MCP (`test_approvals.py`); aprobación de otra herramienta, otros argumentos, rechazada o ya usada; no existe herramienta de aprobar; la tabla de autonomía cubre exactamente el registro y coincide con el contrato (`test_autonomy.py`); Agent Cards en la ruta well-known, descubrimiento sin rutas escritas a mano y secreto de socios (`test_discovery.py`); eventos válidos contra el esquema, etiquetas de superficie y eventos de clientes solo `message` sobre reclamos propios (`test_events.py`); MCP, REST y el agente Escudo actúan como el `customer_id` del token verificado y `/a2a/escudo` rechaza llamadas anónimas (`test_identity.py`); aprobar exige firma del dispositivo registrado de la clienta: sin dispositivo, dispositivo ajeno o desconocido, firma mala o para otra aprobación → 403 sin cambios, repetir → rechazado (`test_device_approvals.py`); chat: solo cabecera `Authorization`, herramientas por las capacidades, pausa en la aprobación y reanudación sola tras aprobar, la conversación sobrevive a una reconexión, el asistente simulado firma el reclamo con 3 aprobaciones y un agente no puede apuntar a un reclamo inventado (`test_chat.py`); los momentos de descubrimiento (Agent Card, `tools/list`) y las llamadas sueltas de la misma clienta quedan en la línea de tiempo de su reclamo (`test_events.py`); cada corrida es su propio cliente y `make reset` los borra sin tocar el dispositivo del escenario (`test_runs.py`); llamadas de respaldo del perito (`test_hedging.py`); el reinicio de la demo: `POST /admin/reset` con token y «Empezar de nuevo» (`POST /demo/restart`), que solo acepta a la clienta sembrada (`test_reset.py`); el escenario completo por MCP con 3 aprobaciones (`test_scenario.py`) |
 | Android | `make android-test` (sabores `fake` y `live`) | Mapeo de AppFunctions, `ApprovalFlow` y firma de aprobaciones, protocolo del chat, repositorio, cliente HTTP, push, línea de tiempo, mensajes de error |
 | Web | `cd web && npm test` (18 pruebas) | Línea de tiempo del presentador (selección de corrida con `?run=` y, sin él, la del reclamo activo; etiqueta «automático») y herramientas WebMCP (exactamente cuatro, todas de solo lectura, ninguna aprueba) |
 | Web e2e | `cd web && npm run e2e` | Presentador en modo demo con Chrome: rótulo REPETICIÓN GRABADA, pausa en ámbar, 3 aprobaciones, el reloj se detiene al firmar |
-| Sin red | `make up-offline`, luego `cd web && E2E_BASE_URL=http://127.0.0.1:3217 npx playwright test e2e/offline.spec.ts` | La repetición funciona con toda petición fuera de la laptop abortada, sin «en vivo» y sin pedidos externos |
 | WebMCP real | `cd web && E2E_WEBMCP=1 npm run e2e` | Chrome con el flag de WebMCP, contra el API desplegado: el portal registra cuatro herramientas y responden |
 | Escenario por MCP | `make scenario CLOUD=1` | El flujo completo contra el servicio desplegado, con su propio cliente, cronometrado (< 180 s, 3 aprobaciones) |
 | Escenario por chat | `make chat-scenario CLOUD=1` | El mismo flujo escribiéndole al asistente, con su propio cliente (< 180 s, 3 aprobaciones) |
@@ -289,6 +291,9 @@ Hace falta la imagen 36.1 (Android 16 QPR2): en 36.0 el servicio de AppFunctions
 
 ### 8.2 Arrancarlo
 
+En la charla se abre desde Android Studio (**Device Manager** → ▶): arranca desde su snapshot de
+arranque rápido, tal como quedó la última vez. Para desarrollo:
+
 ```bash
 make android-emulator     # arranca Pixel_9_API_36_1 (o reutiliza el que ya corre) y muestra su serial
 ```
@@ -297,7 +302,7 @@ Todos los comandos de Android (`android-install`, `make -C android chat-scenario
 del emulador `Pixel_9_API_36_1` en ejecución (`android/scripts/emulator_serial.sh`), así que da igual en
 qué puerto arrancó. `make android-serial` lo muestra; `ANDROID_SERIAL=…` lo fuerza.
 
-### 8.3 Dejarlo listo: `make android-prep`
+### 8.3 Dejarlo listo: `make android-prep` (una vez, antes de la charla)
 
 ```bash
 make seed            # una vez: escribe en .env.local el correo y la contraseña de la clienta
@@ -315,76 +320,79 @@ make android-prep    # arranca el emulador y lo prepara; idempotente, se puede r
 | Permisos | `pm grant` de `POST_NOTIFICATIONS` y `READ_MEDIA_IMAGES` (este último para `reportAccident` con `recentPhotoCount`) |
 | Fotos del choque | Copia `backend/samples/photos/crash_1..3.jpg` a `Pictures/escudo_crash_1..3.jpg` si no están en la galería y la vuelve a escanear |
 | Huella | Si no hay ninguna: abre el registro de Ajustes, escribe el PIN, acepta y toca el sensor virtual (`adb emu finger touch 1`) hasta que queda registrada |
+| Agente de prueba de AppFunctions | `android/scripts/prep_appfunctions_agent.sh`: clona [android/appfunctions](https://github.com/android/appfunctions) (commit fijo) en `~/.cache/escudo/appfunctions`, compila su `agent/`, lo instala y lo arranca con `ShellIdentityInstrumentation`, que le da el permiso de sistema para llamar AppFunctions de otras apps (sección 9). Si ya corre con ese permiso, no hace nada |
 | Token | Reinicia la app: inicia sesión sola con la clienta y registra su token FCM y su llave de aprobación (`POST /devices`); espera la línea `Device registered for approval pushes` en logcat |
 
-`BiometricVerifier` acepta biometría fuerte con el PIN como respaldo; en el escenario se aprueba tocando
-el sensor con `adb emu finger touch 1`. En la charla no hay pantalla de login.
+Después, **cierra el emulador normalmente**: al cerrarse guarda su snapshot de arranque rápido con todo
+esto, incluido el agente de prueba corriendo con su permiso, y la próxima vez abre tal cual. Hay además
+un snapshot de respaldo, `escudo-escena` (controles extendidos → **Snapshots**), por si el de arranque
+rápido se pierde.
+
+`BiometricVerifier` acepta biometría fuerte con el PIN como respaldo. En la charla la huella se toca con
+el botón **Touch sensor** de los controles extendidos del emulador (**⋯** → **Fingerprint**); en los
+scripts, con `adb emu finger touch 1`. En la charla no hay pantalla de login.
 
 Para un backend local con `MOCK_AUTH=1` (`make up-mock`), agrega a `android/local.properties`
 `escudo.apiUrl=http://10.0.2.2:8080` y `escudo.mockAuth=true`. También se aceptan las variables
 `ESCUDO_API_URL`, `ESCUDO_CUSTOMER_EMAIL`, `ESCUDO_CUSTOMER_PASSWORD` y `ESCUDO_MOCK_AUTH`. La URL del chat
 se deriva de `escudo.apiUrl` (`wss://…/assistant/chat`).
 
-### 8.4 Verificar: `make preflight`
+### 8.4 Lo que resuelve solo el día de la charla
 
-`make preflight` (`backend/escudo/preflight.py`) revisa en una pasada lo que la charla necesita y sale con
-error si algo falta; cada falla imprime el comando que la arregla:
-
-- Nube: `escudo-api` y `escudo-web` con `min-instances=1`; `/health`, la Agent Card y `/presenter` responden
-  200 en menos de 2 s.
-- Emulador: corriendo, arranque completo, desbloqueado, app instalada, los dos permisos, al menos una huella
-  y las tres fotos en la galería.
-- Firestore: póliza `POL-GT-2027-0042` activa, 3 talleres con horarios, 2 grúas, y `cus_demo` sin reclamos
-  ni aprobaciones (estado de `make reset CLOUD=1`).
-- Registro: el `device_id` de la app (sus `shared_prefs`) está en `devices`, a nombre de `cus_demo`, activo,
-  con token FCM y llave de aprobación.
+| Qué | Cómo |
+| --- | --- |
+| Servicios dormidos | `/presenter` los despierta al abrirse y muestra «Preparando Escudo…» hasta que responden (sección 5) |
+| Estado de un ensayo anterior | **Póliza** → **Empezar de nuevo** en la app (`POST /demo/restart`): vuelve a la siembra y reinicia las pantallas de la app |
+| Horarios de talleres vencidos | El API reescribe la siembra cada vez que arranca: los horarios siempre empiezan mañana |
+| Token de notificaciones | La app lo registra sola cada vez que arranca su proceso; reiniciar la demo conserva los dispositivos con llave |
+| DNS del emulador | La primera búsqueda tras un rato quieto a veces falla; la app reintenta (hasta 2 veces) las llamadas que no llegaron al servidor |
 
 ### 8.5 Escenario por chat en el emulador
 
 ```bash
-make reset CLOUD=1
+make reset CLOUD=1              # o «Empezar de nuevo» en la app
 make -C android chat-scenario   # usa el emulador Pixel_9_API_36_1 que esté corriendo
 ```
 
 Reporta el accidente desde la app con las tres fotos de la galería, le escribe al Asistente Escudo,
 aprueba cada pausa con la huella virtual y termina cuando el reclamo queda firmado; imprime el tiempo
 real. Los detalles (marcadores de logcat, capturas) están en [`android/README.md`](../android/README.md).
+Mientras el agente de prueba de AppFunctions corre con su permiso, `uiautomator dump` no responde (el
+agente ocupa UiAutomation); el escenario no lo usa.
 
 ## 9. Mostrar AppFunctions y WebMCP
 
-### AppFunctions con `adb`
+### AppFunctions con el agente de prueba de Google
 
-Gemini con AppFunctions de terceros está en vista previa privada y no está disponible para esta app,
-así que en el escenario se muestran con las herramientas de Android (Android 16 QPR2+):
+Gemini con AppFunctions de terceros está en vista previa privada y no está disponible para esta app.
+En el escenario las llama el **AppFunction Testing Agent** de Google
+([android/appfunctions](https://github.com/android/appfunctions), `agent/`): un agente externo que
+lista las funciones que cada app ofrece al sistema y las ejecuta con entradas que escribes, con taps.
+Necesita el permiso de sistema `EXECUTE_APP_FUNCTIONS`, que solo obtiene si se arranca con su
+`ShellIdentityInstrumentation`; `make android-prep` lo deja corriendo así (sección 8.3).
+
+En el emulador: ábrelo desde recientes o desde su ícono → buscador → **Escudo** (fijada) → aparecen
+`getClaimStatus`, `reportAccident` y `getCoverage`. **getCoverage** con `incidentType` = `collision` →
+**Run** muestra póliza, vehículo, coberturas y deducible; **getClaimStatus** sin parámetros muestra el
+reclamo activo. Cada llamada viaja con `X-Escudo-Surface: appfunctions`, así que aparece en `/presenter`
+con su insignia y como **Agente externo**. Más detalle en [`android/APPFUNCTIONS.md`](../android/APPFUNCTIONS.md).
+
+Si el emulador arrancó desde cero (sin snapshot), el agente ya no tiene el permiso: `make android-prep`
+lo vuelve a arrancar. En desarrollo también se pueden llamar con `adb`:
 
 ```bash
 make -C android appfunctions     # lista los tres ids
 F=app.escudo.android.appfunctions.BaseEscudoAppFunctionService
-
 adb shell "cmd app_function execute-app-function --package app.escudo.android \
   --function '$F#getCoverage' --parameters '{\"incidentType\": \"collision\"}' --brief-yaml"
-
-adb shell "cmd app_function execute-app-function --package app.escudo.android \
-  --function '$F#reportAccident' \
-  --parameters '{\"description\": \"Choque menor: me chocaron por detrás mientras esperaba en el semáforo. Nadie salió herido.\", \"recentPhotoCount\": 1, \"locationLabel\": \"Calzada Roosevelt, zona 11\"}' \
-  --brief-yaml"
-
-adb shell "cmd app_function execute-app-function --package app.escudo.android \
-  --function '$F#getClaimStatus' --parameters '{}' --brief-yaml"
 ```
-
-Cada llamada viaja con `X-Escudo-Surface: appfunctions`, así que aparece en `/presenter` con su insignia
-y como **Agente externo** (quien la llama es `adb`, no Gemini).
-Para mostrar que una función se puede apagar:
-`adb shell cmd app_function set-enabled --package app.escudo.android --function "$F#reportAccident" --state disable`
-(y `--state default` para volver). Más detalle en [`android/APPFUNCTIONS.md`](../android/APPFUNCTIONS.md).
 
 ### WebMCP en Chrome
 
 1. Una vez: `chrome://flags/#enable-webmcp-testing` → **Enabled** → relanzar Chrome (150 o más).
-2. Abrir https://escudo-web-611681112050.us-central1.run.app/entrar y entrar con la cuenta de Andrea
-   (correo y contraseña en `.env.local`; la sesión queda guardada en el navegador, hazlo antes de la
-   charla). El pie del portal dice «WebMCP · 4 herramientas disponibles…».
+2. Una vez: abrir https://escudo-web-611681112050.us-central1.run.app/entrar y entrar con la cuenta de
+   Andrea (correo y contraseña en `.env.local`; la sesión queda guardada en el navegador). El pie del
+   portal dice «WebMCP · 4 herramientas disponibles…».
 3. DevTools (`⌥⌘I`) → **Application** → **WebMCP**: aparecen `getCoverage`, `getDeductible`,
    `findRepairShops` y `getClaimStatus` con su descripción y esquema. Elegir `getDeductible` → **Run tool**
    → `{"deductible_usd": 500, …}`; `/presenter` muestra el paso con la insignia **WebMCP**, como
@@ -477,6 +485,8 @@ el agente A2A (`agents/escudo_agent.build_a2a_agent`) o una AppFunction (que lla
 | No llega el push de aprobación | La app no registró su token (abrirla una vez con sesión iniciada), falta `google-services.json`, falta el permiso de notificaciones, o el emulador no es una imagen *Play*. Mientras tanto, la pestaña Aprobaciones también muestra la pendiente |
 | «Ningún socio disponible ofrece ese servicio» (`peer_unavailable`) | `A2A_PEERS` no apunta a las Agent Cards (`{base}/.well-known/agent-card.json`) o el secreto `X-Escudo-A2A-Key` no coincide |
 | `adb shell cmd app_function` → `No shell command implementation.` | Imagen API 36.0. Usa `Pixel_9_API_36_1` (36.1) |
+| El agente de prueba de AppFunctions no lista funciones o falla por permisos | Lo abriste después de un arranque desde cero, sin su `ShellIdentityInstrumentation`: `make android-prep` lo vuelve a arrancar con el permiso (sección 9) |
+| `uiautomator dump` no responde o devuelve una pantalla vieja | El agente de prueba ocupa UiAutomation mientras corre con su permiso; `adb shell am force-stop com.example.appfunctions.agent` para depurar, y `make android-prep` para volver a dejarlo listo |
 | `reportAccident` por AppFunction: «Escudo cannot read the gallery yet» | `make android-prep` (concede `READ_MEDIA_IMAGES`) |
 | `make -C android chat-scenario` → «No running emulator for AVD Pixel_9_API_36_1» o «not on screen» | Arranca el emulador con `make android-emulator` (otro AVD no cuenta). Revisa también que haya tres fotos en la galería y que la app esté instalada con sesión iniciada |
 | `make -C android chat-scenario` → «no biometric prompt» o «approval not granted» | No hay huella registrada: `make android-prep` (sección 8.3) |
@@ -486,56 +496,39 @@ el agente A2A (`agents/escudo_agent.build_a2a_agent`) o una AppFunction (que lla
 | El chat no sigue solo después de aprobar | La aprobación se decidió con otra conversación cerrada: reabre el chat con la cabecera `X-Escudo-Chat-Session` (la app la guarda) o escribe «sigue» |
 | `make scenario` → 401 en `/admin/runs` | Token de admin distinto al del servidor local (ver fila de `make reset`) o sin acceso a Secret Manager (`CLOUD=1`) |
 | Portal: «No pudimos iniciar sesión», o el corredor recibe 403 `Requests from referer … are blocked` | La «Escudo web key» no acepta ese origen. Agrega el origen a sus referrers en `infra/07-web-api-key.sh` y vuelve a correrlo (en local, la web debe estar en `:3217`) |
-| `make up-offline` → `EADDRINUSE 127.0.0.1:3217` | `make web` (u otro `next-server`) ya usa el puerto: ciérralo o usa `PORT=3218 make up-offline` |
-| El chat se queda «pensando» más de 30 s | Gemini tardó; cada llamada se corta a los 30 s y se reintenta. Si se repite, `global` está lento: usa el respaldo (`make chat-scenario CLOUD=1` o `/presenter?demo=1`) |
+| El chat se queda «pensando» más de 30 s | Gemini tardó; cada llamada se corta a los 30 s y se reintenta. Si se repite, `global` está lento: usa la repetición grabada (`/presenter?demo=1`) |
 
 ## 12. Lista del día de la charla
 
-**La víspera**
+**Antes (lo hace quien desarrolla, cuando cambia algo)**
 
-- [ ] `make stage-on`: `escudo-api` y `escudo-web` con una instancia caliente (`min-instances=1`).
-- [ ] Ensayar el guion completo de [DEMO.md](DEMO.md) una vez.
-- [ ] `make test` en verde (y el último run de CI en GitHub).
-- [ ] `curl https://escudo-api-611681112050.us-central1.run.app/health` → `{"status":"ok"}`; Agent Cards responden.
-- [ ] `make reset CLOUD=1`, `make scenario CLOUD=1 APPROVE_DELAY=4` y `make chat-scenario CLOUD=1`:
-      «aprobaciones: 3 (esperadas 3) · OK» en ambos.
-- [ ] `make android-prep`: el emulador `Pixel_9_API_36_1` (el dispositivo del escenario) queda con la app
-      `live`, sesión, permisos, huella, las fotos del choque y su token registrado (sección 8.3).
-- [ ] Un push de prueba llega al emulador (correr `make scenario-live` y aprobar una vez con
-      `adb emu finger touch 1`).
-- [ ] `make -C android chat-scenario` completo una vez en el emulador; después, `make reset CLOUD=1`.
-- [ ] Chrome: flag de WebMCP activo; portal con sesión; DevTools → Application → WebMCP lista 4 herramientas.
+- [ ] `make test` en verde.
+- [ ] Desplegado con `make deploy` si cambió el backend o la web.
+- [ ] `make scenario CLOUD=1 APPROVE_DELAY=4` y `make chat-scenario CLOUD=1`: «aprobaciones: 3
+      (esperadas 3) · OK» en ambos.
+- [ ] `make android-prep` y luego cerrar el emulador normalmente (sección 8.3): app `live` con sesión,
+      permisos, huella, fotos, agente de prueba de AppFunctions y token registrado, guardados en su
+      snapshot.
+- [ ] `make -C android chat-scenario` completo una vez en el emulador; después, **Empezar de nuevo** en la
+      app.
+- [ ] Chrome: flag de WebMCP activo y portal con la sesión de Andrea (sección 9); DevTools →
+      Application → WebMCP lista 4 herramientas.
 
-**Antes de subir**
+**El día de la charla (sin comandos)**
 
-En este orden (`make stage-on` despliega una revisión nueva, así que el warmup va después):
-
-- [ ] `make stage-on` (si no quedó de la víspera).
-- [ ] `make android-prep`: arranca el emulador si no corre y repite lo que falte.
-- [ ] `make warmup` → `warmup OK`.
-- [ ] `make reset CLOUD=1` (< 10 s).
-- [ ] `make preflight` → `preflight OK` (sección 8.4).
-- [ ] `/presenter` abierto en Chrome a pantalla completa en el proyector; «Aprobaciones 0 de 3» (sin
-      `?run`, sigue la corrida del reclamo más reciente: la del emulador).
-- [ ] `make up-offline` probado en la laptop y `docs/escudo-chat-run.mp4` a mano.
+- [ ] Chrome con https://escudo-web-611681112050.us-central1.run.app/presenter a pantalla completa en el
+      proyector, unos minutos antes: «Preparando Escudo…» y después «Listo para empezar».
+- [ ] El emulador `Pixel_9_API_36_1` desde Android Studio (**Device Manager** → ▶). Si pide PIN: `1234`.
+- [ ] Si el presentador muestra un reclamo viejo: en la app, **Póliza** → **Empezar de nuevo** → **Empezar**.
+- [ ] Los controles extendidos del emulador abiertos en **Fingerprint** (botón **Touch sensor**).
 - [ ] Laptop conectada a la corriente y en No molestar (que no aparezcan avisos en el proyector).
-- [ ] Ventana del emulador a tamaño legible, app abierta en **Póliza**
-      (el guion empieza ahí, ver [DEMO.md](DEMO.md)).
-- [ ] Terminal en la raíz del repo con `export ANDROID_SERIAL=$(make -s android-serial)` y los comandos
-      de la huella y de `adb … cmd app_function` listos (sección 9).
-- [ ] Si se quiere el espejo exacto: ventana `scrcpy --serial "$(make -s android-serial)" --window-title "Escudo" --always-on-top`
-      sobre el panel del espejo en `/presenter`.
+- [ ] El guion: [DEMO.md](DEMO.md).
 
 **Si algo falla en vivo**
 
-- El emulador se cuelga o no arranca a tiempo: `make chat-scenario CLOUD=1` (o
-  `make scenario CLOUD=1 APPROVE_DELAY=4`) reproduce el
-  flujo con su propio cliente; abre el `…/presenter?run=<id>` que imprime.
-- Sin red: `make up-offline` y `http://127.0.0.1:3217/presenter?demo=1` (se ve **REPETICIÓN GRABADA**:
-  dilo en voz alta). Si tampoco hay laptop confiable, el video `docs/escudo-chat-run.mp4`.
-- Estado sucio: `make reset CLOUD=1`.
+- Gemini lento o caído: https://escudo-web-611681112050.us-central1.run.app/presenter?demo=1 (se ve
+  **REPETICIÓN GRABADA**: dilo en voz alta).
+- Sin red: el video `docs/escudo-chat-run.mp4`.
+- Estado sucio: **Empezar de nuevo** en la app.
 
-**Después de la charla**
-
-- [ ] `make stage-off`: los dos servicios vuelven a `min-instances=0` (sin costo en reposo). Los
-      despliegues siguientes respetan ese estado.
+Después de la charla no hace falta nada: los servicios vuelven a cero solos.
