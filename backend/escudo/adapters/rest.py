@@ -246,6 +246,17 @@ async def reset(
     return Response(status_code=204, headers={"X-Reset-Seconds": f"{seconds:.2f}"})
 
 
+@router.post("/demo/restart", status_code=204)
+async def restart_demo(request: Request, caller: Caller = Depends(current_caller)) -> Response:
+    """«Empezar de nuevo» in the stage app: the same reset as /admin/reset, allowed only for the seeded
+    stage customer, so the talk never needs a terminal. Run customers (scenario tests) can't call it."""
+    services = services_of(request)
+    if caller.customer_id != services.settings.demo_customer_id:
+        raise Forbidden("demo_only", "Solo la clienta de la demo puede empezar de nuevo.")
+    seconds = await seed.reset(services.repo, services.auth)
+    return Response(status_code=204, headers={"X-Reset-Seconds": f"{seconds:.2f}"})
+
+
 @router.post("/admin/runs", status_code=201)
 async def create_run(
     request: Request, x_admin_token: str | None = Header(default=None), authorization: str | None = Header(default=None)

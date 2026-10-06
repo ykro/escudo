@@ -1,4 +1,4 @@
-"""make reset restores the seed and keeps only keyed devices."""
+"""The demo reset restores the seed and keeps only keyed devices."""
 
 from __future__ import annotations
 
@@ -32,3 +32,19 @@ async def test_reset_drops_keyless_devices_but_keeps_the_phone(http, services):
     await services.repo.register_device("probe", {"device_key": "probe", "customer_id": "cus_demo", "fcm_token": "x"})
     assert (await http.post("/admin/reset", headers={"X-Admin-Token": "test-admin"})).status_code == 204
     assert {d["device_key"] for d in await services.repo.store.where(DEVICES)} == {"test-phone"}
+
+
+async def test_stage_customer_restarts_the_demo_from_the_app(http, services):
+    """«Empezar de nuevo» (POST /demo/restart): the seeded customer resets without the admin token."""
+    await ready_claim(http)
+    r = await http.post("/demo/restart")
+    assert r.status_code == 204 and float(r.headers["X-Reset-Seconds"]) < 10
+    for collection in (CLAIMS, APPROVALS, EVENTS):
+        assert await services.repo.store.where(collection) == []
+    assert (await http.get("/claims/latest")).status_code == 404
+
+
+async def test_run_customers_cannot_restart_the_demo(http):
+    run = (await http.post("/admin/runs", headers={"X-Admin-Token": "test-admin"})).json()
+    r = await http.post("/demo/restart", headers={"Authorization": f"Bearer {run['token']}"})
+    assert r.status_code == 403 and r.json()["error"] == "demo_only"

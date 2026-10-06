@@ -46,8 +46,9 @@ def create_app(services: Services | None = None) -> FastAPI:
 
     @contextlib.asynccontextmanager
     async def lifespan(app: FastAPI):  # noqa: ANN202
-        if await seed.seed_if_empty(services.repo):
-            logging.getLogger(__name__).info("seeded an empty database")
+        # Every start writes the seed again: an empty database gets seeded, and the repair shops' slots
+        # always start tomorrow, however long the service slept (talk days need no reset to have them).
+        await seed.write_seed(services.repo)
         async with mcp.session_manager.run():  # a mounted app's own lifespan never runs
             warm = None
             if not settings.mock_ai:

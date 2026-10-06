@@ -22,7 +22,7 @@ ENV_FILE := $(if $(wildcard .env),--env-file ../.env,)
 ANDROID_AVD ?= Pixel_9_API_36_1
 EMULATOR := $${ANDROID_HOME:-$$HOME/Library/Android/sdk}/emulator/emulator
 
-.PHONY: help up up-mock up-offline web seed reset test scenario chat-scenario scenario-live stage-on stage-off warmup preflight infra deploy deploy-api deploy-web \
+.PHONY: help up up-mock web seed reset test scenario chat-scenario scenario-live infra deploy deploy-api deploy-web \
 	photos brand android-build android-test android-install android-emulator android-serial android-prep
 
 help: ## Lista todos los comandos
@@ -37,9 +37,6 @@ up-mock: ## API local sin nube (MOCK_AI=1 MOCK_AUTH=1) en :8080
 
 web: ## Portal + /presenter local en :3217 (contra el API desplegado)
 	cd web && npm run dev
-
-up-offline: ## Respaldo sin red: build de producción local en :3217, fuentes propias; /presenter?demo=1
-	web/scripts/serve-offline.sh
 
 # --- data -------------------------------------------------------------------------
 seed: ## Póliza, talleres y grúas en Firestore + login del cliente en Firebase Auth (.env.local)
@@ -91,33 +88,6 @@ deploy-api: ## Despliega solo escudo-api
 deploy-web: ## Despliega solo escudo-web
 	bash infra/11-deploy-web.sh
 
-# Talk days: one warm instance of each service (no cold start on stage). Other days: scale to zero.
-stage-on: ## Día de charla: escudo-api y escudo-web con min-instances=1 (sin arranque en frío)
-	@for svc in escudo-api escudo-web; do gcloud run services update $$svc --region=us-central1 --project=ai-experiments-487722 --min-instances=1 --quiet >/dev/null && echo "$$svc: min-instances=1"; done
-
-stage-off: ## Fuera de la charla: min-instances=0 (escala a cero, sin costo en reposo)
-	@for svc in escudo-api escudo-web; do gcloud run services update $$svc --region=us-central1 --project=ai-experiments-487722 --min-instances=0 --quiet >/dev/null && echo "$$svc: min-instances=0"; done
-
-# Before going on stage: touch every public surface once so no request on stage pays a cold start
-# (the API instance also warms its A2A partners on start). Fails if anything is not 200.
-WARM_URLS := $(DEPLOYED_URL)/health \
-	$(DEPLOYED_URL)/a2a/escudo/.well-known/agent-card.json \
-	$(DEPLOYED_URL)/a2a/tow/.well-known/agent-card.json \
-	$(DEPLOYED_URL)/a2a/repair/.well-known/agent-card.json \
-	$(DEPLOYED_WEB)/entrar $(DEPLOYED_WEB)/presenter
-warmup: ## Antes de subir: toca API, Agent Cards, portal y /presenter desplegados (todo 200)
-	@fail=0; for url in $(WARM_URLS); do \
-		out=$$(curl -s -o /dev/null -w '%{http_code} %{time_total}' --max-time 60 "$$url"); \
-		printf '  %s  %6.2f s  %s\n' "$${out% *}" "$${out#* }" "$$url"; \
-		[ "$${out% *}" = "200" ] || fail=1; \
-	done; \
-	if [ $$fail = 0 ]; then echo "warmup OK"; else echo "warmup: algo no respondió 200"; exit 1; fi
-
-# Last check before going on stage: cloud warm, Firestore in its initial state, emulator ready and
-# its device registered. Each failure prints the command that fixes it (backend/escudo/preflight.py).
-preflight: ## Antes de subir: nube caliente, Firestore en estado inicial, emulador listo y registrado
-	cd $(BACKEND) && ANDROID_AVD=$(ANDROID_AVD) uv run $(ENV_FILE) python -m escudo.preflight
-
 # --- Android (escudo/android has its own Makefile) -------------------------------
 android-build: ## APKs de depuración (sabores fake y live)
 	$(MAKE) -C android build
@@ -130,11 +100,11 @@ android-install: ## Instala y abre la app en el emulador (FLAVOR=live|fake)
 
 android-emulator: ## Arranca (o reutiliza) el emulador Pixel_9_API_36_1 y muestra su serial
 	@if ! android/scripts/emulator_serial.sh $(ANDROID_AVD) >/dev/null 2>&1; then \
-		$(EMULATOR) -avd $(ANDROID_AVD) -no-snapshot-save >/dev/null 2>&1 & \
+		$(EMULATOR) -avd $(ANDROID_AVD) >/dev/null 2>&1 & \
 	fi; \
 	android/scripts/emulator_serial.sh --wait 180 $(ANDROID_AVD)
 
-android-prep: android-emulator ## Deja el emulador listo sin pasos manuales: PIN, app live, permisos, fotos, huella y registro del token (idempotente)
+android-prep: android-emulator ## Deja el emulador listo para la charla: PIN, app live, permisos, fotos, huella, agente de AppFunctions y token (idempotente)
 	@ANDROID_AVD=$(ANDROID_AVD) android/scripts/prep_emulator.sh
 
 android-serial: ## Serial adb del emulador Pixel_9_API_36_1 en ejecución

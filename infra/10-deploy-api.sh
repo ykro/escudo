@@ -33,18 +33,14 @@ ENV_VARS+=",GEMINI_MODEL=${GEMINI_MODEL}"
 ENV_VARS+=",FIRESTORE_DATABASE=${FIRESTORE_DATABASE},CLAIMS_BUCKET=${CLAIMS_BUCKET},DEMO_CUSTOMER_ID=${DEMO_CUSTOMER_ID}"
 ENV_VARS+=",PUBLIC_BASE_URL=${URL},A2A_PEERS=${URL}/a2a/tow;${URL}/a2a/repair,MOCK_AI=0,MOCK_AUTH=0"
 
-# min-instances: 0 by default (scale to zero); `make stage-on` sets 1 on talk days, `make stage-off` back
-#   to 0. Up to 3 instances: chat transcripts and approval waits live in Firestore, so any instance can
-#   serve any request. no-cpu-throttling + 1 h timeout: chat WebSockets stay open during the talk.
-# A deploy keeps the stage state: it reuses the service's current min-instances (1 after `make stage-on`,
-# 0 after `make stage-off`); a first deploy gets 0. MIN_INSTANCES=… overrides.
-CURRENT_MIN="$(gcloud run services describe "$SERVICE" --region "$REGION" \
-  --format='value(spec.template.metadata.annotations["autoscaling.knative.dev/minScale"])' 2>/dev/null || true)"
-MIN_INSTANCES="${MIN_INSTANCES:-${CURRENT_MIN:-0}}"
+# Scales to zero between talks (min-instances 0, no cost at rest). Opening /presenter wakes it
+#   (escudo-web's /api/presenter/wake) and startup CPU boost shortens that cold start. Up to 3
+#   instances: chat transcripts and approval waits live in Firestore, so any instance can serve any
+#   request. no-cpu-throttling + 1 h timeout: chat WebSockets stay open during the talk.
 deploy_run "$SERVICE" "$STAGE" \
   --service-account="$SA" \
   --allow-unauthenticated \
-  --min-instances="$MIN_INSTANCES" --max-instances=3 --concurrency=80 \
+  --min-instances=0 --max-instances=3 --cpu-boost --concurrency=80 \
   --cpu=1 --memory=1Gi --no-cpu-throttling --timeout=3600 --session-affinity \
   --set-env-vars="^@^$(echo "$ENV_VARS" | tr ',' '@' | tr ';' ',')" \
   --set-secrets="ADMIN_TOKEN=escudo-admin-token:latest,A2A_SHARED_SECRET=escudo-a2a-secret:latest"

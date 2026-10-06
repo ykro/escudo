@@ -10,7 +10,7 @@ const browser = await chromium.launch({ channel: "chrome" });
 const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
 await run("make", ["reset", "CLOUD=1"]);
 await page.goto(`${WEB}/presenter`);
-await page.getByText("Listo para el escenario").waitFor({ timeout: 30_000 });
+await page.getByText("Listo para empezar").waitFor({ timeout: 30_000 });
 await page.screenshot({ path: `${OUT}/presenter-empty.png` });
 
 const scenario = run("make", ["chat-scenario", "CLOUD=1"]);

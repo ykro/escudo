@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { EscudoMark } from "@/brand/EscudoMark";
 import { buildPresenterState, clock, EXPECTED_APPROVALS, phoneScreen, selectRun } from "@/lib/timeline";
 import { usePresenterFeed } from "./usePresenterFeed";
+import { useCloudAwake, type Awake } from "./useCloudAwake";
 import { PhoneMirror } from "./PhoneMirror";
 import { Timeline } from "./Timeline";
 import styles from "./presenter.module.css";
@@ -34,6 +35,7 @@ function useNow(active: boolean): number {
 
 export function PresenterView({ demo, run }: { demo: boolean; run?: string }) {
   const feed = usePresenterFeed(demo);
+  const awake = useCloudAwake(demo);
   const followed = useMemo(() => selectRun(feed.events, run), [feed.events, run]);
   const state = useMemo(() => buildPresenterState(followed.events), [followed.events]);
   const phone = useMemo(() => {
@@ -85,7 +87,7 @@ export function PresenterView({ demo, run }: { demo: boolean; run?: string }) {
             {feed.connection === "connecting" ? (
               <Connecting />
             ) : state.rows.length === 0 && !state.pause ? (
-              <Empty />
+              awake === "ready" ? <Empty /> : <Waking awake={awake} />
             ) : (
               <Timeline rows={state.rows} pause={state.pause} done={state.endedAt ? { elapsed, approvals } : null} />
             )}
@@ -115,10 +117,23 @@ function Connecting() {
   );
 }
 
+function Waking({ awake }: { awake: Awake }) {
+  return (
+    <div className={styles.placeholder} role="status">
+      <p className={styles.placeholderTitle}>Preparando Escudo…</p>
+      <p className={styles.placeholderText}>
+        {awake === "retrying"
+          ? "Escudo todavía no responde. Sigo intentando cada pocos segundos."
+          : "Despertando los servicios en la nube. Tarda unos 20 segundos la primera vez."}
+      </p>
+    </div>
+  );
+}
+
 function Empty() {
   return (
     <div className={styles.placeholder}>
-      <p className={styles.placeholderTitle}>Listo para el escenario</p>
+      <p className={styles.placeholderTitle}>Listo para empezar</p>
       <p className={styles.placeholderText}>
         Cada paso aparecerá aquí en cuanto un agente use Escudo: qué agente actúa, por qué superficie y qué logró.
       </p>

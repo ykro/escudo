@@ -3,7 +3,8 @@
     uv run python -m escudo.admin seed     # upsert policy, shops, tow providers + the customer's Firebase login
     uv run python -m escudo.admin reset    # clear claims/approvals/events + seed (< 10 s)
 
-For a running MOCK_AI server (in-memory store) use `make reset`, which calls POST /admin/reset.
+For a running MOCK_AI server (in-memory store) use `make reset`, which calls POST /admin/reset
+(the stage app calls POST /demo/restart instead).
 """
 
 from __future__ import annotations
