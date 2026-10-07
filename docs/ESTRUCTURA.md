@@ -37,7 +37,7 @@ android/                  Kotlin + Compose + Material 3 (ver android/README.md)
 .github/workflows/test.yml  CI: make test en cada push y PR, solo modos simulados
 web/                      Next.js 16 (ver web/README.md)
   src/lib/webmcp.ts       herramientas WebMCP
-  src/app/presenter/      vista del presentador (1920×1080)
+  src/app/presentador/      vista del presentador (1920×1080)
   src/app/api/presenter/  stream SSE de Firestore y wake (despierta el API al abrir la vista)
 infra/                    scripts numerados e idempotentes: 01-06 crean el proyecto desde cero, 10-11 despliegan
 brand/                    prompts y generador del logo y las maquetas «A · Sereno» (make brand)

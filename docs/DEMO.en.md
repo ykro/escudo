@@ -18,10 +18,13 @@ Main walkthrough: **about 2 minutes** of system time plus your talking (the dama
 
 | Where | What |
 | --- | --- |
-| Projector, full screen | Chrome: https://escudo-web-611681112050.us-central1.run.app/presenter |
+| Projector, full screen | Chrome: https://escudo-web-611681112050.us-central1.run.app/presentador |
 | Laptop, left half | The **Pixel_9_API_36_1** emulator (Android Studio → **Device Manager** → ▶). The Escudo app is already installed and signed in, with the crash photos in the gallery and an enrolled fingerprint |
 | Laptop, next to the emulator | The emulator's extended controls (the **⋯** button on its side bar) on **Fingerprint**: the **Touch sensor** button there is the fingerprint |
 | Laptop, right half | Chrome with the portal at https://escudo-web-611681112050.us-central1.run.app/reclamo, for WebMCP |
+
+The presenter view is only the projector screen for this live demo. The product, what anyone can
+try, is the app and the portal (https://escudo-web-611681112050.us-central1.run.app/).
 
 Open the presenter a few minutes before you start. The cloud services shut down by themselves when
 nobody uses them; when the page opens it says **«Preparando Escudo…»** (getting Escudo ready) while it
@@ -233,7 +236,7 @@ This part needs, once in that Chrome, the `chrome://flags/#enable-webmcp-testing
 | The push does not arrive | Open the **Aprobaciones** tab: the pending one is there |
 | Dirty state (old claim, odd counter) | **Póliza** → **Empezar de nuevo** → **Empezar** |
 | The AppFunctions testing agent is not in recents or lists no functions | Skip that extra: the emulator booted from scratch and the agent needs to be prepared again (ONBOARDING, section 9) |
-| Gemini slow or down | https://escudo-web-611681112050.us-central1.run.app/presenter?demo=1: a real recorded run, labelled **REPETICIÓN GRABADA** (recorded replay). Say so out loud |
+| Gemini slow or down | https://escudo-web-611681112050.us-central1.run.app/presentador?demo=1: a real recorded run, labelled **REPETICIÓN GRABADA** (recorded replay). Say so out loud |
 | No network | The video [`escudo-chat-run.mp4`](escudo-chat-run.mp4) (83 s, also labelled as a replay) |
 | The portal says «No pudimos iniciar sesión» | Skip the WebMCP extra |
 

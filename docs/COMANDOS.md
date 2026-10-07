@@ -20,7 +20,7 @@ Contra la nube (requiere ADC y `.env`; ver [docs/ONBOARDING.md](ONBOARDING.md)):
 ```bash
 cp .env.example .env  # y completa los secretos
 make reset CLOUD=1    # vuelve el servicio desplegado al estado inicial
-make scenario CLOUD=1 APPROVE_DELAY=4   # cliente propio para esta corrida; imprime …/presenter?run=<id>
+make scenario CLOUD=1 APPROVE_DELAY=4   # cliente propio para esta corrida; imprime …/presentador?run=<id>
 make chat-scenario CLOUD=1              # lo mismo, escribiéndole al asistente por chat
 ```
 
@@ -36,7 +36,7 @@ make android-prep     # arranca el emulador y lo deja listo: PIN, app live, perm
 # … y lo cierra normalmente: su snapshot de arranque rápido guarda todo eso
 ```
 
-Respaldos sin comandos: `/presenter?demo=1` reproduce una corrida real grabada, rotulada
+Respaldos sin comandos: `/presentador?demo=1` reproduce una corrida real grabada, rotulada
 **REPETICIÓN GRABADA**, y el video [`docs/escudo-chat-run.mp4`](escudo-chat-run.mp4).
 
 ## Comandos `make`
@@ -47,11 +47,12 @@ Desde la raíz del repo (`make help` los lista todos):
 | --- | --- |
 | `make up` | API local en `:8080` contra Firestore, Storage y Gemini reales (ADC, `.env`) |
 | `make up-mock` | API local sin nube (`MOCK_AI=1 MOCK_AUTH=1`, `ADMIN_TOKEN=local-admin`, el mismo que usa `make reset`) |
-| `make web` | Portal y `/presenter` locales en `:3217` (`npm run dev`, configuración en `web/.env.local`) |
+| `make web` | Portal y `/presentador` locales en `:3217` (`npm run dev`, configuración en `web/.env.local`) |
+| `node web/e2e/responsive.mjs` | Capturas de cada página (presentador, entrar, póliza, reclamo, talleres) en teléfono 375 y 414, tableta 768, laptop 1280 y proyector 1920, en `web/e2e/screenshots/responsive/`; falla si alguna página se desborda a lo ancho. `ESCUDO_WEB_URL=http://localhost:3217` la corre contra `make web` |
 | `make seed` | Escribe póliza, talleres y grúas en Firestore y crea el login de la clienta en Firebase Auth (credenciales en `.env.local`) |
 | `make reset` | `POST /admin/reset` en `ESCUDO_BASE_URL` (< 10 s). `CLOUD=1` apunta al servicio desplegado y lee el token de Secret Manager (`escudo-admin-token`). En la charla se usa **Empezar de nuevo** en la app, que hace lo mismo |
 | `make test` | `pytest` del backend con `MOCK_AI=1 MOCK_AUTH=1`, unitarias de Android y `vitest` de la web |
-| `make scenario` | Escenario completo por MCP en modo prueba, con un cliente propio (`POST /admin/runs`) y un dispositivo de prueba que firma las 3 aprobaciones; `CLOUD=1`, `APPROVE_DELAY=4`. Imprime `…/presenter?run=<id>` |
+| `make scenario` | Escenario completo por MCP en modo prueba, con un cliente propio (`POST /admin/runs`) y un dispositivo de prueba que firma las 3 aprobaciones; `CLOUD=1`, `APPROVE_DELAY=4`. Imprime `…/presentador?run=<id>` |
 | `make chat-scenario` | Escenario por chat escrito: cliente propio, reclamo y 3 fotos por REST (como la app) y luego el chat; 3 aprobaciones firmadas; < 3 min. Contra `make up-mock` responde el asistente simulado; `CLOUD=1`, Gemini |
 | `make scenario-live` | El escenario por MCP con la clienta sembrada (`--shared`); espera a que apruebe cada paso en la app del emulador |
 | `make infra` | Crea o verifica todo en GCP desde un proyecto vacío: `infra/01..07` (APIs, base `escudo`, bucket, Artifact Registry, Firebase Auth por API, cuentas de servicio, Secret Manager, llave web propia de Firebase) |

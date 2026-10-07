@@ -25,13 +25,27 @@ make up-mock                 # cloud-free API on :8080
 make scenario                # another terminal: the scenario over MCP, 3 approvals
 make chat-scenario           # the same flow over the chat
 make test                    # backend, Android and web
-make chat-scenario CLOUD=1   # cloud: prints …/presenter?run=<id>
+make chat-scenario CLOUD=1   # cloud: prints …/presentador?run=<id>
 ```
 
-On talk day nothing is run: you open the [presenter](https://escudo-web-611681112050.us-central1.run.app/presenter)
+On talk day nothing is run: you open the [presenter](https://escudo-web-611681112050.us-central1.run.app/presentador)
 (it wakes the services, which shut down by themselves when nobody uses them) and the `Pixel_9_API_36_1`
 emulator, which already has the app ready. **Empezar de nuevo** (start over), on the app's Policy screen,
 puts everything back in its initial state. Script: [docs/DEMO.en.md](docs/DEMO.en.md).
+
+## What is the product and what is only for the talk
+
+- **The product, anyone can try it:** the Escudo Android app and the web portal
+  https://escudo-web-611681112050.us-central1.run.app/ (policy, claim and repair shops, with the WebMCP
+  tools). They work on phones, tablets and computers.
+- **Only for the live demo:** the presenter view,
+  https://escudo-web-611681112050.us-central1.run.app/presentador. It is the projector screen: it shows,
+  in large type, what the agents do while the customer uses the app. It is not part of the product. On
+  a phone it reflows into a single column. `/presenter` redirects there.
+
+| Portal on a phone | Presenter on a phone |
+| --- | --- |
+| ![Portal on a 375 px phone](docs/demo/movil-poliza.png) | ![Presenter on a 375 px phone](docs/demo/movil-presentador.png) |
 
 ## Deployed URLs
 
@@ -39,7 +53,8 @@ puts everything back in its initial state. Script: [docs/DEMO.en.md](docs/DEMO.e
 | --- | --- |
 | API · MCP · chat | https://escudo-api-611681112050.us-central1.run.app (`/health`, `/mcp`, `wss://…/assistant/chat`) |
 | Agent Cards | https://escudo-api-611681112050.us-central1.run.app/a2a/escudo/.well-known/agent-card.json (also `/a2a/tow/…`, `/a2a/repair/…`) |
-| Portal · presenter | https://escudo-web-611681112050.us-central1.run.app/ · [`/presenter`](https://escudo-web-611681112050.us-central1.run.app/presenter) (`?demo=1`: recorded replay) |
+| Portal (product) | https://escudo-web-611681112050.us-central1.run.app/ |
+| Presenter (talk only) | https://escudo-web-611681112050.us-central1.run.app/presentador (`?demo=1`: recorded replay) |
 
 ## Documentation
 

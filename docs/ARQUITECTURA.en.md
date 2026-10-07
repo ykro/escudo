@@ -23,7 +23,7 @@
   (`/assistant/chat`) and three A2A agents (`/a2a/escudo`, `/a2a/tow`, `/a2a/repair`). Every call goes
   through `gateway.call_capability`, which validates input, runs the precheck, applies `autonomy.py`,
   runs the capability and writes the timeline events (validated against `contracts/events.schema.json`).
-- **`escudo-web`** (Cloud Run): the customer portal with WebMCP and the `/presenter` view, which reads
+- **`escudo-web`** (Cloud Run): the customer portal with WebMCP and the `/presentador` view, which reads
   Firestore on the server and streams it to the browser as Server-Sent Events.
 - **Escudo for Android** (phone or emulator): policy, claim, fingerprint approvals, the Escudo
   Assistant chat, FCM push and AppFunctions.
@@ -59,6 +59,6 @@ The full table, with inputs and outputs, is in [`contracts/tools.md`](../contrac
 | Agent Cards | https://escudo-api-611681112050.us-central1.run.app/a2a/escudo/.well-known/agent-card.json (also `/a2a/tow/…` and `/a2a/repair/…`) |
 | Chat | `wss://escudo-api-611681112050.us-central1.run.app/assistant/chat` (`Authorization` header) |
 | Portal | https://escudo-web-611681112050.us-central1.run.app/ |
-| Presenter | https://escudo-web-611681112050.us-central1.run.app/presenter (`?run=<id>` follows one run; `?demo=1` replays a recorded run with no cloud, labelled REPETICIÓN GRABADA) |
+| Presenter | https://escudo-web-611681112050.us-central1.run.app/presentador (`?run=<id>` follows one run; `?demo=1` replays a recorded run with no cloud, labelled REPETICIÓN GRABADA) |
 
 ![Presenter view during an approval pause](screenshots/presenter-chat-pause.png)

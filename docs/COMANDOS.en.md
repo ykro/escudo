@@ -20,7 +20,7 @@ Against the cloud (needs ADC and `.env`; see [docs/ONBOARDING.md](ONBOARDING.md)
 ```bash
 cp .env.example .env  # and fill in the secrets
 make reset CLOUD=1    # put the deployed service back in its initial state
-make scenario CLOUD=1 APPROVE_DELAY=4   # its own customer for this run; prints …/presenter?run=<id>
+make scenario CLOUD=1 APPROVE_DELAY=4   # its own customer for this run; prints …/presentador?run=<id>
 make chat-scenario CLOUD=1              # the same, typing to the assistant in the chat
 ```
 
@@ -36,7 +36,7 @@ make android-prep     # boots the emulator and gets it ready: PIN, live app, per
 # … then closes it normally: its quick-boot snapshot keeps all of it
 ```
 
-Fallbacks without commands: `/presenter?demo=1` replays a real recorded run, labelled
+Fallbacks without commands: `/presentador?demo=1` replays a real recorded run, labelled
 **REPETICIÓN GRABADA** (recorded replay), and the video [`docs/escudo-chat-run.mp4`](escudo-chat-run.mp4).
 
 ## `make` commands
@@ -47,11 +47,12 @@ From the repo root (`make help` lists them all):
 | --- | --- |
 | `make up` | Local API on `:8080` against real Firestore, Storage and Gemini (ADC, `.env`) |
 | `make up-mock` | Local API without cloud (`MOCK_AI=1 MOCK_AUTH=1`, `ADMIN_TOKEN=local-admin`, the same one `make reset` uses) |
-| `make web` | Local portal and `/presenter` on `:3217` (`npm run dev`, config in `web/.env.local`) |
+| `make web` | Local portal and `/presentador` on `:3217` (`npm run dev`, config in `web/.env.local`) |
+| `node web/e2e/responsive.mjs` | Screenshots of every page (presenter, sign-in, policy, claim, repair shops) on 375 and 414 px phones, a 768 tablet, a 1280 laptop and a 1920 projector, in `web/e2e/screenshots/responsive/`; fails if any page scrolls sideways. `ESCUDO_WEB_URL=http://localhost:3217` runs it against `make web` |
 | `make seed` | Writes policy, shops and tow providers to Firestore and creates the customer's Firebase Auth login (credentials in `.env.local`) |
 | `make reset` | `POST /admin/reset` on `ESCUDO_BASE_URL` (< 10 s). `CLOUD=1` targets the deployed service and reads the token from Secret Manager (`escudo-admin-token`). On stage, **Empezar de nuevo** (start over) in the app does the same |
 | `make test` | Backend `pytest` with `MOCK_AI=1 MOCK_AUTH=1`, Android unit tests and web `vitest` |
-| `make scenario` | Full scenario over MCP in test mode, with its own customer (`POST /admin/runs`) and a test device signing the 3 approvals; `CLOUD=1`, `APPROVE_DELAY=4`. Prints `…/presenter?run=<id>` |
+| `make scenario` | Full scenario over MCP in test mode, with its own customer (`POST /admin/runs`) and a test device signing the 3 approvals; `CLOUD=1`, `APPROVE_DELAY=4`. Prints `…/presentador?run=<id>` |
 | `make chat-scenario` | Typed-chat scenario: own customer, claim and 3 photos over REST (as the app does), then the chat; 3 signed approvals; < 3 min. Against `make up-mock` the scripted assistant answers; `CLOUD=1`, Gemini |
 | `make scenario-live` | The MCP scenario with the seeded customer (`--shared`); waits for her to approve each step in the app on the emulator |
 | `make infra` | Creates or verifies everything in GCP from an empty project: `infra/01..07` (APIs, `escudo` database, bucket, Artifact Registry, Firebase Auth via API, service accounts, Secret Manager, Escudo's own Firebase web key) |

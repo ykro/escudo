@@ -17,10 +17,13 @@ daños tarda de 6 a 15 s y cada paso del asistente de 7 a 25 s, según lo que ta
 
 | Dónde | Qué |
 | --- | --- |
-| Proyector, pantalla completa | Chrome: https://escudo-web-611681112050.us-central1.run.app/presenter |
+| Proyector, pantalla completa | Chrome: https://escudo-web-611681112050.us-central1.run.app/presentador |
 | Laptop, mitad izquierda | El emulador **Pixel_9_API_36_1** (Android Studio → **Device Manager** → ▶). La app Escudo ya está instalada, con sesión, fotos del choque en la galería y una huella registrada |
 | Laptop, junto al emulador | Los controles extendidos del emulador (botón **⋯** de su barra lateral) en **Fingerprint**: ahí está el botón **Touch sensor**, que es la huella |
 | Laptop, mitad derecha | Chrome con el portal en https://escudo-web-611681112050.us-central1.run.app/reclamo, para WebMCP |
+
+El presentador es solo la pantalla del proyector para esta demo en vivo. El producto, lo que cualquiera
+puede probar, son la app y el portal (https://escudo-web-611681112050.us-central1.run.app/).
 
 Abre el presentador unos minutos antes de empezar. Los servicios en la nube se apagan solos cuando nadie
 los usa; al abrir la página dice **«Preparando Escudo…»** mientras los despierta (unos 20 segundos) y
@@ -234,7 +237,7 @@ Esta parte necesita, una sola vez en ese Chrome, el flag `chrome://flags/#enable
 | No llega el push | Abre la pestaña **Aprobaciones**: la pendiente está ahí |
 | Estado sucio (reclamo viejo, contador raro) | **Póliza** → **Empezar de nuevo** → **Empezar** |
 | El agente de prueba de AppFunctions no aparece en recientes o no lista funciones | Salta esa demostración: el emulador arrancó desde cero y el agente necesita prepararse de nuevo (ONBOARDING, sección 9) |
-| Gemini lento o caído | https://escudo-web-611681112050.us-central1.run.app/presenter?demo=1: corrida real grabada, rotulada **REPETICIÓN GRABADA**. Dilo en voz alta |
+| Gemini lento o caído | https://escudo-web-611681112050.us-central1.run.app/presentador?demo=1: corrida real grabada, rotulada **REPETICIÓN GRABADA**. Dilo en voz alta |
 | Sin red | El video [`escudo-chat-run.mp4`](escudo-chat-run.mp4) (83 s, también rotulado como repetición) |
 | El portal dice «No pudimos iniciar sesión» | Salta la demostración de WebMCP |
 

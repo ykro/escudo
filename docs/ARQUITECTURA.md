@@ -24,7 +24,7 @@
   por `gateway.call_capability`, que valida la entrada, corre el *precheck*, aplica `autonomy.py`,
   ejecuta la capacidad y escribe los eventos de la línea de tiempo (validados contra
   `contracts/events.schema.json`).
-- **`escudo-web`** (Cloud Run): portal de la clienta con WebMCP y la vista `/presenter`, que lee
+- **`escudo-web`** (Cloud Run): portal de la clienta con WebMCP y la vista `/presentador`, que lee
   Firestore en el servidor y lo envía al navegador por Server-Sent Events.
 - **Escudo para Android** (teléfono o emulador): póliza, reclamo, aprobaciones con huella, chat con el
   Asistente Escudo, push FCM y AppFunctions.
@@ -60,6 +60,6 @@ La tabla completa, con entradas y salidas, está en [`contracts/tools.md`](../co
 | Agent Cards | https://escudo-api-611681112050.us-central1.run.app/a2a/escudo/.well-known/agent-card.json (también `/a2a/tow/…` y `/a2a/repair/…`) |
 | Chat | `wss://escudo-api-611681112050.us-central1.run.app/assistant/chat` (cabecera `Authorization`) |
 | Portal | https://escudo-web-611681112050.us-central1.run.app/ |
-| Presentador | https://escudo-web-611681112050.us-central1.run.app/presenter (`?run=<id>` sigue una corrida; `?demo=1` reproduce una grabada sin nube, rotulada REPETICIÓN GRABADA) |
+| Presentador | https://escudo-web-611681112050.us-central1.run.app/presentador (`?run=<id>` sigue una corrida; `?demo=1` reproduce una grabada sin nube, rotulada REPETICIÓN GRABADA) |
 
 ![Vista del presentador durante una pausa de aprobación](screenshots/presenter-chat-pause.png)

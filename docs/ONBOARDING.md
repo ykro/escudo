@@ -195,10 +195,13 @@ En orden:
 `.env.example` y, encima, de `.env`.
 
 Los dos servicios escalan a cero cuando nadie los usa (`min-instances=0`, sin costo en reposo) y
-arrancan con *startup CPU boost*. Abrir `/presenter` los despierta: la página llama a
-`/api/presenter/wake` (`web/src/app/api/presenter/wake/route.ts`), que toca `/health` y las tres
-Agent Cards del API, y muestra «Preparando Escudo…» hasta que responden (unos 20 s en frío, porque el
-API también despierta a sus socios A2A al arrancar). Nadie tiene que calentar nada el día de la charla.
+arrancan con *startup CPU boost* en el entorno de ejecución de primera generación: medido el 6 de
+octubre, una instancia nueva del API queda lista en unos 13 s, contra 20 s en el de segunda generación
+(con 2 vCPU no bajó: el tiempo se va en arrancar el contenedor e importar Python). Abrir `/presentador`
+los despierta: la página llama a `/api/presenter/wake` (`web/src/app/api/presenter/wake/route.ts`), que
+toca primero `/health` sola (cuatro llamadas a la vez a un servicio dormido arrancan hasta tres
+instancias) y luego las tres Agent Cards, y muestra «Preparando Escudo…» hasta que responden. Nadie
+tiene que calentar nada el día de la charla.
 
 URLs resultantes: ver «URLs desplegadas» en [ARQUITECTURA.md](ARQUITECTURA.md#urls-desplegadas).
 
@@ -219,7 +222,7 @@ Notas:
 - `make scenario` usa `ESCUDO_BASE_URL` (por defecto local; `CLOUD=1` para el desplegado). Cada corrida
   pide su propio cliente con `POST /admin/runs` (token de admin: `ADMIN_TOKEN` en local, Secret Manager
   con `CLOUD=1`), inicia sesión con ese usuario de Firebase (`FIREBASE_WEB_API_KEY`), registra un
-  dispositivo de prueba nuevo, manda `X-Escudo-Run-Id` e imprime `…/presenter?run=<id>`. Así dos
+  dispositivo de prueba nuevo, manda `X-Escudo-Run-Id` e imprime `…/presentador?run=<id>`. Así dos
   corridas a la vez no se pisan, ni pisan a la clienta del escenario. `--auto-approve` solo se acepta
   junto con `--test-mode`: en una corrida real aprueba la clienta. `APPROVE_DELAY=4` deja la pausa en
   pantalla 4 s. `make reset` borra los clientes de corrida, sus usuarios y sus dispositivos.
@@ -235,14 +238,14 @@ Notas:
   `clm_96051512` ya no rompe la corrida.
 - Línea de tiempo coherente: cada evento lleva el `run_id` de la corrida (`X-Escudo-Run-Id`) o, si no
   viene, el de la clienta (`Caller.timeline_run_id`), así que una llamada suelta por MCP, WebMCP o AppFunctions
-  con la misma clienta cae en la misma línea de tiempo. `/presenter` sin `?run` sigue la corrida del
+  con la misma clienta cae en la misma línea de tiempo. `/presentador` sin `?run` sigue la corrida del
   reclamo más reciente y no salta a otra por un evento suelto.
 - Cada llamada al modelo del chat tiene un límite de 30 s (`CHAT_MODEL_TIMEOUT_SECONDS`, con reintentos):
   si Gemini se queda colgado, el turno reintenta en vez de detener el escenario.
 - `make scenario-live` usa la clienta sembrada (`--shared`) y espera a que apruebes en la app del emulador
   (sondea `GET /approvals`).
-- Web local: `make web` levanta el portal en `http://localhost:3217`. `/presenter` lee Firestore en el
-  servidor con tu ADC; `/presenter?demo=1` reproduce una corrida real por chat grabada
+- Web local: `make web` levanta el portal en `http://localhost:3217`. `/presentador` lee Firestore en el
+  servidor con tu ADC; `/presentador?demo=1` reproduce una corrida real por chat grabada
   (`web/src/lib/fixtures/scenario-events.json`, corrida `run-6958m5`) sin nube, rotulada
   **REPETICIÓN GRABADA** («Reclamo grabado», teléfono «grabado»): nunca dice «en vivo».
 - Respaldo sin red: el video `docs/escudo-chat-run.mp4` (83 s: la misma corrida grabada, también
@@ -341,7 +344,7 @@ se deriva de `escudo.apiUrl` (`wss://…/assistant/chat`).
 
 | Qué | Cómo |
 | --- | --- |
-| Servicios dormidos | `/presenter` los despierta al abrirse y muestra «Preparando Escudo…» hasta que responden (sección 5) |
+| Servicios dormidos | `/presentador` los despierta al abrirse y muestra «Preparando Escudo…» hasta que responden (sección 5) |
 | Estado de un ensayo anterior | **Póliza** → **Empezar de nuevo** en la app (`POST /demo/restart`): vuelve a la siembra y reinicia las pantallas de la app |
 | Horarios de talleres vencidos | El API reescribe la siembra cada vez que arranca: los horarios siempre empiezan mañana |
 | Token de notificaciones | La app lo registra sola cada vez que arranca su proceso; reiniciar la demo conserva los dispositivos con llave |
@@ -374,7 +377,7 @@ Necesita el permiso de sistema `EXECUTE_APP_FUNCTIONS`, que solo obtiene si se a
 En el emulador: ábrelo desde recientes o desde su ícono → buscador → **Escudo** (fijada) → aparecen
 `getClaimStatus`, `reportAccident` y `getCoverage`. **getCoverage** con `incidentType` = `collision` →
 **Run** muestra póliza, vehículo, coberturas y deducible; **getClaimStatus** sin parámetros muestra el
-reclamo activo. Cada llamada viaja con `X-Escudo-Surface: appfunctions`, así que aparece en `/presenter`
+reclamo activo. Cada llamada viaja con `X-Escudo-Surface: appfunctions`, así que aparece en `/presentador`
 con su insignia y como **Agente externo**. Más detalle en [`android/APPFUNCTIONS.md`](../android/APPFUNCTIONS.md).
 
 Si el emulador arrancó desde cero (sin snapshot), el agente ya no tiene el permiso: `make android-prep`
@@ -395,7 +398,7 @@ adb shell "cmd app_function execute-app-function --package app.escudo.android \
    portal dice «WebMCP · 4 herramientas disponibles…».
 3. DevTools (`⌥⌘I`) → **Application** → **WebMCP**: aparecen `getCoverage`, `getDeductible`,
    `findRepairShops` y `getClaimStatus` con su descripción y esquema. Elegir `getDeductible` → **Run tool**
-   → `{"deductible_usd": 500, …}`; `/presenter` muestra el paso con la insignia **WebMCP**, como
+   → `{"deductible_usd": 500, …}`; `/presentador` muestra el paso con la insignia **WebMCP**, como
    **Agente externo**, en la línea de tiempo del reclamo activo de Andrea.
 
 ## 10. Recorrido por el código: una llamada a través de todas las capas
@@ -491,12 +494,12 @@ el agente A2A (`agents/escudo_agent.build_a2a_agent`) o una AppFunction (que lla
 | `make -C android chat-scenario` → «No running emulator for AVD Pixel_9_API_36_1» o «not on screen» | Arranca el emulador con `make android-emulator` (otro AVD no cuenta). Revisa también que haya tres fotos en la galería y que la app esté instalada con sesión iniciada |
 | `make -C android chat-scenario` → «no biometric prompt» o «approval not granted» | No hay huella registrada: `make android-prep` (sección 8.3) |
 | El portal dice «WebMCP no está activo en este navegador» | Activa `chrome://flags/#enable-webmcp-testing` y relanza Chrome 150+ |
-| `/presenter` vacío en local | `make web` lee Firestore con tu ADC; usa `/presenter?demo=1` sin nube |
+| `/presentador` vacío en local | `make web` lee Firestore con tu ADC; usa `/presentador?demo=1` sin nube |
 | La evaluación de fotos tarda mucho | El perito lanza una llamada de respaldo cada 5 s (hasta 4, gana la primera; límite 45 s, después `assessment_unavailable`). Si `global` está lento para todos, ninguna gana antes: los tiempos quedan en los logs como `assessment_timing` |
 | El chat no sigue solo después de aprobar | La aprobación se decidió con otra conversación cerrada: reabre el chat con la cabecera `X-Escudo-Chat-Session` (la app la guarda) o escribe «sigue» |
 | `make scenario` → 401 en `/admin/runs` | Token de admin distinto al del servidor local (ver fila de `make reset`) o sin acceso a Secret Manager (`CLOUD=1`) |
 | Portal: «No pudimos iniciar sesión», o el corredor recibe 403 `Requests from referer … are blocked` | La «Escudo web key» no acepta ese origen. Agrega el origen a sus referrers en `infra/07-web-api-key.sh` y vuelve a correrlo (en local, la web debe estar en `:3217`) |
-| El chat se queda «pensando» más de 30 s | Gemini tardó; cada llamada se corta a los 30 s y se reintenta. Si se repite, `global` está lento: usa la repetición grabada (`/presenter?demo=1`) |
+| El chat se queda «pensando» más de 30 s | Gemini tardó; cada llamada se corta a los 30 s y se reintenta. Si se repite, `global` está lento: usa la repetición grabada (`/presentador?demo=1`) |
 
 ## 12. Lista del día de la charla
 
@@ -516,7 +519,7 @@ el agente A2A (`agents/escudo_agent.build_a2a_agent`) o una AppFunction (que lla
 
 **El día de la charla (sin comandos)**
 
-- [ ] Chrome con https://escudo-web-611681112050.us-central1.run.app/presenter a pantalla completa en el
+- [ ] Chrome con https://escudo-web-611681112050.us-central1.run.app/presentador a pantalla completa en el
       proyector, unos minutos antes: «Preparando Escudo…» y después «Listo para empezar».
 - [ ] El emulador `Pixel_9_API_36_1` desde Android Studio (**Device Manager** → ▶). Si pide PIN: `1234`.
 - [ ] Si el presentador muestra un reclamo viejo: en la app, **Póliza** → **Empezar de nuevo** → **Empezar**.
@@ -526,7 +529,7 @@ el agente A2A (`agents/escudo_agent.build_a2a_agent`) o una AppFunction (que lla
 
 **Si algo falla en vivo**
 
-- Gemini lento o caído: https://escudo-web-611681112050.us-central1.run.app/presenter?demo=1 (se ve
+- Gemini lento o caído: https://escudo-web-611681112050.us-central1.run.app/presentador?demo=1 (se ve
   **REPETICIÓN GRABADA**: dilo en voz alta).
 - Sin red: el video `docs/escudo-chat-run.mp4`.
 - Estado sucio: **Empezar de nuevo** en la app.
