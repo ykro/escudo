@@ -21,7 +21,7 @@ pytestmark = pytest.mark.anyio
 
 TOKENS = {
     "tok-andrea": {"uid": "u-andrea", "customer_id": "cus_demo"},  # seeded login: custom claim
-    "tok-stranger": {"uid": "u-stranger"},  # verified, but no customer claim
+    "tok-stranger": {"uid": "u-stranger"},  # verified Firebase user (anyone can sign up), no customer claim
 }
 A2A_MESSAGE = {"jsonrpc": "2.0", "id": "1", "method": "SendMessage",
                "params": {"message": {"messageId": "m1", "role": "ROLE_USER", "parts": [{"text": "¿Cómo va mi reclamo?"}]}}}
@@ -60,8 +60,10 @@ async def test_mcp_acts_as_the_customer_in_the_token(real_auth_app):
     andrea = await mcp_tool(real_auth_app, "tok-andrea", "get_policy")
     assert not andrea.is_error and json.loads(andrea.content[0].text)["holder"]["customer_id"] == "cus_demo"
 
-    stranger = await mcp_tool(real_auth_app, "tok-stranger", "get_policy")
-    assert stranger.is_error and "policy_not_found" in stranger.content[0].text  # not the demo customer's policy
+    async with http_as(real_auth_app, "tok-stranger") as http:  # a signed-up user who isn't a customer
+        r = await http.post("/mcp", json={"jsonrpc": "2.0", "id": 1, "method": "tools/list"},
+                            headers={"Accept": "application/json, text/event-stream"})
+        assert r.status_code == 401
 
 
 async def test_mcp_without_a_valid_token_is_refused(real_auth_app):
@@ -78,8 +80,8 @@ async def test_mcp_without_a_valid_token_is_refused(real_auth_app):
 async def test_rest_is_scoped_to_the_token_customer(real_auth_app):
     async with http_as(real_auth_app, "tok-andrea") as andrea, http_as(real_auth_app, "tok-stranger") as stranger:
         claim = (await andrea.post("/claims", json={"description": "Choque menor"})).json()
-        assert (await stranger.get(f"/claims/{claim['claim_id']}")).status_code == 404
-        assert (await stranger.get("/policy")).status_code == 404
+        assert (await stranger.get(f"/claims/{claim['claim_id']}")).status_code == 401
+        assert (await stranger.get("/policy")).status_code == 401
         assert (await andrea.get(f"/claims/{claim['claim_id']}")).status_code == 200
 
 
@@ -107,8 +109,7 @@ async def test_escudo_agent_answers_as_the_authenticated_customer(real_auth_app)
     async with http_as(real_auth_app, "tok-andrea") as andrea:
         assert claim["claim_id"] in json.dumps(answer(await andrea.post("/a2a/escudo", json=A2A_MESSAGE)))
     async with http_as(real_auth_app, "tok-stranger") as stranger:
-        text = json.dumps(answer(await stranger.post("/a2a/escudo", json=A2A_MESSAGE)), ensure_ascii=False)
-        assert claim["claim_id"] not in text and "no_claims" in text
+        assert (await stranger.post("/a2a/escudo", json=A2A_MESSAGE)).status_code == 401
     async with http_as(real_auth_app) as partner:
         r = await partner.post("/a2a/escudo", json=A2A_MESSAGE,
                                headers={"X-Escudo-A2A-Key": "partner-secret", "X-Escudo-Customer-Id": "cus_demo"})

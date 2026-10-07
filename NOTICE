@@ -1,0 +1,15 @@
+Escudo
+Copyright 2026 Adrián Catalán
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Third-party material included in this repository:
+- Onest typeface (web/src/app/fonts/Onest-Variable.woff2, android/app/src/main/res/font/onest.ttf):
+  SIL Open Font License 1.1. License text: web/src/app/fonts/Onest-OFL.txt and
+  android/design/a-sereno/Onest-OFL.txt.
+
+Generated material: the crash photos, logo and mockups were generated with gemini-3.1-flash-lite-image
+(prompts stored next to each file). All people, companies, plates, phone numbers and addresses in the
+seed data are fictional. Full inventory: data/SOURCES.md and docs/CREDITOS.md.
+
+Dependencies are installed from their registries (uv, npm, Gradle) and keep their own licenses.

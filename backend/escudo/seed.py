@@ -72,7 +72,7 @@ TOW_SEED = [
     {
         "provider_id": "tow_express",
         "name": "Grúas Express Guate",
-        "phone": "+502 2200-1100",
+        "phone": "+502 0000-1100",
         "base": {"lat": 14.6180, "lng": -90.5260},
         "avg_speed_kmh": 28,
         "dispatch_minutes": 6,
@@ -80,7 +80,7 @@ TOW_SEED = [
     {
         "provider_id": "tow_sur",
         "name": "Auxilio Vial del Sur",
-        "phone": "+502 2200-2200",
+        "phone": "+502 0000-2200",
         "base": {"lat": 14.5400, "lng": -90.5500},
         "avg_speed_kmh": 35,
         "dispatch_minutes": 9,

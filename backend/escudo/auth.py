@@ -1,8 +1,10 @@
 """Customer identity: Firebase ID tokens (MOCK_AUTH=1 accepts anything, for local tests).
 
 Every surface acts as the customer named in the verified token: the seeded login
-(`make seed`) carries a `customer_id` custom claim; a user without that claim is
-their own customer (uid), so they see no policy and no claims. Only MOCK_AUTH=1
+(`make seed`) and each run customer carry a `customer_id` custom claim, set only with the Admin
+SDK. A token without that claim is refused: the Firebase project allows anonymous and
+email sign-up, so any visitor could get a valid token, and the assistant spends Gemini on
+every turn. Only MOCK_AUTH=1
 (local tests) maps every caller to the demo customer. The token still matters — it is what makes
 an MCP client, the assistant or the app act *as the customer*.
 """
@@ -56,7 +58,9 @@ class Authenticator:
             except Exception as exc:  # expired, revoked, wrong project, malformed...
                 raise Unauthorized("invalid_token", "Tu sesión expiró o no es válida. Vuelve a iniciar sesión.") from exc
             uid = claims["uid"]
-            customer_id = claims.get("customer_id") or uid
+            customer_id = claims.get("customer_id")
+            if not customer_id:
+                raise Unauthorized("not_a_customer", "Esta cuenta no es una clienta de Escudo.")
             self._cache[token] = (min(claims.get("exp", 0), time.time() + 300), f"{uid}|{customer_id}")
         uid, _, customer_id = self._cache[token][1].partition("|")
         return Identity(uid=uid, customer_id=customer_id)

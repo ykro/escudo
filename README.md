@@ -63,3 +63,14 @@ inicial. Guion: [docs/DEMO.md](docs/DEMO.md).
 - [Arquitectura](docs/ARQUITECTURA.md) · [Comandos](docs/COMANDOS.md) · [Estructura del repo](docs/ESTRUCTURA.md)
 - [Decisiones técnicas y versiones](docs/DECISIONES.md) · [Créditos y procedencia](docs/CREDITOS.md)
 - Contratos: [herramientas](contracts/tools.md), [API REST](contracts/openapi.yaml), [eventos](contracts/events.schema.json)
+
+## Usar tu propio proyecto de Google Cloud
+
+Los scripts de `infra/` usan `PROJECT_ID` (por defecto el proyecto de la charla). Para desplegar en el tuyo:
+`PROJECT_ID=<tu-proyecto> make infra && PROJECT_ID=<tu-proyecto> make deploy`, y pon el mismo ID en
+`.env` y `web/.env.local`. El detalle está en la [guía de incorporación](docs/ONBOARDING.md).
+
+## Licencia
+
+Código bajo [Apache 2.0](LICENSE). La tipografía Onest es SIL OFL 1.1; las imágenes son sintéticas y todos
+los datos son ficticios ([NOTICE](NOTICE), [créditos](docs/CREDITOS.md)).

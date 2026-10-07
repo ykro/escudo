@@ -20,3 +20,4 @@ local.properties
 *.keystore
 *.pem
 *service-account*.json
+google-services.json

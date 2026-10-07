@@ -63,3 +63,14 @@ puts everything back in its initial state. Script: [docs/DEMO.en.md](docs/DEMO.e
 - [Architecture](docs/ARQUITECTURA.en.md) · [Commands](docs/COMANDOS.en.md) · [Repo structure](docs/ESTRUCTURA.en.md)
 - [Technical decisions and versions](docs/DECISIONES.en.md) · [Credits and provenance](docs/CREDITOS.en.md)
 - Contracts: [tools](contracts/tools.md), [REST API](contracts/openapi.yaml), [events](contracts/events.schema.json)
+
+## Use your own Google Cloud project
+
+The `infra/` scripts read `PROJECT_ID` (the talk's project by default). To deploy to yours:
+`PROJECT_ID=<your-project> make infra && PROJECT_ID=<your-project> make deploy`, and put the same ID in
+`.env` and `web/.env.local`. Details in the [onboarding guide](docs/ONBOARDING.md) (Spanish).
+
+## License
+
+Code under [Apache 2.0](LICENSE). The Onest typeface is SIL OFL 1.1; images are synthetic and all data is
+fictional ([NOTICE](NOTICE), [credits](docs/CREDITOS.en.md)).
