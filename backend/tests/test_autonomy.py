@@ -77,3 +77,15 @@ def test_args_hash_is_canonical():
     h = approvals.args_hash
     assert h("t", {"a": 1, "b": 2}) == h("t", {"b": 2, "a": 1}) == h("t", {"a": 1, "b": 2, "approval_id": "x", "c": None})
     assert h("t", {"a": 1}) != h("u", {"a": 1}) != h("t", {"a": 2})
+
+
+async def test_mcp_annotations_are_hints_that_match_the_table(mcp):
+    """Read-only tools say so; every tool that needs approval is not read-only (hints only: the gateway decides)."""
+    tools = {t.name: t for t in (await mcp.list_tools()).tools}
+    for name, tool in tools.items():
+        ann = tool.annotations
+        assert ann is not None, name
+        if AUTONOMY[name].level is Level.NEEDS_APPROVAL:
+            assert ann.read_only_hint is False, name
+    assert tools["get_policy"].annotations.read_only_hint is True
+    assert tools["request_tow"].annotations.open_world_hint is True

@@ -16,6 +16,7 @@ from mcp.server.auth.provider import AccessToken
 from mcp.server.auth.settings import AuthSettings
 from mcp.server.mcpserver import Context, MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
+from mcp.types import ToolAnnotations
 from pydantic import Field
 
 from ..auth import bearer
@@ -127,18 +128,27 @@ def build_mcp(services: Services) -> MCPServer:
     def describe(name: str) -> str:
         return REGISTRY[name].description
 
-    @mcp.tool(description=describe("get_policy"))
+    # MCP tool annotations: hints for the client (the spec says to treat them as untrusted).
+    # Approval is enforced by the gateway's autonomy table, never by these hints.
+    read_only = {"get_policy", "check_coverage", "list_repair_options", "get_claim_status"}
+    open_world = {"request_tow", "list_repair_options"}  # they reach partner companies over A2A
+
+    def hints(name: str) -> ToolAnnotations:
+        return ToolAnnotations(read_only_hint=name in read_only, destructive_hint=False,
+                               idempotent_hint=name in read_only, open_world_hint=name in open_world)
+
+    @mcp.tool(description=describe("get_policy"), annotations=hints("get_policy"))
     async def get_policy(ctx: Context) -> dict[str, Any]:
         return await invoke(ctx, "get_policy", {})
 
-    @mcp.tool(description=describe("check_coverage"))
+    @mcp.tool(description=describe("check_coverage"), annotations=hints("check_coverage"))
     async def check_coverage(
         ctx: Context,
         incident_type: str = Field(description="collision, theft, towing, rental_car or third_party (Spanish words work too)"),
     ) -> dict[str, Any]:
         return await invoke(ctx, "check_coverage", {"incident_type": incident_type})
 
-    @mcp.tool(description=describe("open_claim"))
+    @mcp.tool(description=describe("open_claim"), annotations=hints("open_claim"))
     async def open_claim(
         ctx: Context,
         description: str = Field(description="What happened, in the customer's words"),
@@ -148,7 +158,7 @@ def build_mcp(services: Services) -> MCPServer:
         args = {"description": description, "location": location.model_dump() if location else None, "occurred_at": occurred_at}
         return await invoke(ctx, "open_claim", {k: v for k, v in args.items() if v is not None})
 
-    @mcp.tool(description=describe("attach_claim_photos"))
+    @mcp.tool(description=describe("attach_claim_photos"), annotations=hints("attach_claim_photos"))
     async def attach_claim_photos(
         ctx: Context,
         claim_id: str,
@@ -156,23 +166,23 @@ def build_mcp(services: Services) -> MCPServer:
     ) -> dict[str, Any]:
         return await invoke(ctx, "attach_claim_photos", {"claim_id": claim_id, "photos": photos})
 
-    @mcp.tool(description=describe("request_tow"))
+    @mcp.tool(description=describe("request_tow"), annotations=hints("request_tow"))
     async def request_tow(ctx: Context, claim_id: str) -> dict[str, Any]:
         return await invoke(ctx, "request_tow", {"claim_id": claim_id})
 
-    @mcp.tool(description=describe("list_repair_options"))
+    @mcp.tool(description=describe("list_repair_options"), annotations=hints("list_repair_options"))
     async def list_repair_options(ctx: Context, claim_id: str) -> dict[str, Any]:
         return await invoke(ctx, "list_repair_options", {"claim_id": claim_id})
 
-    @mcp.tool(description=describe("request_rental_car"))
+    @mcp.tool(description=describe("request_rental_car"), annotations=hints("request_rental_car"))
     async def request_rental_car(ctx: Context, claim_id: str, approval_id: str | None = APPROVAL_ID) -> dict[str, Any]:
         return await invoke(ctx, "request_rental_car", {"claim_id": claim_id}, approval_id)
 
-    @mcp.tool(description=describe("accept_deductible"))
+    @mcp.tool(description=describe("accept_deductible"), annotations=hints("accept_deductible"))
     async def accept_deductible(ctx: Context, claim_id: str, approval_id: str | None = APPROVAL_ID) -> dict[str, Any]:
         return await invoke(ctx, "accept_deductible", {"claim_id": claim_id}, approval_id)
 
-    @mcp.tool(description=describe("select_repair_shop"))
+    @mcp.tool(description=describe("select_repair_shop"), annotations=hints("select_repair_shop"))
     async def select_repair_shop(
         ctx: Context,
         claim_id: str,
@@ -182,11 +192,11 @@ def build_mcp(services: Services) -> MCPServer:
     ) -> dict[str, Any]:
         return await invoke(ctx, "select_repair_shop", {"claim_id": claim_id, "shop_id": shop_id, "slot": slot}, approval_id)
 
-    @mcp.tool(description=describe("sign_claim"))
+    @mcp.tool(description=describe("sign_claim"), annotations=hints("sign_claim"))
     async def sign_claim(ctx: Context, claim_id: str, approval_id: str | None = APPROVAL_ID) -> dict[str, Any]:
         return await invoke(ctx, "sign_claim", {"claim_id": claim_id}, approval_id)
 
-    @mcp.tool(description=describe("get_claim_status"))
+    @mcp.tool(description=describe("get_claim_status"), annotations=hints("get_claim_status"))
     async def get_claim_status(
         ctx: Context, claim_id: str | None = Field(default=None, description="Omit for the latest claim")
     ) -> dict[str, Any]:
