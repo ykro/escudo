@@ -262,7 +262,7 @@ async def main() -> int:
     session = await prepare_run(base, isolated=not args.shared and args.auto_approve, token=args.token)
     print(f"\nEscudo · escenario vía MCP contra {base} · {session.label}")
     if session.run_id:
-        print(f"Presentador: {WEB_URL}/presenter?run={session.run_id}")
+        print(f"Presentador: {WEB_URL}/presentador?run={session.run_id}")
     print()
     headers = session.headers()
     async with httpx2.AsyncClient(base_url=base, headers=headers, timeout=120) as http:

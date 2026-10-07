@@ -200,7 +200,7 @@ paths:
   /admin/runs:
     post:
       operationId: createRun
-      description: "Creates an isolated, ephemeral customer for one scenario run: its own policy (same coverage as the seed), Firebase Auth user (custom claim customer_id) and run id. Send the run id as X-Escudo-Run-Id so the presenter can follow it (/presenter?run=<run_id>). POST /admin/reset removes every run customer, user and device. Requires ADMIN_TOKEN."
+      description: "Creates an isolated, ephemeral customer for one scenario run: its own policy (same coverage as the seed), Firebase Auth user (custom claim customer_id) and run id. Send the run id as X-Escudo-Run-Id so the presenter can follow it (/presentador?run=<run_id>). POST /admin/reset removes every run customer, user and device. Requires ADMIN_TOKEN."
       security: [{ adminToken: [] }]
       responses:
         '201':

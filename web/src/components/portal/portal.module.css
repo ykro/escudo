@@ -245,3 +245,10 @@
   .stepper { grid-template-columns: repeat(3, 1fr); row-gap: var(--s4); }
   .fact { grid-template-columns: 1fr; gap: var(--s1); }
 }
+
+@media (max-width: 480px) {
+  .stepper { grid-template-columns: repeat(2, 1fr); }
+  .shopHead { flex-wrap: wrap; row-gap: var(--s1); }
+  .shopHead h2, .shopQuote { font-size: 20px; }
+  .log li { grid-template-columns: 1fr; gap: 2px; }
+}

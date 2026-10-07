@@ -32,16 +32,16 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID=${PROJECT_ID}
 ENV
 
 # Scales to zero between talks (min-instances 0); its cold start is a few seconds, and opening
-# /presenter wakes the API too. no-cpu-throttling + 1 h timeout: the presenter keeps a Server-Sent
+# /presentador wakes the API too. no-cpu-throttling + 1 h timeout: the presenter keeps a Server-Sent
 # Events stream open for the whole talk.
 deploy_run "$SERVICE" "$STAGE" \
   --service-account="$SA" \
   --allow-unauthenticated \
-  --min-instances=0 --max-instances=2 --cpu-boost \
+  --min-instances=0 --max-instances=2 --cpu-boost --execution-environment=gen1 \
   --cpu=1 --memory=512Mi --no-cpu-throttling --timeout=3600 \
   --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT_ID},FIRESTORE_DATABASE=${FIRESTORE_DATABASE}"
 
 URL="https://${SERVICE}-${PROJECT_NUMBER}.${REGION}.run.app"
 say "Deployed: $URL"
 echo "  Portal:     $URL/"
-echo "  Presenter:  $URL/presenter"
+echo "  Presentador: $URL/presentador"

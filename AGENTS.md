@@ -77,7 +77,7 @@ Tow and repair live in the same service for simplicity, but they only talk to th
 - Registered tools: `getCoverage`, `getDeductible`, `findRepairShops`, `getClaimStatus`.
 - Tested in Chrome with the WebMCP implementation available at build time (record version). On stage WebMCP is a short aside.
 
-## Presenter view (`escudo-web` route `/presenter`)
+## Presenter view (`escudo-web` route `/presentador`; `/presenter` redirects)
 
 - Live timeline of every step: which agent acts, through which surface (Android, web, MCP, A2A), which tool, the result.
 - Approval pauses stand out with the reason until the customer approves.

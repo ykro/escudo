@@ -33,14 +33,16 @@ ENV_VARS+=",GEMINI_MODEL=${GEMINI_MODEL}"
 ENV_VARS+=",FIRESTORE_DATABASE=${FIRESTORE_DATABASE},CLAIMS_BUCKET=${CLAIMS_BUCKET},DEMO_CUSTOMER_ID=${DEMO_CUSTOMER_ID}"
 ENV_VARS+=",PUBLIC_BASE_URL=${URL},A2A_PEERS=${URL}/a2a/tow;${URL}/a2a/repair,MOCK_AI=0,MOCK_AUTH=0"
 
-# Scales to zero between talks (min-instances 0, no cost at rest). Opening /presenter wakes it
-#   (escudo-web's /api/presenter/wake) and startup CPU boost shortens that cold start. Up to 3
+# Scales to zero between talks (min-instances 0, no cost at rest). Opening /presentador wakes it
+#   (escudo-web's /api/presenter/wake) and startup CPU boost shortens that cold start. First generation
+#   execution environment: measured 2026-10-06, a new instance was ready in ~13 s on gen1 against ~20 s
+#   on gen2 (2 vCPU didn't help: the time is container start and Python imports). Up to 3
 #   instances: chat transcripts and approval waits live in Firestore, so any instance can serve any
 #   request. no-cpu-throttling + 1 h timeout: chat WebSockets stay open during the talk.
 deploy_run "$SERVICE" "$STAGE" \
   --service-account="$SA" \
   --allow-unauthenticated \
-  --min-instances=0 --max-instances=3 --cpu-boost --concurrency=80 \
+  --min-instances=0 --max-instances=3 --cpu-boost --concurrency=80 --execution-environment=gen1 \
   --cpu=1 --memory=1Gi --no-cpu-throttling --timeout=3600 --session-affinity \
   --set-env-vars="^@^$(echo "$ENV_VARS" | tr ',' '@' | tr ';' ',')" \
   --set-secrets="ADMIN_TOKEN=escudo-admin-token:latest,A2A_SHARED_SECRET=escudo-a2a-secret:latest"

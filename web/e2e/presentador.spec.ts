@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test.use({ viewport: { width: 1920, height: 1080 } });
 
 test("presenter replays a run: pause in amber, 3 approvals, clock stops when signed", async ({ page }) => {
-  await page.goto("/presenter?demo=1");
+  await page.goto("/presentador?demo=1");
   await expect(page.getByRole("heading", { name: "Reclamo grabado" })).toBeVisible();
   await expect(page.getByText("REPETICIÓN GRABADA", { exact: true })).toBeVisible();
 

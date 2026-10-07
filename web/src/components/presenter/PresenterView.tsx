@@ -11,16 +11,25 @@ import styles from "./presenter.module.css";
 const STAGE_W = 1920;
 const STAGE_H = 1080;
 
-/** Scales the fixed 1920×1080 stage to any projector without reflowing the layout. */
-function useStageScale(): number {
-  const [scale, setScale] = useState(1);
+// Below this width, or in portrait, the scaled stage would be unreadably small (a phone shows it at
+// a fifth of its size): the same content reflows into a single readable column instead.
+const FLOW_MAX_WIDTH = 1000;
+
+/** Scales the fixed 1920×1080 stage to any projector without reflowing the layout; on phones and
+ *  portrait tablets it switches to the flowing layout. */
+function useStageLayout(): { scale: number; flow: boolean } {
+  const [layout, setLayout] = useState({ scale: 1, flow: false });
   useEffect(() => {
-    const fit = () => setScale(Math.min(window.innerWidth / STAGE_W, window.innerHeight / STAGE_H));
+    const fit = () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      setLayout({ scale: Math.min(w / STAGE_W, h / STAGE_H), flow: w < FLOW_MAX_WIDTH || w < h });
+    };
     fit();
     window.addEventListener("resize", fit);
     return () => window.removeEventListener("resize", fit);
   }, []);
-  return scale;
+  return layout;
 }
 
 function useNow(active: boolean): number {
@@ -44,16 +53,16 @@ export function PresenterView({ demo, run }: { demo: boolean; run?: string }) {
   }, [feed.claims, feed.approvals, state.claimId]);
   const running = Boolean(state.startedAt && !state.endedAt);
   const now = useNow(running);
-  const scale = useStageScale();
+  const { scale, flow } = useStageLayout();
 
   const elapsed = state.startedAt ? clock(state.startedAt, state.endedAt ?? new Date(now).toISOString()) : "00:00";
   const approvals = Math.min(state.approvalsGranted, EXPECTED_APPROVALS);
 
   return (
-    <div className={styles.viewport}>
+    <div className={`${styles.viewport} ${flow ? styles.flow : ""}`}>
       <main
         className={styles.stage}
-        style={{ transform: `translate(-50%, -50%) scale(${scale})` }}
+        style={flow ? undefined : { transform: `translate(-50%, -50%) scale(${scale})` }}
         aria-label={demo ? "Vista del presentador: repetición grabada" : "Vista del presentador: reclamo en vivo"}
       >
         <header className={styles.header}>

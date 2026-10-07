@@ -8,5 +8,5 @@ export default defineConfig({
   testDir: "e2e",
   timeout: 90_000,
   use: { baseURL, channel: "chrome" },
-  webServer: process.env.E2E_BASE_URL ? undefined : { command: "npm run dev", url: `${baseURL}/presenter?demo=1`, reuseExistingServer: true },
+  webServer: process.env.E2E_BASE_URL ? undefined : { command: "npm run dev", url: `${baseURL}/presentador?demo=1`, reuseExistingServer: true },
 });

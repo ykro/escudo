@@ -1,10 +1,11 @@
 # Escudo web
 
 Portal del cliente (póliza, coberturas, deducible, talleres, reclamo) con **WebMCP**, y la vista
-**/presenter** para la charla. Next.js 16 en Cloud Run (`escudo-web`).
+**/presentador**, que es solo para el proyector durante la charla. Next.js 16 en Cloud Run (`escudo-web`).
 
-- Portal: https://escudo-web-611681112050.us-central1.run.app/
-- Presentador: https://escudo-web-611681112050.us-central1.run.app/presenter (sin login; `?run=<id>` sigue
+- Portal (el producto, lo puede probar cualquiera con una cuenta): https://escudo-web-611681112050.us-central1.run.app/
+- Presentador (solo para el proyector en la demo en vivo): https://escudo-web-611681112050.us-central1.run.app/presentador
+  (`/presenter` redirige aquí; sin login; `?run=<id>` sigue
   una corrida —la imprimen `make scenario` y `make chat-scenario`—, sin `?run` la más reciente; `?demo=1`
   reproduce una corrida grabada, sin nube)
 
@@ -13,6 +14,7 @@ npm install
 npm run dev          # http://localhost:3217 (usa .env.local; ver .env.example)
 npm test             # unitarias (vitest)
 npm run e2e          # Playwright con Chrome: presentador en modo demo
+node e2e/responsive.mjs   # (desde escudo/) capturas de cada página en teléfono, tableta, laptop y proyector
 set -a; source ../.env.local; set +a
 E2E_WEBMCP=1 npm run e2e   # + WebMCP real en Chrome, con la cuenta sembrada (usa el API desplegado)
 ```

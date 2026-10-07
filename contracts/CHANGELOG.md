@@ -44,6 +44,6 @@ live in `openapi.yaml` (REST), `tools.md` (capabilities, approvals, push, chat) 
 - Timeline: clients may `POST /events` with `kind: "message"` only; the server sets `id` and `ts` and
   rejects `claim_id`s the caller does not own.
 - Runs: `POST /admin/runs` (admin token) creates an isolated customer (policy, Firebase user) for one
-  scenario run; send its `run_id` as `X-Escudo-Run-Id`; `/presenter?run=<run_id>` follows that run
+  scenario run; send its `run_id` as `X-Escudo-Run-Id`; `/presentador?run=<run_id>` follows that run
   (default: the latest). The Android app's stage customer stays the seeded one.
 - Admin: `POST /admin/reset` with `X-Admin-Token` (also removes run customers).

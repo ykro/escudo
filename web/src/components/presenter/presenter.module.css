@@ -349,3 +349,81 @@
   vertical-align: 4px;
   white-space: nowrap;
 }
+
+/* ---------- phones and portrait tablets: one readable column instead of the scaled stage ---------- */
+.flow { position: static; min-height: 100dvh; overflow: visible; }
+.flow .stage {
+  position: static;
+  width: auto;
+  height: auto;
+  min-height: 100dvh;
+  padding: 20px clamp(16px, 5vw, 40px) 32px;
+  gap: 24px;
+  font-size: 17px;
+}
+.flow .header { grid-template-columns: 1fr auto; grid-template-areas: "brand meters" "title title"; gap: 12px 16px; }
+.flow .brand { grid-area: brand; font-size: 22px; gap: 10px; }
+.flow .brand svg { width: 32px; height: 32px; }
+.flow .title { grid-area: title; column-gap: 12px; }
+.flow .title h1 { font-size: clamp(26px, 7vw, 36px); white-space: normal; }
+.flow .claimId { font-size: 16px; }
+.flow .replay { font-size: 13px; padding: 4px 12px; }
+.flow .meters { grid-area: meters; gap: 20px; }
+.flow .meterLabel { font-size: 13px; }
+.flow .meterValue { font-size: 24px; }
+.flow .clock { font-size: 40px; }
+.flow .doneChip { font-size: 14px; margin-top: 2px; }
+
+.flow .body { grid-template-columns: 1fr; gap: 28px; }
+.flow .timeline { height: auto; gap: 16px; }
+.flow .rowsClip { overflow: visible; }
+.flow .rows { grid-template-columns: 44px 24px 1fr; row-gap: 14px; column-gap: 8px; }
+.flow .rows::before { left: 63px; top: 12px; bottom: 12px; width: 2px; }
+.flow .row { grid-template-columns: subgrid; align-items: start; }
+.flow .rowClock { font-size: 13px; padding-top: 4px; }
+.flow .rowDot { width: 12px; height: 12px; margin-top: 6px; box-shadow: 0 0 0 4px var(--mist); }
+.flow .tone_approved .rowDot { width: 20px; height: 20px; margin-top: 2px; }
+.flow .tone_approved .rowDot svg { width: 12px; height: 12px; }
+/* the surface badge moves above the text so the sentence keeps the full width */
+.flow .badge { grid-column: 3; grid-row: 1; font-size: 13px; padding: 2px 10px; margin-bottom: 4px; }
+.flow .rowText { grid-column: 3; grid-row: 2; font-size: 17px; line-height: 1.35; -webkit-line-clamp: unset; display: block; }
+.flow .rowClock, .flow .rowDot { grid-row: 1 / span 2; }
+.flow .autoTag { font-size: 12px; margin-left: 8px; padding: 1px 8px; vertical-align: 1px; }
+
+.flow .pause, .flow .done { grid-template-columns: 44px 1fr; gap: 14px; padding: 16px 18px; border-radius: var(--r-md); }
+.flow .pauseIcon, .flow .doneIcon { width: 44px; height: 44px; }
+.flow .pauseIcon svg, .flow .doneIcon svg { width: 22px; height: 22px; }
+.flow .pauseLabel { font-size: 14px; }
+.flow .pauseSummary { font-size: 22px; }
+.flow .pauseReason { font-size: 15px; }
+.flow .doneText { font-size: 22px; white-space: normal; }
+.flow .doneMuted { font-size: 15px; }
+
+.flow .placeholder { margin: 8px 0; gap: 10px; }
+.flow .placeholderTitle { font-size: 28px; }
+.flow .placeholderText { font-size: 17px; }
+.flow .skeletonRows { gap: 14px; }
+.flow .offline { position: static; align-self: flex-start; font-size: 14px; padding: 4px 12px; margin-bottom: 12px; }
+
+/* the phone mirror keeps its proportions, at the size of a real phone screen */
+.flow .phoneCol { gap: 10px; }
+.flow .phone { width: min(300px, 100%); flex: none; height: 540px; max-height: none; border-radius: 40px; border-width: 2px; padding: 9px; }
+.flow .phoneScreen { border-radius: 32px; }
+.flow .phoneBar { font-size: 17px; padding: 22px 20px 8px; gap: 8px; }
+.flow .phoneBar svg { width: 22px; height: 22px; }
+.flow .phoneBody { gap: 10px; padding: 10px 18px 20px; }
+.flow .phoneApproval { padding: 16px; gap: 4px; border-radius: var(--r-md); }
+.flow .phoneApprovalTitle { font-size: 20px; }
+.flow .phoneAmount { font-size: 34px; }
+.flow .phoneMuted, .flow .phoneSmall, .flow .phoneLink { font-size: 15px; }
+.flow .phoneButton { font-size: 16px; padding: 12px 10px; }
+.flow .phoneFact { font-size: 15px; padding-top: 8px; }
+.flow .phoneFact strong { font-size: 16px; }
+.flow .phoneCaption { font-size: 14px; }
+@media (max-width: 520px) {
+  .flow .header { grid-template-columns: 1fr; grid-template-areas: "brand" "title" "meters"; }
+  .flow .meters { justify-content: space-between; }
+  .flow .approvals, .flow .clockBox { align-items: flex-start; }
+  .flow .clock { font-size: 34px; }
+  .flow .phone { height: 440px; }
+}

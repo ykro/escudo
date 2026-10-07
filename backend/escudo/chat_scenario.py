@@ -49,7 +49,7 @@ async def main() -> int:
 
     print(f"\nEscudo · escenario por chat contra {base} · {session.label}")
     if session.run_id:
-        print(f"Presentador: {WEB_URL}/presenter?run={session.run_id}")
+        print(f"Presentador: {WEB_URL}/presentador?run={session.run_id}")
     print()
     headers = session.headers(actor="customer")
     approvals: list[str] = []

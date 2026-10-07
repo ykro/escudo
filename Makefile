@@ -35,7 +35,7 @@ up: ## API local (Firestore + Gemini con ADC) en :8080
 up-mock: ## API local sin nube (MOCK_AI=1 MOCK_AUTH=1) en :8080
 	cd $(BACKEND) && MOCK_AI=1 MOCK_AUTH=1 ADMIN_TOKEN=$(ADMIN_TOKEN) uv run uvicorn escudo.main:create_app --factory --host 0.0.0.0 --port 8080
 
-web: ## Portal + /presenter local en :3217 (contra el API desplegado)
+web: ## Portal + /presentador local en :3217 (contra el API desplegado)
 	cd web && npm run dev
 
 # --- data -------------------------------------------------------------------------
