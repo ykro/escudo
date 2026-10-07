@@ -49,7 +49,7 @@ Verificadas el 2026-09-30. El detalle está en [`backend/VERSIONS.md`](../backen
 | Google Gen AI SDK (`google-genai`) | 2.25.0 (Vertex AI) |
 | Gemini | `GEMINI_MODEL=gemini-3.8-flash` (global), `IMAGE_MODEL=gemini-3.1-flash-lite-image` |
 | Jetpack AppFunctions (`androidx.appfunctions`) | 1.0.0-alpha12; `adb shell cmd app_function` desde Android 16 QPR2 (API 36.1) |
-| Gemini + AppFunctions de terceros | Vista previa privada; no disponible para esta app. En el escenario las AppFunctions se muestran con `adb` |
+| Gemini + AppFunctions de terceros | Vista previa privada; no disponible para esta app. En el escenario las AppFunctions se muestran con el AppFunction Testing Agent (en el emulador) y con `adb` |
 | WebMCP | Borrador del W3C WebML CG del 2026-09-30 (`document.modelContext.registerTool`); probado en Chrome 154.0.8037.59 con `chrome://flags/#enable-webmcp-testing` |
 | Next.js / React | 16.3.8 / 19.2.8 |
 | Firebase | Android BoM 34.19.0, JS SDK 12.19.0, `firebase-admin` 7.7.0 (Python) y 14.5.0 (Node) |

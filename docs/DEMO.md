@@ -172,7 +172,7 @@ escuchar un instante después de que aparece el diálogo.
 
 ## Demostraciones adicionales (1 min cada una): la app y el sitio como herramientas para cualquier agente
 
-Muestran las mismas capacidades fuera del chat: con AppFunctions, Android ofrece funciones de la app a
+Muestran las mismas capacidades fuera del chat, en Android y en la web: con AppFunctions, Android ofrece funciones de la app a
 los agentes del sistema; con WebMCP, el sitio ofrece herramientas al agente del navegador.
 
 ### AppFunctions: la app como herramienta del sistema (1 min)

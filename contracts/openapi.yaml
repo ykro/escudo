@@ -209,3 +209,5 @@ paths:
         '401': { description: wrong or missing admin token }
   /admin/reset:
     post: { operationId: reset, description: "Restores seed data, clears claims/approvals/events and every run customer (POST /admin/runs) with its Firebase user and devices; keeps the seeded customer's keyed devices. Requires ADMIN_TOKEN in X-Admin-Token (or as bearer). Response header X-Reset-Seconds.", security: [{ adminToken: [] }], responses: { '204': { description: reset }, '401': { description: wrong or missing admin token } } }
+  /demo/restart:
+    post: { operationId: restartDemo, description: "Same reset as /admin/reset, allowed only for the seeded stage customer (cus_demo) from the Android app's 'Empezar de nuevo' button.", responses: { '204': { description: reset }, '403': { description: caller is not the seeded demo customer } } }

@@ -39,7 +39,7 @@ web/                      Next.js 16 (see web/README.md)
   src/lib/webmcp.ts       WebMCP tools
   src/app/presentador/      presenter view (1920×1080)
   src/app/api/presenter/  Firestore SSE stream and wake (wakes the API when the view opens)
-infra/                    numbered, idempotent scripts: 01-06 build the project from scratch, 10-11 deploy
+infra/                    numbered, idempotent scripts: 01-07 build the project from scratch, 10-11 deploy
 brand/                    prompts and generator for the "A · Sereno" logo and mockups (make brand)
 data/                     SOURCES.md (origin of every data file and asset) and DATASHEET.md
 docs/                     ONBOARDING.md, DEMO.md + DEMO.en.md (script, screenshots in docs/demo/), ARQUITECTURA, COMANDOS,

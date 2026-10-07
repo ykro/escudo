@@ -48,7 +48,8 @@ class Settings:
     @classmethod
     def from_env(cls) -> "Settings":
         mock_ai = _flag("MOCK_AI")
-        public = os.environ.get("PUBLIC_BASE_URL", "http://127.0.0.1:8080").rstrip("/")
+        port = int(os.environ.get("PORT", "8080"))
+        public = os.environ.get("PUBLIC_BASE_URL", f"http://127.0.0.1:{port}").rstrip("/")
         peers_raw = os.environ.get("A2A_PEERS", f"{public}/a2a/tow,{public}/a2a/repair")
         return cls(
             project_id=os.environ.get("GOOGLE_CLOUD_PROJECT", cls.project_id),
@@ -64,7 +65,7 @@ class Settings:
             a2a_peers=tuple(p.strip().rstrip("/") for p in peers_raw.split(",") if p.strip()),
             demo_customer_id=os.environ.get("DEMO_CUSTOMER_ID", cls.demo_customer_id),
             a2a_shared_secret=os.environ.get("A2A_SHARED_SECRET", ""),
-            port=int(os.environ.get("PORT", "8080")),
+            port=port,
         )
 
     def require_models(self) -> None:

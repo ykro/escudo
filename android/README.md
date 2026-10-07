@@ -17,7 +17,7 @@ vectores, con versión monocromática.
 
 - **Funciones, no pantallas**: pantallas y AppFunctions llaman al mismo `EscudoRepository`.
   Cada llamada viaja con `X-Escudo-Surface` / `X-Escudo-Actor` (`android`/`customer` o
-  `appfunctions`/`gemini`) para que la línea de tiempo del presentador muestre quién actuó.
+  `appfunctions`/`external_agent`) para que la línea de tiempo del presentador muestre quién actuó.
 - **Aprobar es humano, y desde este teléfono** (`escudo-approval:v1`, ver `contracts/tools.md`): en el
   primer arranque la app crea una llave EC P-256 en el Android Keystore (`escudo-approval`), que solo se
   usa tras una huella o el PIN en ese momento (`setUserAuthenticationParameters(0, …)`), y registra su
