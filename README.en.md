@@ -17,6 +17,12 @@ claim, with **exactly three fingerprint approvals**.
 [![Escudo architecture](docs/diagrams/architecture.png)](docs/diagrams/architecture.svg)
 [![What the demo verifies](docs/diagrams/demo-coverage.png)](docs/diagrams/demo-coverage.svg)
 
+## 60-Minute Interactive Codelab (Live)
+
+- **Interactive Codelab (Firebase Hosting):** [https://built-for-agents-2027.web.app](https://built-for-agents-2027.web.app)
+- **Live Codelab App (`Escudo Agent Sandbox` on Cloud Run):** [https://escudo-agent-sandbox-611681112050.us-central1.run.app](https://escudo-agent-sandbox-611681112050.us-central1.run.app)
+- **Runnable Codelab code and test suite:** [`codelab/demo-app/`](codelab/demo-app/) (`node --test codelab/demo-app/gate.test.mjs`)
+
 ## Quickstart
 
 ```bash

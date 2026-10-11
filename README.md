@@ -17,6 +17,12 @@ firmado, con **exactamente tres aprobaciones con huella**.
 [![Arquitectura de Escudo](docs/diagrams/architecture.png)](docs/diagrams/architecture.svg)
 [![Qué se prueba en la demo](docs/diagrams/demo-coverage.png)](docs/diagrams/demo-coverage.svg)
 
+## Taller / Codelab de 60 Minutos (En Vivo)
+
+- **Codelab Interactivo (Firebase Hosting):** [https://built-for-agents-2027.web.app](https://built-for-agents-2027.web.app)
+- **App del Codelab funcionando en vivo (`Escudo Agent Sandbox` en Cloud Run):** [https://escudo-agent-sandbox-611681112050.us-central1.run.app](https://escudo-agent-sandbox-611681112050.us-central1.run.app)
+- **Código ejecutable y pruebas del Codelab:** [`codelab/demo-app/`](codelab/demo-app/) (`node --test codelab/demo-app/gate.test.mjs`)
+
 ## Inicio rápido
 
 ```bash

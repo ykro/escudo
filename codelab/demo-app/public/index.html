@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Escudo Agent Sandbox — MCP, Elicitation, A2A 1.0, WebMCP y Compuerta ECDSA P-256</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #FAF9F5;
+      --surface: #FFFFFF;
+      --ink: #14171F;
+      --slate: #334155;
+      --muted: #64748B;
+      --border: #E2E8F0;
+      --blue: #1A73E8;
+      --blue-bg: #EFF6FF;
+      --teal: #0D9488;
+      --teal-bg: #F0FDFA;
+      --amber: #D97706;
+      --amber-bg: #FFFBEB;
+      --rose: #E11D48;
+      --rose-bg: #FFF1F2;
+      --violet: #6D28D9;
+      --violet-bg: #F5F3FF;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      padding-bottom: 2.5rem;
+    }
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0.9rem 1.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand { display: flex; align-items: center; gap: 0.85rem; }
+    .badge-main {
+      background: var(--blue);
+      color: #fff;
+      font-weight: 800;
+      font-size: 0.76rem;
+      padding: 0.35rem 0.7rem;
+      border-radius: 6px;
+      letter-spacing: 0.03em;
+    }
+    .header-pills { display: flex; gap: 0.6rem; align-items: center; }
+    .status-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.76rem;
+      background: var(--teal-bg);
+      color: var(--teal);
+      border: 1px solid #99F6E4;
+      padding: 0.32rem 0.7rem;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+    .status-pill.blue {
+      background: var(--blue-bg);
+      color: var(--blue);
+      border-color: #BFDBFE;
+    }
+
+    .top-metrics {
+      max-width: 1480px;
+      margin: 1rem auto 0;
+      padding: 0 1.25rem;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.85rem;
+    }
+    .metric-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+      border-left: 4px solid var(--blue);
+    }
+    .metric-card.green { border-left-color: var(--teal); }
+    .metric-card.amber { border-left-color: var(--amber); }
+    .metric-card.red { border-left-color: var(--rose); }
+    .metric-label { font-size: 0.7rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .metric-val { font-size: 1.05rem; font-weight: 800; color: var(--ink); margin-top: 0.15rem; font-family: 'JetBrains Mono', monospace; }
+    .metric-sub { font-size: 0.74rem; color: var(--slate); margin-top: 0.1rem; }
+
+    .sandbox-grid {
+      max-width: 1480px;
+      margin: 1rem auto;
+      padding: 0 1.25rem;
+      display: grid;
+      grid-template-columns: 390px 440px minmax(0, 1fr);
+      gap: 1rem;
+      align-items: start;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.15rem;
+      box-shadow: 0 4px 14px rgba(20, 23, 31, 0.04);
+      margin-bottom: 1rem;
+    }
+    .card-title {
+      font-size: 0.98rem;
+      font-weight: 800;
+      margin-bottom: 0.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+    .card-sub {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 0.85rem;
+      line-height: 1.4;
+    }
+
+    .tier-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 0.15rem 0.48rem;
+      border-radius: 4px;
+    }
+    .tier-GREEN { background: var(--teal-bg); color: var(--teal); border: 1px solid #99F6E4; }
+    .tier-AMBER { background: var(--amber-bg); color: var(--amber); border: 1px solid #FDE68A; }
+    .tier-RED { background: var(--rose-bg); color: var(--rose); border: 1px solid #FECDD3; }
+    .tier-A2A { background: var(--violet-bg); color: var(--violet); border: 1px solid #DDD6FE; }
+
+    .tool-item {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.7rem 0.85rem;
+      margin-bottom: 0.6rem;
+      background: #FCFBF9;
+    }
+    .tool-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.25rem;
+    }
+    .tool-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 0.82rem;
+      color: var(--ink);
+    }
+    .tool-desc {
+      font-size: 0.76rem;
+      color: var(--slate);
+      margin-bottom: 0.45rem;
+      line-height: 1.35;
+    }
+    .tool-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.69rem;
+      color: var(--muted);
+    }
+    .btn-sm {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--blue);
+      font-weight: 700;
+      font-size: 0.73rem;
+      padding: 0.28rem 0.6rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .btn-sm:hover { background: var(--blue-bg); border-color: var(--blue); }
+
+    .btn-action {
+      width: 100%;
+      border: none;
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.83rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn-action.amber { background: var(--amber); color: #fff; }
+    .btn-action.blue { background: var(--blue); color: #fff; }
+    .btn-action.teal { background: var(--teal); color: #fff; }
+    .btn-action.rose { background: var(--rose); color: #fff; }
+
+    .code-json {
+      background: #181A24;
+      color: #F1F3F8;
+      padding: 0.75rem 0.9rem;
+      border-radius: 9px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.73rem;
+      line-height: 1.45;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .elicitation-box {
+      background: var(--amber-bg);
+      border: 1px solid #FCD34D;
+      border-radius: 10px;
+      padding: 0.85rem;
+      margin-bottom: 0.85rem;
+    }
+    .elicitation-title {
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: #92400E;
+      margin-bottom: 0.35rem;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .crypto-box {
+      background: #FFFDFD;
+      border: 1px solid #FECDD3;
+      border-radius: 10px;
+      padding: 0.85rem;
+    }
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.55rem;
+      margin-bottom: 0.55rem;
+    }
+    .field label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--slate);
+      margin-bottom: 0.2rem;
+    }
+    .field input {
+      width: 100%;
+      padding: 0.42rem 0.6rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      background: #fff;
+    }
+
+    .attack-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.55rem;
+      margin-bottom: 0.85rem;
+    }
+    .btn-attack {
+      text-align: left;
+      padding: 0.6rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #FCFBF9;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-attack:hover { border-color: var(--blue); background: var(--blue-bg); }
+    .btn-attack strong { display: block; font-size: 0.78rem; color: var(--ink); }
+    .btn-attack span { font-size: 0.7rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+
+    .verdict-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.8rem 0.95rem;
+      margin-bottom: 0.65rem;
+      background: #FCFBF9;
+      border-left: 4px solid var(--rose);
+    }
+    .verdict-card.allowed {
+      border-left-color: var(--teal);
+      background: #F4FBF9;
+    }
+    .verdict-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.3rem;
+    }
+    .verdict-title {
+      font-weight: 800;
+      font-size: 0.83rem;
+      color: var(--ink);
+    }
+    .http-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+    }
+    .http-403 { background: var(--rose-bg); color: var(--rose); border: 1px solid #FECDD3; }
+    .http-200 { background: var(--teal-bg); color: var(--teal); border: 1px solid #99F6E4; }
+    .verdict-msg {
+      font-size: 0.77rem;
+      color: var(--slate);
+      line-height: 1.4;
+      margin-bottom: 0.35rem;
+    }
+    .verdict-hash {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.69rem;
+      color: var(--muted);
+      background: #fff;
+      padding: 0.3rem 0.5rem;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="badge-main">ESCUDO AGENT SANDBOX</span>
+      <div>
+        <div style="font-weight:800; font-size:1.05rem;">Escudo Seguros — Superficie Multi-Protocolo y Compuerta Criptográfica</div>
+        <div style="font-size:0.78rem; color:var(--muted);">MCP (ToolAnnotations + Elicitation) · A2A 1.0 AgentCard · W3C WebMCP · Hardware Gate ECDSA P-256</div>
+      </div>
+    </div>
+    <div class="header-pills">
+      <span class="status-pill blue" id="webmcpStatus">W3C WebMCP: 3 tools registradas en DOM</span>
+      <span class="status-pill" id="cryptoStatus">Keystore ECDSA P-256: ACTIVO</span>
+    </div>
+  </header>
+
+  <section class="top-metrics">
+    <div class="metric-card green">
+      <div class="metric-label">Póliza y Reclamo Activo</div>
+      <div class="metric-val" id="mClaimId">POL-GT-2026 · CLM-2026-089</div>
+      <div class="metric-sub">Toyota Corolla Cross 2024 · Cobertura Amplia</div>
+    </div>
+    <div class="metric-card amber">
+      <div class="metric-label">Nivel Ámbar (MCP Elicitation)</div>
+      <div class="metric-val" id="mElicitationState">PAUSA_HUMANA_ACTIVA</div>
+      <div class="metric-sub" id="mWorkshopSub">Taller: WS-Z10-01 · Deducible Q1,800</div>
+    </div>
+    <div class="metric-card red">
+      <div class="metric-label">Nivel Rojo (Compuerta P-256)</div>
+      <div class="metric-val" id="mSettlementAmount">Q3,400.00 GTQ</div>
+      <div class="metric-sub" id="mSettlementStatus">Verificación args_hash + Anti-Replay JTI</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Auditoría Red-Team</div>
+      <div class="metric-val" id="mRedTeamScore">3 Bloqueados / 1 Aprobado</div>
+      <div class="metric-sub">403 MISSING · 403 HASH · 403 REPLAY · 200 OK</div>
+    </div>
+  </section>
+
+  <main class="sandbox-grid">
+    <!-- COLUMNA 1: CATÁLOGO MCP + A2A + WEBMCP -->
+    <section id="colCatalog">
+      <div class="card">
+        <div class="card-title">
+          <span>1. Catálogo MCP y Matriz de Autonomía</span>
+          <span class="tier-badge tier-GREEN">5 TOOLS</span>
+        </div>
+        <div class="card-sub">Cada herramienta declara <code>ToolAnnotations</code> para que el host distinga lecturas libres, mutaciones con pausa de elicitación y desembolsos con firma en hardware.</div>
+        <div id="mcpToolsContainer"></div>
+      </div>
+
+      <div class="card" id="a2aCardSection">
+        <div class="card-title">
+          <span>Descriptor A2A 1.0 + W3C WebMCP</span>
+          <span class="tier-badge tier-A2A">/.well-known/agent-card.json</span>
+        </div>
+        <div class="card-sub">Descubrimiento horizontal entre agentes (Perito Vehicular) y registro imperativo en la pestaña activa con <code>navigator.modelContext.registerTool()</code>.</div>
+        <pre class="code-json" id="a2aCardBox"></pre>
+      </div>
+    </section>
+
+    <!-- COLUMNA 2: PAUSA DE ELICITACIÓN (ÁMBAR) Y FIRMA P-256 (ROJO) -->
+    <section id="colWorkflow">
+      <div class="card" id="elicitationCard">
+        <div class="card-title">
+          <span>2A. Gobernador Nivel Ámbar (MCP Elicitation)</span>
+          <span class="tier-badge tier-AMBER">PAUSA HUMANA</span>
+        </div>
+        <div class="card-sub">Al invocar <code>assign_workshop</code> o <code>accept_deductible</code> sin confirmación previa, el servidor devuelve <code>202 elicitation_required</code> con el esquema JSON del formulario.</div>
+
+        <div class="elicitation-box">
+          <div class="elicitation-title">
+            <span>Solicitud de Elicitación en Curso</span>
+            <span id="elicitationBadge" style="font-family:'JetBrains Mono',monospace;">HTTP 202</span>
+          </div>
+          <div style="font-size:0.77rem; color:#78350F; margin-bottom:0.55rem;" id="elicitationPromptText">
+            Confirmar ingreso a Taller Multimarcas Zona 10 (WS-Z10-01) y aceptación de deducible fijo por Q1,800.
+          </div>
+          <div style="display:flex; gap:0.5rem;">
+            <button class="btn-action amber" onclick="triggerAmberElicitation(false)">1. Invocar sin confirmar (Pausa 202)</button>
+            <button class="btn-action teal" onclick="triggerAmberElicitation(true)">2. Confirmar Elicitación (200 OK)</button>
+          </div>
+        </div>
+
+        <pre class="code-json" id="mcpInspectorBox"></pre>
+      </div>
+
+      <div class="card" id="cryptoSignerCard">
+        <div class="card-title">
+          <span>2B. Firmador en Hardware ECDSA P-256 (Nivel Rojo)</span>
+          <span class="tier-badge tier-RED">PASSKEY / KEYSTORE</span>
+        </div>
+        <div class="card-sub">Calcula <code>args_hash = SHA-256(canonical_json)</code> y firma con la llave privada <code>EC P-256</code> del dispositivo antes de llamar a <code>approve_settlement</code>.</div>
+
+        <div class="crypto-box">
+          <div class="field-row">
+            <div class="field">
+              <label>Reclamo ID</label>
+              <input id="signClaimId" value="CLM-2026-089" readonly />
+            </div>
+            <div class="field">
+              <label>Monto Autorizado (GTQ)</label>
+              <input id="signAmountGtq" type="number" value="3400" />
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:0.6rem;">
+            <label>Beneficiario Autorizado</label>
+            <input id="signRecipient" value="Taller Multimarcas Zona 10 (Cuenta GT82-ESCUDO-99)" />
+          </div>
+          <button class="btn-action blue" onclick="signAndExecuteSettlement()">Firmar con ECDSA P-256 y Desembolsar</button>
+        </div>
+
+        <div style="margin-top:0.75rem;">
+          <pre class="code-json" id="cryptoEnvelopeBox"></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- COLUMNA 3: LABORATORIO RED-TEAM EN VIVO -->
+    <section id="colRedTeam">
+      <div class="card" id="redTeamCard">
+        <div class="card-title">
+          <span>3. Laboratorio Red-Team: Compuerta Determinista ECDSA P-256</span>
+          <span class="tier-badge tier-RED">VERIFY GATE</span>
+        </div>
+        <div class="card-sub">Lanza en vivo los 3 vectores de ataque clásicos contra agentes con capacidad financiera y comprueba cómo <code>verifySettlementGate()</code> los neutraliza matemáticamente.</div>
+
+        <div class="attack-buttons">
+          <button class="btn-attack" onclick="runRedTeam('attack_1_prompt_injection')">
+            <strong>Ataque 1: Prompt Injection</strong>
+            <span>Sin firma → 403 MISSING_SIGNATURE</span>
+          </button>
+          <button class="btn-attack" onclick="runRedTeam('attack_2_tampering')">
+            <strong>Ataque 2: Parameter Tampering</strong>
+            <span>Q3,400 → Q15,000 → 403 ARGS_HASH_MISMATCH</span>
+          </button>
+          <button class="btn-attack" onclick="runRedTeam('attack_3_replay')">
+            <strong>Ataque 3: Replay Attack</strong>
+            <span>Doble cobro JTI → 403 JTI_ALREADY_CONSUMED</span>
+          </button>
+          <button class="btn-attack" onclick="runRedTeam('legitimate_settlement')">
+            <strong>4. Desembolso Legítimo P-256</strong>
+            <span>Firma + Hash íntegro → 200 DISBURSED</span>
+          </button>
+        </div>
+
+        <button class="btn-action rose" style="margin-bottom:0.9rem;" onclick="runRedTeam('run_all')">
+          Ejecutar Suite Completa Red-Team en Vivo (4 Escenarios)
+        </button>
+
+        <div id="redTeamResultsContainer"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // 1. Registro W3C WebMCP en el navegador (con adaptador local para inspección)
+    const registeredWebMcpTools = [];
+    if (!window.navigator.modelContext) {
+      window.navigator.modelContext = {
+        registerTool(toolDef) {
+          registeredWebMcpTools.push({
+            name: toolDef.name,
+            description: toolDef.description,
+            inputSchema: toolDef.inputSchema,
+          });
+        }
+      };
+    }
+
+    function registerEscudoWebMcpTools() {
+      registeredWebMcpTools.length = 0;
+      window.navigator.modelContext.registerTool({
+        name: "escudo_ver_cobertura_dom",
+        description: "Lee el resumen de cobertura de la póliza activa en la sesión web",
+        inputSchema: { type: "object", properties: { policyId: { type: "string" } } },
+        async execute({ policyId }) {
+          const r = await fetch("/api/mcp/call", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ toolName: "get_policy_coverage", args: { policyId } }),
+          });
+          return r.json();
+        }
+      });
+      window.navigator.modelContext.registerTool({
+        name: "escudo_solicitar_taller_dom",
+        description: "Inicia la pausa de Elicitation para asignar taller certificado",
+        inputSchema: { type: "object", properties: { workshopId: { type: "string" } } },
+        async execute({ workshopId }) {
+          const r = await fetch("/api/mcp/call", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ toolName: "assign_workshop", args: { claimId: "CLM-2026-089", workshopId, dropOffDate: "2026-10-12" } }),
+          });
+          return r.json();
+        }
+      });
+      window.navigator.modelContext.registerTool({
+        name: "escudo_verificar_estado_finiquito",
+        description: "Consulta si el desembolso cuenta con firma ECDSA P-256 verificada",
+        inputSchema: { type: "object", properties: { claimId: { type: "string" } } },
+        async execute() {
+          return { claimId: "CLM-2026-089", requiresHardwareSignature: "ECDSA_P256" };
+        }
+      });
+    }
+
+    async function loadCatalog() {
+      registerEscudoWebMcpTools();
+      const res = await fetch("/api/catalog");
+      const data = await res.json();
+
+      const container = document.getElementById("mcpToolsContainer");
+      container.innerHTML = data.mcpTools.map(t => `
+        <div class="tool-item">
+          <div class="tool-head">
+            <span class="tool-name">${t.name}</span>
+            <span class="tier-badge tier-${t.autonomyTier}">NIVEL ${t.autonomyTier === 'GREEN' ? 'VERDE' : t.autonomyTier === 'AMBER' ? 'ÁMBAR' : 'ROJO'}</span>
+          </div>
+          <div class="tool-desc">${t.description}</div>
+          <div class="tool-meta">
+            <span>readOnly:${t.annotations.readOnlyHint} · destructive:${t.annotations.destructiveHint}</span>
+            <button class="btn-sm" onclick="quickInvokeTool('${t.name}')">Probar Tool</button>
+          </div>
+        </div>
+      `).join("");
+
+      document.getElementById("a2aCardBox").textContent = JSON.stringify({
+        a2aAgentCard: {
+          name: data.agentCard.name,
+          protocolVersion: data.agentCard.protocolVersion,
+          endpoint: "/.well-known/agent-card.json",
+          skill: data.agentCard.skills[0],
+        },
+        w3cWebMcpRegisteredInDom: registeredWebMcpTools.map(t => t.name),
+      }, null, 2);
+    }
+
+    async function quickInvokeTool(toolName) {
+      if (toolName === "get_policy_coverage" || toolName === "list_partner_workshops") {
+        const res = await fetch("/api/mcp/call", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            toolName,
+            args: toolName === "get_policy_coverage" ? { policyId: "POL-GT-2026" } : { zone: "Zona 10" },
+          }),
+        });
+        const out = await res.json();
+        document.getElementById("mcpInspectorBox").textContent = JSON.stringify(out, null, 2);
+      } else if (toolName === "assign_workshop" || toolName === "accept_deductible") {
+        await triggerAmberElicitation(false, toolName);
+      } else {
+        await signAndExecuteSettlement();
+      }
+    }
+
+    async function triggerAmberElicitation(confirmed, toolName = "assign_workshop") {
+      const res = await fetch("/api/mcp/call", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          toolName,
+          args: {
+            claimId: "CLM-2026-089",
+            workshopId: "WS-Z10-01",
+            dropOffDate: "2026-10-12",
+            deductibleGtq: 1800,
+          },
+          context: { elicitationConfirmed: confirmed },
+        }),
+      });
+      const out = await res.json();
+      document.getElementById("elicitationBadge").textContent = `HTTP ${out.httpStatus} · ${out.status.toUpperCase()}`;
+      document.getElementById("mElicitationState").textContent = confirmed ? "CONFIRMADO_POR_HUMANO" : "PAUSA_ELICITATION_202";
+      document.getElementById("mcpInspectorBox").textContent = JSON.stringify(out, null, 2);
+    }
+
+    async function signAndExecuteSettlement() {
+      const claimId = document.getElementById("signClaimId").value;
+      const amountGtq = Number(document.getElementById("signAmountGtq").value);
+      const recipient = document.getElementById("signRecipient").value;
+
+      const signRes = await fetch("/api/crypto/sign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ claimId, amountGtq, recipient }),
+      });
+      const signed = await signRes.json();
+
+      const callRes = await fetch("/api/mcp/call", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          toolName: "approve_settlement",
+          args: { claimId, amountGtq, recipient },
+          context: { signatureToken: signed.token },
+        }),
+      });
+      const verdict = await callRes.json();
+
+      document.getElementById("cryptoEnvelopeBox").textContent = JSON.stringify({
+        hardwareKeystoreSignature: {
+          algorithm: signed.algorithm,
+          jti: signed.jti,
+          args_hash: signed.args_hash,
+          canonicalJson: signed.canonicalJson,
+        },
+        serverGateVerification: verdict,
+      }, null, 2);
+    }
+
+    async function runRedTeam(scenarioId) {
+      const res = await fetch("/api/redteam/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scenarioId }),
+      });
+      const data = await res.json();
+      const container = document.getElementById("redTeamResultsContainer");
+
+      container.innerHTML = data.results.map(item => {
+        const r = item.result;
+        const isOk = r.allowed;
+        return `
+          <div class="verdict-card ${isOk ? 'allowed' : ''}">
+            <div class="verdict-head">
+              <span class="verdict-title">${item.title}</span>
+              <span class="http-pill ${isOk ? 'http-200' : 'http-403'}">HTTP ${r.httpStatus} · ${r.code}</span>
+            </div>
+            <div class="verdict-msg">${r.message}</div>
+            <div class="verdict-hash">
+              args_hash: ${r.computedArgsHash.slice(0, 28)}... ${r.jti ? `| jti: ${r.jti}` : '| sin token P-256'} ${r.disbursementId ? `| ref: ${r.disbursementId}` : ''}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    window.addEventListener("DOMContentLoaded", async () => {
+      await loadCatalog();
+      await triggerAmberElicitation(false);
+      await signAndExecuteSettlement();
+      await runRedTeam("run_all");
+    });
+  </script>
+</body>
+</html>

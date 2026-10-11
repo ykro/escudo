@@ -1,0 +1,13 @@
+{
+  "hosting": {
+    "site": "built-for-agents-2027",
+    "public": "codelab",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "demo-app/**"
+    ],
+    "cleanUrls": true
+  }
+}
