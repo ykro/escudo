@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Codelab: Built for Agents — Cómo hacer que los agentes de IA puedan usar tus apps</title>
+  <title>Codelab: Cómo conectar tu aplicación a un Agente de IA con 3 Niveles de Permiso</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -16,8 +16,6 @@
       --green-bg: #e6f4ea;
       --amber: #d97706;
       --amber-bg: #fef7e0;
-      --rose: #e11d48;
-      --rose-bg: #fff1f2;
       --bg: #f8f9fa;
       --surface: #ffffff;
       --ink: #202124;
@@ -27,7 +25,6 @@
       --code-bg: #1e222d;
       --code-fg: #f1f3f4;
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -39,8 +36,6 @@
       height: 100vh;
       overflow: hidden;
     }
-
-    /* Top Appbar (Google Codelabs style) */
     header.appbar {
       height: 64px;
       background: var(--surface);
@@ -52,13 +47,9 @@
       z-index: 10;
       flex-shrink: 0;
     }
-    .appbar-left {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-    .badge-codelab {
-      background: var(--blue);
+    .appbar-left { display: flex; align-items: center; gap: 14px; }
+    .badge-gemma {
+      background: var(--green);
       color: #fff;
       font-family: 'Google Sans', sans-serif;
       font-weight: 700;
@@ -69,7 +60,7 @@
     }
     .appbar-title {
       font-family: 'Google Sans', sans-serif;
-      font-size: 18px;
+      font-size: 17px;
       font-weight: 500;
       color: var(--ink);
     }
@@ -91,17 +82,9 @@
       border-radius: 20px;
       font-weight: 500;
     }
-
-    /* Main Workspace */
-    .workspace {
-      display: flex;
-      flex: 1;
-      overflow: hidden;
-    }
-
-    /* Left Drawer */
+    .workspace { display: flex; flex: 1; overflow: hidden; }
     nav.drawer {
-      width: 320px;
+      width: 310px;
       background: var(--surface);
       border-right: 1px solid var(--border);
       overflow-y: auto;
@@ -116,44 +99,31 @@
       cursor: pointer;
       color: var(--muted);
       font-size: 14px;
+      font-family: 'Google Sans', sans-serif;
       border-left: 4px solid transparent;
-      transition: all 0.15s ease;
+      transition: all 0.15s;
     }
-    .step-nav-item:hover {
-      background: #f1f3f4;
-      color: var(--ink);
-    }
+    .step-nav-item:hover { background: #f1f3f4; color: var(--ink); }
     .step-nav-item.active {
       background: var(--blue-bg);
       color: var(--blue);
-      border-left-color: var(--blue);
       font-weight: 500;
-    }
-    .step-nav-item.completed .step-circle {
-      background: var(--blue);
-      color: #fff;
-      border-color: var(--blue);
+      border-left-color: var(--blue);
     }
     .step-circle {
       width: 26px;
       height: 26px;
       border-radius: 50%;
-      border: 2px solid var(--border);
+      background: #e8eaed;
+      color: var(--muted);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 12px;
       font-weight: 700;
       flex-shrink: 0;
-      background: #fff;
     }
-    .step-nav-item.active .step-circle {
-      background: var(--blue);
-      color: #fff;
-      border-color: var(--blue);
-    }
-
-    /* Content Area */
+    .step-nav-item.active .step-circle { background: var(--blue); color: #fff; }
     main.stage {
       flex: 1;
       overflow-y: auto;
@@ -172,9 +142,7 @@
       display: none;
       height: fit-content;
     }
-    .step-card.active {
-      display: block;
-    }
+    .step-card.active { display: block; }
     .step-header {
       border-bottom: 1px solid var(--border);
       padding-bottom: 18px;
@@ -182,33 +150,22 @@
     }
     .step-header h1 {
       font-family: 'Google Sans', sans-serif;
-      font-size: 28px;
+      font-size: 27px;
       color: var(--ink);
       font-weight: 500;
       margin-bottom: 6px;
     }
-    .step-duration {
-      font-size: 13px;
-      color: var(--muted);
-      font-weight: 500;
-    }
-
+    .step-duration { font-size: 13px; color: var(--muted); font-weight: 500; }
     h2 {
       font-family: 'Google Sans', sans-serif;
-      font-size: 20px;
+      font-size: 19px;
       color: var(--ink);
-      margin: 26px 0 12px;
-    }
-    h3 {
-      font-family: 'Google Sans', sans-serif;
-      font-size: 16px;
-      color: var(--ink);
-      margin: 18px 0 8px;
+      margin: 24px 0 10px;
     }
     p { margin-bottom: 14px; font-size: 15.5px; }
     ul, ol { margin: 0 0 18px 24px; font-size: 15.5px; }
     li { margin-bottom: 8px; }
-    code {
+    code.inline {
       font-family: 'Roboto Mono', monospace;
       font-size: 13.5px;
       background: #f1f3f4;
@@ -216,13 +173,6 @@
       padding: 2px 6px;
       border-radius: 4px;
     }
-    pre code {
-      background: transparent;
-      color: inherit;
-      padding: 0;
-    }
-
-    /* Callouts */
     .callout {
       padding: 16px 20px;
       border-radius: 6px;
@@ -230,24 +180,10 @@
       font-size: 14.5px;
       border-left: 4px solid;
     }
-    .callout.info {
-      background: var(--blue-bg);
-      border-left-color: var(--blue);
-      color: #174ea6;
-    }
-    .callout.tip {
-      background: var(--green-bg);
-      border-left-color: var(--green);
-      color: #0d652d;
-    }
-    .callout.warn {
-      background: var(--amber-bg);
-      border-left-color: var(--amber);
-      color: #b06000;
-    }
+    .callout.info { background: var(--blue-bg); border-left-color: var(--blue); color: #174ea6; }
+    .callout.tip { background: var(--green-bg); border-left-color: var(--green); color: #0d652d; }
+    .callout.warn { background: var(--amber-bg); border-left-color: var(--amber); color: #b06000; }
     .callout strong { display: block; margin-bottom: 4px; font-family: 'Google Sans', sans-serif; }
-
-    /* Screenshot Figure */
     figure.screenshot-box {
       margin: 22px 0 26px;
       border: 1px solid var(--border);
@@ -256,11 +192,7 @@
       background: #faf9f5;
       box-shadow: 0 4px 14px rgba(0,0,0,0.06);
     }
-    figure.screenshot-box img {
-      width: 100%;
-      height: auto;
-      display: block;
-    }
+    figure.screenshot-box img { width: 100%; height: auto; display: block; }
     figure.screenshot-box figcaption {
       padding: 10px 16px;
       background: #f8f9fa;
@@ -269,8 +201,6 @@
       color: var(--muted);
       font-family: 'Google Sans', sans-serif;
     }
-
-    /* Code Blocks */
     .code-wrap {
       position: relative;
       margin: 18px 0 24px;
@@ -299,7 +229,6 @@
       cursor: pointer;
       font-family: 'Google Sans', sans-serif;
     }
-    .copy-btn:hover { background: rgba(255,255,255,0.2); }
     pre {
       padding: 18px 20px;
       overflow-x: auto;
@@ -308,30 +237,27 @@
       line-height: 1.55;
       color: var(--code-fg);
     }
-
-    /* Architecture table */
     table.arch-table {
       width: 100%;
       border-collapse: collapse;
-      margin: 18px 0 24px;
+      margin: 16px 0 24px;
       font-size: 14.5px;
     }
     table.arch-table th, table.arch-table td {
       border: 1px solid var(--border);
-      padding: 12px 14px;
+      padding: 11px 14px;
       text-align: left;
+      vertical-align: top;
     }
     table.arch-table th {
       background: #f1f3f4;
-      color: var(--ink);
       font-family: 'Google Sans', sans-serif;
+      color: var(--ink);
     }
-
-    /* Bottom Navigation Controls */
     footer.controls {
       position: fixed;
       bottom: 0;
-      left: 320px;
+      left: 310px;
       right: 0;
       height: 64px;
       background: var(--surface);
@@ -352,741 +278,257 @@
       border: 1px solid var(--border);
       background: #fff;
       color: var(--blue);
-      transition: all 0.15s;
     }
-    .btn:hover { background: #f1f3f4; }
-    .btn.primary {
-      background: var(--blue);
-      color: #fff;
-      border-color: var(--blue);
-    }
-    .btn.primary:hover { background: var(--blue-dark); }
+    .btn.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
     .btn:disabled { opacity: 0.4; cursor: default; }
-
-    @media (max-width: 900px) {
-      nav.drawer { display: none; }
-      footer.controls { left: 0; padding: 0 20px; }
-      main.stage { padding: 20px 16px 90px; }
-      .step-card { padding: 24px 20px; }
-    }
   </style>
 </head>
 <body>
-
   <header class="appbar">
     <div class="appbar-left">
-      <span class="badge-codelab">CODELAB · BUILT FOR AGENTS</span>
-      <span class="appbar-title">Built for Agents: Cómo hacer que los agentes de IA puedan usar tus apps</span>
+      <span class="badge-gemma">CODELAB · BUILT FOR AGENTS</span>
+      <span class="appbar-title">Cómo conectar tu aplicación a un Agente de IA con 3 Niveles de Permiso</span>
     </div>
     <div class="appbar-right">
-      <a href="https://escudo-agent-sandbox-611681112050.us-central1.run.app" target="_blank" rel="noopener" style="color:var(--blue); text-decoration:none; font-weight:500; padding:6px 12px; border-radius:6px; border:1px solid var(--border); background:#fff;">Abrir App Demo en Vivo</a>
+      <a href="https://escudo-agent-sandbox-611681112050.us-central1.run.app" target="_blank" rel="noopener" style="background:#0d9488;color:#fff;text-decoration:none;padding:6px 14px;border-radius:16px;font-weight:700;font-size:13px;">Abrir App Demo en Vivo ↗</a>
       <span>Autor: Adrián Catalán (@adriancs.tech)</span>
       <span class="timer-pill" id="timeRemaining">60 min restantes</span>
     </div>
   </header>
-
   <div class="workspace">
     <nav class="drawer" id="drawerNav"></nav>
-
     <main class="stage" id="stageContainer">
-
-      <!-- STEP 1 (6 min) -->
-      <section class="step-card active" data-title="1. Qué vas a construir: Escudo Agent Sandbox" data-duration="6">
+      <section class="step-card active" data-title="1. Qué vas a construir y cómo se ve al final" data-duration="8">
         <div class="step-header">
-          <h1>1. Qué vas a construir y cómo se ve al final: Escudo Agent Sandbox</h1>
-          <div class="step-duration">Duración estimada: 6 minutos</div>
-        </div>
-
-        <p>En este codelab práctico de 60 minutos construirás y probarás de extremo a extremo <strong>Escudo Agent Sandbox</strong>, una aplicación web y servidor en Node.js 20+ (cero dependencias externas, utilizando <code>node:http</code>, <code>node:crypto</code> con llaves <code>ECDSA P-256</code> y <code>node:test</code>) que convierte el flujo de reclamos vehiculares de <strong>Escudo Seguros</strong> en una superficie nativa para agentes de IA.</p>
-
-        <div class="callout info">
-          <strong>Prueba la aplicación funcionando en vivo en internet</strong>
-          Puedes interactuar ahora mismo con la versión desplegada de <strong>Escudo Agent Sandbox</strong> (exactamente lo que tendrás funcionando al terminar este codelab) en:<br/>
-          <a href="https://escudo-agent-sandbox-611681112050.us-central1.run.app" target="_blank" rel="noopener" style="font-weight:700; color:#1a73e8;">https://escudo-agent-sandbox-611681112050.us-central1.run.app</a>
-        </div>
-
-        <figure class="screenshot-box">
-          <img src="assets/step1-final-sandbox.png" alt="Vista general de Escudo Agent Sandbox funcionando en el navegador" />
-          <figcaption>Figura 1 — Resultado final que construirás: Escudo Agent Sandbox ejecutándose en el navegador con catálogo MCP de 3 niveles (Verde/Ámbar/Rojo), pausa de Elicitation, descriptor A2A 1.0, registro W3C WebMCP y Laboratorio Red-Team con compuerta criptográfica ECDSA P-256.</figcaption>
-        </figure>
-
-        <h2>Por qué las aplicaciones necesitan contratos deterministas para agentes</h2>
-        <p>Cuando un agente de IA interactúa con una aplicación mediante capturas de pantalla y clics por coordenadas <code>(x, y)</code>, sufre de alta latencia, fragilidad ante cambios visuales de CSS y ausencia de fronteras de seguridad: una instrucción maliciosa dentro de un campo de texto o imagen puede inducir al agente a presionar un botón de transferencia bancaria.</p>
-        <p>Para que un agente opere tu aplicación con seguridad de grado financiero, debes exponer tus capacidades sobre cuatro pilares complementarios:</p>
-
-        <table class="arch-table">
-          <thead>
-            <tr>
-              <th>Pilar</th>
-              <th>Estándar / API</th>
-              <th>Qué construirás en el Sandbox</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>1. Herramientas Semánticas + Pausa Humana</strong></td>
-              <td><strong>MCP (Model Context Protocol)</strong></td>
-              <td>Catálogo de 5 herramientas con <code>ToolAnnotations</code> y pausa <code>elicitation_required</code> (HTTP 202) para mutaciones operativas.</td>
-            </tr>
-            <tr>
-              <td><strong>2. Descubrimiento entre Agentes</strong></td>
-              <td><strong>A2A 1.0 (Agent2Agent)</strong></td>
-              <td>Manifiesto público en <code>GET /.well-known/agent-card.json</code> que declara la habilidad pericial de evaluación de daños.</td>
-            </tr>
-            <tr>
-              <td><strong>3. Herramientas en el Navegador</strong></td>
-              <td><strong>W3C WebMCP</strong></td>
-              <td>Registro imperativo en el DOM mediante <code>navigator.modelContext.registerTool()</code> reutilizando la sesión web activa.</td>
-            </tr>
-            <tr>
-              <td><strong>4. Compuerta Criptográfica en Hardware</strong></td>
-              <td><strong>ECDSA P-256 + SHA-256</strong></td>
-              <td>Firma de <code>args_hash</code> en el dispositivo del asegurado y verificación determinista con tabla anti-replay <code>consumedJti</code>.</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div class="callout warn">
-          <strong>Axioma de seguridad para agentes con capacidad financiera</strong>
-          Ningún prompt del sistema puede impedir al 100% una inyección indirecta. Las operaciones irreversibles (Nivel Rojo, como desembolsar un finiquito) deben exigir una prueba matemática firmada por la llave privada del dispositivo del usuario (Passkey / Keystore) atada exactamente al hash SHA-256 de los argumentos (<code>args_hash</code>).
-        </div>
-      </section>
-
-      <!-- STEP 2 (8 min) -->
-      <section class="step-card" data-title="2. Estructura del Proyecto y Llaves ECDSA P-256" data-duration="8">
-        <div class="step-header">
-          <h1>2. Inicializar el proyecto y generar el par de llaves ECDSA P-256</h1>
+          <h1>1. Qué vas a construir y cómo se ve al final</h1>
           <div class="step-duration">Duración estimada: 8 minutos</div>
         </div>
-
-        <p>Nuestra aplicación utiliza únicamente módulos nativos de Node.js 20+ (<code>node:http</code>, <code>node:crypto</code>, <code>node:fs</code> y <code>node:test</code>) para que puedas ejecutarla en cualquier entorno sin instalar paquetes externos.</p>
-
-        <h2>1. Crear la carpeta y <code>package.json</code></h2>
-        <div class="code-wrap">
-          <div class="code-bar"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copiar</button></div>
-          <pre>mkdir -p demo-app/public
-cd demo-app</pre>
-        </div>
-
-        <p>Crea el archivo <code>demo-app/package.json</code> habilitando módulos ES (<code>"type": "module"</code>):</p>
-        <div class="code-wrap">
-          <div class="code-bar"><span>demo-app/package.json</span><button class="copy-btn" onclick="copyCode(this)">Copiar</button></div>
-          <pre>{
-  "name": "escudo-agent-sandbox",
-  "version": "1.0.0",
-  "description": "Escudo Agent Sandbox — MCP ToolAnnotations, Elicitation, A2A 1.0, WebMCP y Compuerta Criptográfica ECDSA P-256",
-  "type": "module",
-  "scripts": {
-    "start": "node server.mjs",
-    "test": "node --test gate.test.mjs"
-  }
-}</pre>
-        </div>
-
-        <h2>2. Par de llaves asimétricas NIST P-256 y estado inicial del reclamo</h2>
-        <p>Crea el archivo <code>demo-app/server.mjs</code> y agrega el primer bloque que genera el par de llaves en curva elíptica <code>prime256v1</code> (estándar <code>ES256</code> usado por Android Keystore, Secure Enclave y WebAuthn Passkeys), junto con el conjunto <code>consumedJti</code> para prevenir ataques de repetición:</p>
-
-        <div class="code-wrap">
-          <div class="code-bar"><span>demo-app/server.mjs (Parte 1 — Llaves ECDSA P-256 y Estado)</span><button class="copy-btn" onclick="copyCode(this)">Copiar</button></div>
-          <pre>import http from "node:http";
-import fs from "node:fs";
-import path from "node:path";
-import crypto from "node:crypto";
-import { fileURLToPath } from "node:url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PORT = Number(process.env.PORT || 4323);
-
-// 1. Par de llaves ECDSA P-256 (Simulando Hardware Keystore / Passkey del Asegurado)
-export const DEVICE_KEYPAIR = crypto.generateKeyPairSync("ec", {
-  namedCurve: "prime256v1", // NIST P-256 (ES256)
-});
-
-export const DEVICE_PUBLIC_KEY_PEM = DEVICE_KEYPAIR.publicKey.export({
-  type: "spki",
-  format: "pem",
-});
-
-// Tabla en memoria de nonces/JTI consumidos (protección anti-replay)
-export const consumedJti = new Set();
-
-// Estado vivo del reclamo en el sandbox
-export const claimState = {
-  policyId: "POL-GT-2026",
-  insuredName: "María Fernanda Morales",
-  vehicle: "Toyota Corolla Cross 2024 · Placa P-849KLM",
-  claimId: "CLM-2026-089",
-  coverageStatus: "ACTIVA · Cobertura Amplia Cero Mora",
-  deductibleGtq: 1800,
-  deductibleAccepted: false,
-  assignedWorkshop: null,
-  settlementAmountGtq: 3400,
-  settlementRecipient: "Taller Multimarcas Zona 10 (Cuenta GT82-ESCUDO-99)",
-  settlementStatus: "PENDIENTE_FIRMA_P256",
-  lastDisbursementId: null,
-};</pre>
-        </div>
-
-        <div class="callout info">
-          <strong>Por qué usamos ECDSA P-256 (prime256v1)</strong>
-          A diferencia de un secreto compartido HMAC, con criptografía asimétrica <code>ECDSA P-256</code> el servidor de la aseguradora únicamente almacena la <strong>llave pública</strong> (SPKI PEM). La llave privada jamás abandona el chip seguro del teléfono o navegador del asegurado.
-        </div>
+        <p>Cuando conectas tu aplicación a un asistente de IA, el mayor error es darle el mismo permiso para todo: o lo dejas solo leer datos (y no resuelve nada completo) o le das acceso directo a modificar y transferir dinero sin control del usuario.</p>
+        <p>En este taller práctico construirás <strong><code class="inline">Escudo Seguros</code></strong>, una aplicación web en Node.js que expone el reclamo de seguro de un automóvil a un asistente de IA organizando sus herramientas en <strong>3 niveles de permiso claros</strong>:</p>
+        <div class="callout info"><strong>Los 3 niveles de permiso que vas a programar</strong>1. <strong>Nivel 1 — Solo lectura (<code class="inline">consultar_poliza</code>):</strong> El asistente consulta cobertura, deducible y talleres disponibles sin pedir confirmación.<br/>
+2. <strong>Nivel 2 — Confirmación del usuario (<code class="inline">agendar_taller</code>):</strong> El asistente prepara el cambio de taller, pero el servidor detiene la acción hasta que la persona confirma en pantalla.<br/>
+3. <strong>Nivel 3 — Autorización vinculada al monto (<code class="inline">aprobar_reembolso</code>):</strong> Para desembolsar dinero (<code class="inline">Q3,400</code>), el servidor exige un recibo de autorización emitido por el usuario para ese monto exacto, rechazando cualquier cambio de cifra o intento repetido.<br/>
+<br/>
+<strong>App Demo de referencia publicada en vivo:</strong> Puedes probar la aplicación funcionando en <a href="https://escudo-agent-sandbox-611681112050.us-central1.run.app" target="_blank" rel="noopener"><code class="inline">https://escudo-agent-sandbox-611681112050.us-central1.run.app</code></a> para comparar tu avance.</div>
+        <h2>Así se ve la aplicación que vas a construir</h2>
+        <p>La pantalla está dividida en dos áreas limpias: a la izquierda pruebas cada una de las 4 llamadas del asistente; a la derecha ves el estado de la póliza y cómo responde el servidor en cada nivel:</p>
+        <figure class="screenshot-box"><img src="assets/step1-final-sandbox.png" alt="Vista general de Escudo Seguros funcionando en el navegador" /><figcaption>Vista general de Escudo Seguros funcionando en el navegador</figcaption></figure>
       </section>
-
-      <!-- STEP 3 (10 min) -->
-      <section class="step-card" data-title="3. Catálogo MCP, Matriz de Autonomía y Elicitation" data-duration="10">
+      <section class="step-card" data-title="2. Nivel 1: Herramientas de solo lectura sin fricción" data-duration="10">
         <div class="step-header">
-          <h1>3. Catálogo MCP con ToolAnnotations, Matriz de Autonomía y Elicitation</h1>
+          <h1>2. Nivel 1: Herramientas de solo lectura sin fricción</h1>
           <div class="step-duration">Duración estimada: 10 minutos</div>
         </div>
-
-        <p>En lugar de exponer todas las funciones con el mismo nivel de privilegio, clasificamos nuestro catálogo MCP en tres niveles de autonomía gobernados por el servidor: <strong>Verde</strong> (lectura libre), <strong>Ámbar</strong> (mutación con pausa de confirmación <code>Elicitation</code>) y <strong>Rojo</strong> (liquidación con firma criptográfica).</p>
-
-        <figure class="screenshot-box">
-          <img src="assets/step3-elicitation-a2a.png" alt="Catálogo MCP con niveles Verde, Ámbar y Rojo junto con la pausa de Elicitación HTTP 202 y el AgentCard A2A" />
-          <figcaption>Figura 2 — Inspector del Catálogo MCP y Gobernador Nivel Ámbar: al invocar <code>assign_workshop</code> sin confirmación humana, el servidor devuelve <code>HTTP 202 elicitation_required</code> con el JSON Schema del formulario.</figcaption>
-        </figure>
-
-        <h2>Definir <code>MCP_TOOLS</code> y el ejecutor con pausa de Elicitación</h2>
-        <p>Agrega a <code>demo-app/server.mjs</code> la definición de las 5 herramientas con sus anotaciones MCP (<code>readOnlyHint</code>, <code>destructiveHint</code>, <code>idempotentHint</code>, <code>openWorldHint</code>) y la función <code>executeMcpTool()</code>:</p>
-
-        <div class="code-wrap">
-          <div class="code-bar"><span>demo-app/server.mjs (Parte 2 — Catálogo MCP y Pausa de Elicitación)</span><button class="copy-btn" onclick="copyCode(this)">Copiar</button></div>
-          <pre>export const MCP_TOOLS = [
-  {
-    name: "get_policy_coverage",
-    title: "Consultar cobertura de póliza",
-    description: "Devuelve el estado de vigencia, topes de responsabilidad civil y deducible de una póliza vehicular.",
-    autonomyTier: "GREEN",
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-    inputSchema: {
-      type: "object",
-      properties: { policyId: { type: "string" } },
-      required: ["policyId"],
-    },
-  },
-  {
-    name: "list_partner_workshops",
-    title: "Listar talleres certificados",
-    description: "Lista los talleres mecánicos certificados por Escudo Seguros según zona geográfica.",
-    autonomyTier: "GREEN",
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-    inputSchema: {
-      type: "object",
-      properties: { zone: { type: "string" } },
-      required: ["zone"],
-    },
-  },
-  {
-    name: "assign_workshop",
-    title: "Asignar taller e ingresar vehículo",
-    description: "Genera la orden de ingreso al taller seleccionado. Requiere confirmación explícita mediante MCP Elicitation.",
-    autonomyTier: "AMBER",
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
-    inputSchema: {
-      type: "object",
-      properties: { claimId: { type: "string" }, workshopId: { type: "string" }, dropOffDate: { type: "string" } },
-      required: ["claimId", "workshopId", "dropOffDate"],
-    },
-  },
-  {
-    name: "accept_deductible",
-    title: "Aceptar cargo de deducible",
-    description: "Registra la aceptación del deducible de la póliza. Pausa la ejecución con MCP Elicitation hasta que el titular confirme.",
-    autonomyTier: "AMBER",
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
-    inputSchema: {
-      type: "object",
-      properties: { claimId: { type: "string" }, deductibleGtq: { type: "number" } },
-      required: ["claimId", "deductibleGtq"],
-    },
-  },
-  {
-    name: "approve_settlement",
-    title: "Desembolsar finiquito e indemnización",
-    description: "Ejecuta la transferencia bancaria irreversible del reclamo. Exige token firmado con ECDSA P-256 sobre el args_hash canónico.",
-    autonomyTier: "RED",
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
-    inputSchema: {
-      type: "object",
-      properties: { claimId: { type: "string" }, amountGtq: { type: "number" }, recipient: { type: "string" } },
-      required: ["claimId", "amountGtq", "recipient"],
-    },
-  },
-];</pre>
-        </div>
-
-        <div class="callout tip">
-          <strong>Cómo funciona la pausa de Elicitación en Nivel Ámbar</strong>
-          Cuando el agente invoca <code>assign_workshop</code> o <code>accept_deductible</code> con <code>elicitationConfirmed: false</code>, el servidor no ejecuta el cambio en la base de datos: devuelve <code>status: "elicitation_required"</code> junto con un <code>elicitationSchema</code> tipado para que la interfaz del cliente renderice un cuadro de confirmación al humano.
-        </div>
-      </section>
-
-      <!-- STEP 4 (10 min) -->
-      <section class="step-card" data-title="4. Descubrimiento A2A 1.0 y Registro W3C WebMCP" data-duration="10">
-        <div class="step-header">
-          <h1>4. Descubrimiento A2A 1.0 (/.well-known/agent-card.json) y W3C WebMCP</h1>
-          <div class="step-duration">Duración estimada: 10 minutos</div>
-        </div>
-
-        <p>Además del servidor MCP, una aplicación preparada para agentes necesita dos mecanismos de descubrimiento adicionales: <strong>A2A 1.0</strong> para cooperación horizontal entre agentes en el backend y <strong>W3C WebMCP</strong> para exponer herramientas directamente en la pestaña activa del navegador.</p>
-
-        <h2>1. Publicar el <code>AgentCard</code> A2A 1.0 en el servidor</h2>
-        <p>Agrega el objeto <code>A2A_AGENT_CARD</code> en <code>demo-app/server.mjs</code>, que será servido en la ruta estándar <code>GET /.well-known/agent-card.json</code>:</p>
-
-        <div class="code-wrap">
-          <div class="code-bar"><span>demo-app/server.mjs (Parte 3 — Descriptor A2A 1.0)</span><button class="copy-btn" onclick="copyCode(this)">Copiar</button></div>
-          <pre>export const A2A_AGENT_CARD = {
-  protocolVersion: "1.0",
-  name: "Escudo Perito Vehicular A2A",
-  description: "Agente especialista para evaluación de daños por colisión, estimación de repuestos OEM y emisión de avalúo pericial certificado.",
-  url: `http://localhost:${PORT}/a2a`,
-  provider: {
-    organization: "Escudo Seguros Guatemala",
-    url: "https://escudo.gt.example",
-  },
-  version: "2.4.0",
-  capabilities: {
-    streaming: true,
-    pushNotifications: false,
-    stateTransitionHistory: true,
-  },
-  defaultInputModes: ["application/json", "image/jpeg"],
-  defaultOutputModes: ["application/json"],
-  skills: [
-    {
-      id: "damage-assessment-vision",
-      name: "Peritaje Fotográfico de Colisión",
-      description: "Analiza fotografías del siniestro, clasifica severidad estructural y calcula presupuesto de reparación en Quetzales (GTQ).",
-      tags: ["seguros", "peritaje", "vision", "guatemala"],
-      examples: [
-        "Evaluar impacto trasero en bumper y compuerta para reclamo CLM-2026-089",
-      ],
-    },
-  ],
-};</pre>
-        </div>
-
-        <h2>2. Registrar herramientas en el navegador con <code>navigator.modelContext.registerTool</code></h2>
-        <p>En el frontend (<code>demo-app/public/index.html</code>), exponemos las capacidades del portal web al agente del navegador mediante la API imperativa de <strong>W3C WebMCP</strong>:</p>
-
-        <div class="code-wrap">
-          <div class="code-bar"><span>demo-app/public/index.html (Registro W3C WebMCP)</span><button class="copy-btn" onclick="copyCode(this)">Copiar</button></div>
-          <pre>window.navigator.modelContext.registerTool({
-  name: "escudo_ver_cobertura_dom",
-  description: "Lee el resumen de cobertura de la póliza activa en la sesión web",
-  inputSchema: {
-    type: "object",
-    properties: { policyId: { type: "string" } },
-  },
-  async execute({ policyId }) {
-    const r = await fetch("/api/mcp/call", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ toolName: "get_policy_coverage", args: { policyId } }),
-    });
-    return r.json();
-  },
-});</pre>
-        </div>
-      </section>
-
-      <!-- STEP 5 (10 min) -->
-      <section class="step-card" data-title="5. Compuerta Criptográfica Determinista ECDSA P-256" data-duration="10">
-        <div class="step-header">
-          <h1>5. Compuerta Criptográfica Determinista ECDSA P-256</h1>
-          <div class="step-duration">Duración estimada: 10 minutos</div>
-        </div>
-
-        <p>Llegamos al corazón de seguridad del codelab: proteger la herramienta de Nivel Rojo <code>approve_settlement</code> mediante tres funciones deterministas en <code>demo-app/server.mjs</code>:</p>
-        <ol>
-          <li><code>computeArgsHash(args)</code>: Ordena canónicamente las llaves <code>{ amountGtq, claimId, recipient }</code> y calcula su digest <code>SHA-256</code> en hexadecimal.</li>
-          <li><code>signSettlementChallenge(args)</code>: Construye el sobre con un identificador único <code>jti</code>, adjunta el <code>args_hash</code> y lo firma con la llave privada <code>EC P-256</code>.</li>
-          <li><code>verifySettlementGate(args, signatureToken, jtiStore)</code>: Verifica en el servidor la firma matemática con la llave pública <code>EC P-256</code>, comprueba que el <code>args_hash</code> firmado coincida byte por byte con los argumentos recibidos y registra el <code>jti</code> para impedir cobros duplicados.</li>
-        </ol>
-
-        <div class="code-wrap">
-          <div class="code-bar"><span>demo-app/server.mjs (Parte 4 — Compuerta Criptográfica ECDSA P-256)</span><button class="copy-btn" onclick="copyCode(this)">Copiar</button></div>
-          <pre>export function canonicalizeSettlementArgs(args) {
-  const normalized = {
-    amountGtq: Number(args.amountGtq),
-    claimId: String(args.claimId || "").trim(),
-    recipient: String(args.recipient || "").trim(),
-  };
-  return JSON.stringify(normalized);
-}
-
-export function computeArgsHash(args) {
-  const canonicalJson = canonicalizeSettlementArgs(args);
-  return crypto.createHash("sha256").update(canonicalJson, "utf8").digest("hex");
-}
-
-export function signSettlementChallenge(args, options = {}) {
-  const privateKey = options.privateKey || DEVICE_KEYPAIR.privateKey;
-  const jti = options.jti || `jti-${crypto.randomUUID().slice(0, 12)}`;
-  const exp = options.exp ?? Date.now() + 5 * 60 * 1000;
-  const args_hash = computeArgsHash(args);
-
-  const payload = {
-    jti,
-    claimId: String(args.claimId),
-    amountGtq: Number(args.amountGtq),
-    recipient: String(args.recipient),
-    args_hash,
-    iat: Date.now(),
-    exp,
-    alg: "ES256",
-  };
-
-  const payloadB64Url = Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
-  const signatureBuffer = crypto.sign("sha256", Buffer.from(payloadB64Url, "utf8"), privateKey);
-  const signatureB64Url = signatureBuffer.toString("base64url");
-
-  return {
-    token: `${payloadB64Url}.${signatureB64Url}`,
-    jti,
-    args_hash,
-    exp,
-    canonicalJson: canonicalizeSettlementArgs(args),
-    algorithm: "ES256 (ECDSA P-256 + SHA-256)",
-  };
-}
-
-export function verifySettlementGate(args, signatureToken, jtiStore = consumedJti, publicKey = DEVICE_KEYPAIR.publicKey) {
-  const computedArgsHash = computeArgsHash(args);
-
-  if (!signatureToken || typeof signatureToken !== "string" || !signatureToken.includes(".")) {
-    return {
-      allowed: false,
-      httpStatus: 403,
-      code: "MISSING_SIGNATURE",
-      computedArgsHash,
-      message: "Compuerta Roja bloqueada: approve_settlement exige token firmado con ECDSA P-256 por el dispositivo del asegurado.",
-    };
-  }
-
-  const [payloadB64Url, signatureB64Url] = signatureToken.split(".");
-  const payload = JSON.parse(Buffer.from(payloadB64Url, "base64url").toString("utf8"));
-
-  const signatureValid = crypto.verify(
-    "sha256",
-    Buffer.from(payloadB64Url, "utf8"),
-    publicKey,
-    Buffer.from(signatureB64Url, "base64url")
-  );
-  if (!signatureValid) {
-    return { allowed: false, httpStatus: 403, code: "INVALID_ECDSA_SIGNATURE", computedArgsHash };
-  }
-
-  if (payload.args_hash !== computedArgsHash) {
-    return {
-      allowed: false,
-      httpStatus: 403,
-      code: "ARGS_HASH_MISMATCH",
-      computedArgsHash,
-      signedArgsHash: payload.args_hash,
-      message: `Alerta de Tampering: el usuario firmó Q${payload.amountGtq}, pero el agente intentó ejecutar Q${args.amountGtq}.`,
-    };
-  }
-
-  if (jtiStore.has(payload.jti)) {
-    return {
-      allowed: false,
-      httpStatus: 403,
-      code: "JTI_ALREADY_CONSUMED",
-      jti: payload.jti,
-      computedArgsHash,
-      message: `Ataque de Replay neutralizado: el nonce '${payload.jti}' ya fue consumido.`,
-    };
-  }
-
-  jtiStore.add(payload.jti);
-  const disbursementId = `DISB-GT-${payload.jti.slice(-6).toUpperCase()}`;
-  return {
-    allowed: true,
-    httpStatus: 200,
-    code: "SETTLEMENT_DISBURSED",
-    jti: payload.jti,
-    computedArgsHash,
-    disbursementId,
-  };
-}</pre>
-        </div>
-      </section>
-
-      <!-- STEP 6 (10 min) -->
-      <section class="step-card" data-title="6. Consola Web y Laboratorio Red-Team en Vivo" data-duration="10">
-        <div class="step-header">
-          <h1>6. Consola Web Interactiva y Laboratorio Red-Team en Vivo</h1>
-          <div class="step-duration">Duración estimada: 10 minutos</div>
-        </div>
-
-        <p>Con el servidor listo, levantamos <code>Escudo Agent Sandbox</code> y ponemos a prueba la compuerta criptográfica desde el <strong>Laboratorio Red-Team</strong> integrado en la tercera columna de <code>public/index.html</code>.</p>
-
-        <figure class="screenshot-box">
-          <img src="assets/step6-redteam-crypto-gate.png" alt="Laboratorio Red-Team bloqueando los 3 ataques con HTTP 403 y aprobando la liquidación con firma ECDSA P-256 válida" />
-          <figcaption>Figura 3 — Laboratorio Red-Team en vivo: bloquea Prompt Injection (<code>403 MISSING_SIGNATURE</code>), Parameter Tampering de Q3,400 a Q15,000 (<code>403 ARGS_HASH_MISMATCH</code>) y Replay Attack (<code>403 JTI_ALREADY_CONSUMED</code>), autorizando únicamente el desembolso con firma ECDSA P-256 íntegra (<code>200 SETTLEMENT_DISBURSED</code>).</figcaption>
-        </figure>
-
-        <h2>Los 4 escenarios que ejecutas en el Laboratorio Red-Team</h2>
-        <table class="arch-table">
-          <thead>
-            <tr>
-              <th>Escenario</th>
-              <th>Qué intenta el atacante / agente</th>
-              <th>Respuesta del Servidor</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>Ataque 1: Prompt Injection</strong></td>
-              <td>Una instrucción oculta en la foto del siniestro ordena llamar a <code>approve_settlement</code> por Q25,000 sin pasar por el dispositivo del asegurado.</td>
-              <td><code>403 MISSING_SIGNATURE</code></td>
-            </tr>
-            <tr>
-              <td><strong>Ataque 2: Parameter Tampering</strong></td>
-              <td>El usuario firma legítimamente <code>Q3,400</code>, pero el agente comprometido altera el argumento <code>amountGtq</code> a <code>Q15,000</code> conservando el token firmado.</td>
-              <td><code>403 ARGS_HASH_MISMATCH</code></td>
-            </tr>
-            <tr>
-              <td><strong>Ataque 3: Replay Attack</strong></td>
-              <td>Un intermediario intercepta un token firmado válido y lo envía por segunda vez para duplicar la transferencia bancaria.</td>
-              <td><code>403 JTI_ALREADY_CONSUMED</code></td>
-            </tr>
-            <tr>
-              <td><strong>4. Ejecución Legítima P-256</strong></td>
-              <td>El dispositivo firma el desafío exacto (<code>Q3,400</code> para el taller certificado) con un <code>jti</code> fresco y <code>args_hash</code> idéntico.</td>
-              <td><code>200 SETTLEMENT_DISBURSED</code></td>
-            </tr>
-          </tbody>
-        </table>
-
-        <h2>Levantar el servidor y probar en el navegador</h2>
-        <div class="code-wrap">
-          <div class="code-bar"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copiar</button></div>
-          <pre>node server.mjs
-# Escudo Agent Sandbox activo en http://localhost:4323</pre>
-        </div>
-      </section>
-
-      <!-- STEP 7 (6 min) -->
-      <section class="step-card" data-title="7. Suite de Pruebas Criptográficas (gate.test.mjs)" data-duration="6">
-        <div class="step-header">
-          <h1>7. Verificación automatizada con node:test (gate.test.mjs)</h1>
-          <div class="step-duration">Duración estimada: 6 minutos</div>
-        </div>
-
-        <p>Para garantizar que ninguna modificación futura debilite las pausas de Elicitación ni la compuerta criptográfica <code>ECDSA P-256</code>, escribimos la suite de pruebas automatizadas en <code>demo-app/gate.test.mjs</code> utilizando <code>node:test</code>:</p>
-
-        <div class="code-wrap">
-          <div class="code-bar"><span>demo-app/gate.test.mjs</span><button class="copy-btn" onclick="copyCode(this)">Copiar</button></div>
-          <pre>import test from "node:test";
-import assert from "node:assert/strict";
-import {
-  MCP_TOOLS,
-  A2A_AGENT_CARD,
-  computeArgsHash,
-  signSettlementChallenge,
-  verifySettlementGate,
-  executeMcpTool,
-} from "./server.mjs";
-
-const sampleSettlementArgs = {
-  claimId: "CLM-2026-089",
-  amountGtq: 3400,
-  recipient: "Taller Multimarcas Zona 10 (Cuenta GT82-ESCUDO-99)",
+        <p>Las consultas que no alteran datos ni cuestan dinero deben responder de inmediato. Si tu aplicación obliga al asistente a leer capturas de pantalla para saber cuánto es el deducible, tardará varios segundos y cometerá errores de lectura.</p>
+        <p>En <code class="inline">demo-app/server.mjs</code>, exponemos <code class="inline">consultarPoliza()</code> devolviendo un objeto limpio con los datos exactos del reclamo:</p>
+        <div class="code-wrap"><div class="code-bar"><span>javascript</span><button class="copy-btn" onclick="copyCode(this)">Copiar</button></div><pre><code>export const CLAIM_STATE = {
+  claimId: &quot;ESC-2027-042&quot;,
+  insuredName: &quot;Lucía Morales&quot;,
+  vehicle: &quot;Toyota Corolla Cross 2025&quot;,
+  coverageLimitGtq: 25000,
+  deductibleGtq: 1200,
+  estimateGtq: 3400,
+  assignedWorkshop: &quot;Taller Miraflores (Zona 11)&quot;,
+  workshops: [
+    { id: &quot;w-miraflores&quot;, name: &quot;Taller Miraflores (Zona 11)&quot;, etaDays: 3 },
+    { id: &quot;w-pradera&quot;, name: &quot;Centro Automotriz Pradera (Zona 10)&quot;, etaDays: 4 }
+  ]
 };
 
-test("1. Catálogo MCP clasifica correctamente los 3 niveles de autonomía (Verde / Ámbar / Rojo) y Descriptor A2A 1.0", () =&gt; {
-  const greenTools = MCP_TOOLS.filter(t =&gt; t.autonomyTier === "GREEN");
-  const amberTools = MCP_TOOLS.filter(t =&gt; t.autonomyTier === "AMBER");
-  const redTools = MCP_TOOLS.filter(t =&gt; t.autonomyTier === "RED");
-
-  assert.equal(greenTools.length, 2);
-  assert.equal(amberTools.length, 2);
-  assert.equal(redTools.length, 1);
-  assert.equal(greenTools.every(t =&gt; t.annotations.readOnlyHint === true), true);
-  assert.equal(redTools[0].name, "approve_settlement");
-  assert.equal(redTools[0].annotations.destructiveHint, true);
-  assert.equal(A2A_AGENT_CARD.protocolVersion, "1.0");
-});
-
-test("2. Herramientas Ámbar devuelven pausa elicitation_required hasta recibir confirmación explícita del usuario", () =&gt; {
-  const paused = executeMcpTool("assign_workshop", {
-    claimId: "CLM-2026-089",
-    workshopId: "WS-Z10-01",
-    dropOffDate: "2026-10-12",
-  }, { elicitationConfirmed: false });
-
-  assert.equal(paused.httpStatus, 202);
-  assert.equal(paused.status, "elicitation_required");
-  assert.equal(paused.autonomyTier, "AMBER");
-
-  const confirmed = executeMcpTool("assign_workshop", {
-    claimId: "CLM-2026-089",
-    workshopId: "WS-Z10-01",
-    dropOffDate: "2026-10-12",
-  }, { elicitationConfirmed: true });
-
-  assert.equal(confirmed.httpStatus, 200);
-  assert.equal(confirmed.status, "confirmed");
-});
-
-test("3. Ataque 1 (Prompt Injection sin firma en hardware) es bloqueado con 403 MISSING_SIGNATURE", () =&gt; {
-  const verdict = verifySettlementGate({
-    claimId: "CLM-2026-089",
-    amountGtq: 25000,
-    recipient: "Cuenta Atacante GT00-9999",
-  }, null, new Set());
-
-  assert.equal(verdict.allowed, false);
-  assert.equal(verdict.httpStatus, 403);
-  assert.equal(verdict.code, "MISSING_SIGNATURE");
-});
-
-test("4. Ataque 2 (Tampering de Q3,400 a Q15,000 tras firmar) es bloqueado con 403 ARGS_HASH_MISMATCH", () =&gt; {
-  const signed = signSettlementChallenge(sampleSettlementArgs);
-  const tamperedArgs = { ...sampleSettlementArgs, amountGtq: 15000 };
-
-  const verdict = verifySettlementGate(tamperedArgs, signed.token, new Set());
-  assert.equal(verdict.allowed, false);
-  assert.equal(verdict.httpStatus, 403);
-  assert.equal(verdict.code, "ARGS_HASH_MISMATCH");
-});
-
-test("5. Ataque 3 (Replay Attack reenviando el mismo JTI dos veces) aprueba el primero y bloquea el segundo con 403 JTI_ALREADY_CONSUMED", () =&gt; {
-  const localJtiStore = new Set();
-  const signed = signSettlementChallenge(sampleSettlementArgs);
-
-  const firstAttempt = verifySettlementGate(sampleSettlementArgs, signed.token, localJtiStore);
-  assert.equal(firstAttempt.allowed, true);
-  assert.equal(firstAttempt.httpStatus, 200);
-  assert.equal(firstAttempt.code, "SETTLEMENT_DISBURSED");
-
-  const replayAttempt = verifySettlementGate(sampleSettlementArgs, signed.token, localJtiStore);
-  assert.equal(replayAttempt.allowed, false);
-  assert.equal(replayAttempt.httpStatus, 403);
-  assert.equal(replayAttempt.code, "JTI_ALREADY_CONSUMED");
-});
-
-test("6. computeArgsHash produce un digest SHA-256 determinista independiente del orden de propiedades de entrada", () =&gt; {
-  const h1 = computeArgsHash({
-    claimId: "CLM-2026-089",
-    amountGtq: 3400,
-    recipient: "Taller Multimarcas Zona 10 (Cuenta GT82-ESCUDO-99)",
-  });
-  const h2 = computeArgsHash({
-    recipient: "Taller Multimarcas Zona 10 (Cuenta GT82-ESCUDO-99)",
-    amountGtq: 3400,
-    claimId: "CLM-2026-089",
-  });
-  assert.equal(h1, h2);
-  assert.equal(h1.length, 64);
-});</pre>
-        </div>
-
-        <h2>Ejecutar la suite de pruebas</h2>
-        <div class="code-wrap">
-          <div class="code-bar"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copiar</button></div>
-          <pre>node --test gate.test.mjs</pre>
-        </div>
-
-        <div class="code-wrap">
-          <div class="code-bar"><span>Salida verificada</span></div>
-          <pre>✔ 1. Catálogo MCP clasifica correctamente los 3 niveles de autonomía (Verde / Ámbar / Rojo) y Descriptor A2A 1.0 (0.60ms)
-✔ 2. Herramientas Ámbar devuelven pausa elicitation_required hasta recibir confirmación explícita del usuario (0.23ms)
-✔ 3. Ataque 1 (Prompt Injection sin firma en hardware) es bloqueado con 403 MISSING_SIGNATURE (0.39ms)
-✔ 4. Ataque 2 (Tampering de Q3,400 a Q15,000 tras firmar) es bloqueado con 403 ARGS_HASH_MISMATCH (1.01ms)
-✔ 5. Ataque 3 (Replay Attack reenviando el mismo JTI dos veces) aprueba el primero y bloquea el segundo con 403 JTI_ALREADY_CONSUMED (15.51ms)
-✔ 6. computeArgsHash produce un digest SHA-256 determinista independiente del orden de propiedades de entrada (0.15ms)
-ℹ tests 6 | pass 6 | fail 0</pre>
-        </div>
-
-        <div class="callout tip">
-          <strong>Completaste el Codelab Built for Agents</strong>
-          Construiste y verificaste <strong>Escudo Agent Sandbox</strong> integrando herramientas MCP con <code>ToolAnnotations</code>, pausas de confirmación humana con <code>Elicitation</code>, descubrimiento <code>A2A 1.0</code>, registro en el DOM con <code>W3C WebMCP</code> y una compuerta criptográfica determinista <code>ECDSA P-256</code> probada contra ataques de Prompt Injection, Tampering y Replay.
-        </div>
+// Nivel 1: Solo lectura
+export function consultarPoliza() {
+  return {
+    ok: true,
+    level: &quot;Nivel 1 · Solo Lectura&quot;,
+    title: &quot;Póliza y cobertura consultadas sin fricción&quot;,
+    data: CLAIM_STATE
+  };
+}</code></pre></div>
+        <div class="callout tip"><strong>Nombres y respuestas claras para el asistente</strong>Usa nombres de función específicos (<code class="inline">consultar_poliza</code> en lugar de <code class="inline">obtener_datos</code>) e incluye las unidades en el nombre de cada campo (<code class="inline">deductibleGtq</code>, <code class="inline">etaDays</code>) para que el asistente nunca confunda monedas ni plazos.</div>
       </section>
+      <section class="step-card" data-title="3. Nivel 2: Pausar y pedir confirmación antes de guardar cambios" data-duration="12">
+        <div class="step-header">
+          <h1>3. Nivel 2: Pausar y pedir confirmación antes de guardar cambios</h1>
+          <div class="step-duration">Duración estimada: 12 minutos</div>
+        </div>
+        <p>Asignar un taller mecánico modifica el expediente del cliente y compromete una fecha de entrega. El asistente puede adelantar el trabajo buscando el taller, pero <strong>no debe guardar el cambio por su cuenta</strong>.</p>
+        <p>En <code class="inline">agendarTaller()</code>, si <code class="inline">userConfirmed</code> es <code class="inline">false</code>, el servidor no modifica el estado: devuelve <code class="inline">requiresConfirmation: true</code> con los detalles listos para que la interfaz le pregunte a la persona:</p>
+        <div class="code-wrap"><div class="code-bar"><span>javascript</span><button class="copy-btn" onclick="copyCode(this)">Copiar</button></div><pre><code>// Nivel 2: Confirmación antes de modificar datos
+export function agendarTaller({ workshopId, userConfirmed = false }) {
+  const workshop = CLAIM_STATE.workshops.find((w) =&gt; w.id === workshopId);
+  if (!workshop) {
+    return {
+      ok: false,
+      errorCode: &quot;TALLER_NO_ENCONTRADO&quot;,
+      recoverable: true,
+      suggestedNextTool: &quot;consultar_poliza&quot;
+    };
+  }
 
+  if (!userConfirmed) {
+    return {
+      ok: false,
+      requiresConfirmation: true,
+      level: &quot;Nivel 2 · Pausa de Confirmación&quot;,
+      title: &quot;Confirmación solicitada antes de cambiar el taller&quot;,
+      pendingAction: {
+        workshopId: workshop.id,
+        workshopName: workshop.name,
+        etaDays: workshop.etaDays,
+        deductibleGtq: CLAIM_STATE.deductibleGtq
+      }
+    };
+  }
+
+  CLAIM_STATE.assignedWorkshop = workshop.name;
+  return {
+    ok: true,
+    level: &quot;Nivel 2 · Cambio Confirmado&quot;,
+    title: `Taller actualizado a ${workshop.name}`,
+    data: { assignedWorkshop: CLAIM_STATE.assignedWorkshop }
+  };
+}</code></pre></div>
+        <p>Así se ve la pausa de confirmación en la aplicación cuando el asistente propone cambiar a <em>Centro Automotriz Pradera</em>:</p>
+        <figure class="screenshot-box"><img src="assets/step3-elicitation-a2a.png" alt="Pausa de confirmación solicitando aprobación de la asegurada" /><figcaption>Pausa de confirmación solicitando aprobación de la asegurada</figcaption></figure>
+      </section>
+      <section class="step-card" data-title="4. Nivel 3: Autorización vinculada al monto para pagos" data-duration="14">
+        <div class="step-header">
+          <h1>4. Nivel 3: Autorización vinculada al monto para pagos</h1>
+          <div class="step-duration">Duración estimada: 14 minutos</div>
+        </div>
+        <p>¿Qué pasa cuando la acción transfiere dinero (<code class="inline">aprobar_reembolso</code>)? Si tu función solo revisa un parámetro <code class="inline">confirmado: true</code>, el propio modelo de IA podría enviar <code class="inline">confirmado: true</code> por error o por una instrucción malintencionada dentro de un texto externo.</p>
+        <p>Para proteger las operaciones de dinero:</p>
+        <ol><li>Cuando el usuario aprueba el pago de <code class="inline">Q3,400</code> en su dispositivo, se genera un <strong>recibo de autorización</strong> cuya firma incluye el número de reclamo, el monto exacto (<code class="inline">3400</code>) y un identificador único (<code class="inline">receiptId</code>).</li><li>El servidor recalcula esa firma al recibir la orden. Si el asistente intenta cambiar el monto a <code class="inline">Q15,000</code> o reutilizar un recibo anterior, la firma no coincide y la transferencia se bloquea.</li></ol>
+        <div class="code-wrap"><div class="code-bar"><span>javascript</span><button class="copy-btn" onclick="copyCode(this)">Copiar</button></div><pre><code>export function createApprovalReceipt({ claimId, amountGtq, receiptId = crypto.randomUUID() }) {
+  const payload = `${claimId}:${Number(amountGtq)}:${receiptId}`;
+  const signature = crypto
+    .createHmac(&quot;sha256&quot;, SECRET_KEY)
+    .update(payload)
+    .digest(&quot;hex&quot;)
+    .slice(0, 16);
+
+  return { receiptId, claimId, authorizedAmountGtq: Number(amountGtq), signature };
+}
+
+export function aprobarReembolso({ claimId, amountGtq, approvalReceipt }) {
+  if (!approvalReceipt?.signature) {
+    return { ok: false, blocked: true, errorCode: &quot;FALTA_AUTORIZACION&quot; };
+  }
+
+  const expectedPayload = `${claimId}:${Number(amountGtq)}:${approvalReceipt.receiptId}`;
+  const expectedSig = crypto
+    .createHmac(&quot;sha256&quot;, SECRET_KEY)
+    .update(expectedPayload)
+    .digest(&quot;hex&quot;)
+    .slice(0, 16);
+
+  if (expectedSig !== approvalReceipt.signature) {
+    return { ok: false, blocked: true, errorCode: &quot;MONTO_ALTERADO&quot; };
+  }
+
+  if (usedReceipts.has(approvalReceipt.receiptId)) {
+    return { ok: false, blocked: true, errorCode: &quot;RECIBO_YA_UTILIZADO&quot; };
+  }
+
+  usedReceipts.add(approvalReceipt.receiptId);
+  return {
+    ok: true,
+    level: &quot;Nivel 3 · Reembolso Autorizado&quot;,
+    data: { claimId, disbursedGtq: Number(amountGtq), receiptId: approvalReceipt.receiptId }
+  };
+}</code></pre></div>
+      </section>
+      <section class="step-card" data-title="5. Probar el bloqueo de seguridad cuando se altera el monto" data-duration="8">
+        <div class="step-header">
+          <h1>5. Probar el bloqueo de seguridad cuando se altera el monto</h1>
+          <div class="step-duration">Duración estimada: 8 minutos</div>
+        </div>
+        <p>Si haces clic en el botón <strong>«4. Simular cambio de monto (Q15,000)»</strong> de la interfaz web, verás qué ocurre cuando el usuario autorizó <code class="inline">Q3,400</code> pero el asistente solicita desembolsar <code class="inline">Q15,000</code>: el servidor detecta que la firma no corresponde a <code class="inline">15000</code> y rechaza el pago:</p>
+        <figure class="screenshot-box"><img src="assets/step6-redteam-crypto-gate.png" alt="Bloqueo de seguridad cuando el monto solicitado no coincide con el autorizado" /><figcaption>Bloqueo de seguridad cuando el monto solicitado no coincide con el autorizado</figcaption></figure>
+        <div class="callout warn"><strong>Separar la intención del modelo del permiso del usuario</strong>Un modelo de lenguaje es excelente para consultar datos y preparar formularios, pero la verificación de permisos sobre pagos nunca debe depender de una instrucción en el prompt: debe comprobarse siempre en el código del servidor.</div>
+      </section>
+      <section class="step-card" data-title="6. Ejecutar las pruebas y levantar tu servidor" data-duration="8">
+        <div class="step-header">
+          <h1>6. Ejecutar las pruebas y levantar tu servidor</h1>
+          <div class="step-duration">Duración estimada: 8 minutos</div>
+        </div>
+        <p>En la carpeta <code class="inline">codelab/demo-app/</code>, ejecuta las pruebas automatizadas con Node.js 20+:</p>
+        <div class="code-wrap"><div class="code-bar"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copiar</button></div><pre><code>cd codelab/demo-app
+node --test gate.test.mjs</code></pre></div>
+        <p>Comprobarás que los 4 escenarios pasan en verde:</p>
+        <div class="code-wrap"><div class="code-bar"><span>text</span><button class="copy-btn" onclick="copyCode(this)">Copiar</button></div><pre><code>✔ 1. Nivel 1 (consultarPoliza) devuelve los datos de la póliza de inmediato sin pedir confirmación
+✔ 2. Nivel 2 (agendarTaller) solicita confirmación cuando userConfirmed es false y aplica el cambio cuando es true
+✔ 3. Error guiado: si el taller no existe, indica al asistente que llame a consultar_poliza
+✔ 4. Nivel 3 (aprobarReembolso) bloquea pagos sin recibo o con monto alterado, y aprueba el monto exacto una sola vez
+ℹ pass 4
+ℹ fail 0</code></pre></div>
+        <p>Para levantar la aplicación en tu máquina (o compararla con la versión en línea en <a href="https://escudo-agent-sandbox-611681112050.us-central1.run.app" target="_blank" rel="noopener"><code class="inline">https://escudo-agent-sandbox-611681112050.us-central1.run.app</code></a>):</p>
+        <div class="code-wrap"><div class="code-bar"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copiar</button></div><pre><code>node server.mjs
+# Abre http://localhost:4323 en tu navegador</code></pre></div>
+      </section>
     </main>
   </div>
-
   <footer class="controls">
-    <button class="btn" id="prevBtn" onclick="changeStep(-1)" disabled>← Anterior</button>
-    <div id="stepCounter" style="font-size: 14px; color: var(--muted); font-family: 'Google Sans', sans-serif;">Paso 1 de 7</div>
+    <button class="btn" id="prevBtn" onclick="changeStep(-1)">← Anterior</button>
     <button class="btn primary" id="nextBtn" onclick="changeStep(1)">Siguiente →</button>
   </footer>
-
   <script>
-    const steps = Array.from(document.querySelectorAll('.step-card'));
+    const cards = Array.from(document.querySelectorAll('.step-card'));
     const drawer = document.getElementById('drawerNav');
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-    const stepCounter = document.getElementById('stepCounter');
-    const timeRemaining = document.getElementById('timeRemaining');
+    const timeEl = document.getElementById('timeRemaining');
+    const stage = document.getElementById('stageContainer');
     let current = 0;
 
     function buildDrawer() {
       drawer.innerHTML = '';
-      steps.forEach((step, idx) => {
+      cards.forEach((card, i) => {
         const item = document.createElement('div');
-        item.className = 'step-nav-item' + (idx === current ? ' active' : '') + (idx < current ? ' completed' : '');
-        item.onclick = () => goToStep(idx);
-        const circle = document.createElement('div');
-        circle.className = 'step-circle';
-        circle.textContent = idx < current ? 'OK' : (idx + 1);
-        const label = document.createElement('span');
-        label.textContent = step.dataset.title.replace(/^\d+\.\s*/, '');
-        item.appendChild(circle);
-        item.appendChild(label);
+        item.className = 'step-nav-item' + (i === current ? ' active' : '');
+        const cleanTitle = card.dataset.title.replace(/^\d+\.\s*/, '');
+        item.innerHTML = `<div class="step-circle">${i + 1}</div><span>${cleanTitle}</span>`;
+        item.onclick = () => goToStep(i);
         drawer.appendChild(item);
       });
     }
 
-    function updateTime() {
+    function updateTimer() {
       let mins = 0;
-      for (let i = current; i < steps.length; i++) {
-        mins += parseInt(steps[i].dataset.duration || '5', 10);
+      for (let i = current; i < cards.length; i++) {
+        mins += parseInt(cards[i].dataset.duration || '0', 10);
       }
-      timeRemaining.textContent = `${mins} min restantes`;
+      timeEl.textContent = `${mins} min restantes`;
     }
 
     function goToStep(idx) {
-      steps[current].classList.remove('active');
+      if (idx < 0 || idx >= cards.length) return;
+      cards[current].classList.remove('active');
       current = idx;
-      steps[current].classList.add('active');
-      document.getElementById('stageContainer').scrollTop = 0;
-      prevBtn.disabled = current === 0;
-      nextBtn.textContent = current === steps.length - 1 ? 'Finalizar' : 'Siguiente →';
-      nextBtn.disabled = current === steps.length - 1;
-      stepCounter.textContent = `Paso ${current + 1} de ${steps.length}`;
+      cards[current].classList.add('active');
+      stage.scrollTop = 0;
       buildDrawer();
-      updateTime();
+      updateTimer();
+      document.getElementById('prevBtn').disabled = current === 0;
+      document.getElementById('nextBtn').textContent = current === cards.length - 1 ? 'Finalizar' : 'Siguiente →';
     }
 
     function changeStep(delta) {
-      const next = current + delta;
-      if (next >= 0 && next < steps.length) {
-        goToStep(next);
-      }
+      goToStep(current + delta);
     }
 
     function copyCode(btn) {
-      const pre = btn.closest('.code-wrap').querySelector('pre');
-      navigator.clipboard.writeText(pre.innerText).then(() => {
-        const orig = btn.textContent;
-        btn.textContent = '¡Copiado!';
-        setTimeout(() => { btn.textContent = orig; }, 1500);
-      });
+      const code = btn.closest('.code-wrap').querySelector('code').innerText;
+      navigator.clipboard.writeText(code);
+      const old = btn.textContent;
+      btn.textContent = '¡Copiado!';
+      setTimeout(() => (btn.textContent = old), 1500);
     }
 
-    window.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowRight') changeStep(1);
       if (e.key === 'ArrowLeft') changeStep(-1);
     });
 
-    buildDrawer();
-    updateTime();
+    goToStep(0);
   </script>
 </body>
 </html>
