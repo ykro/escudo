@@ -17,11 +17,9 @@ claim, with **exactly three fingerprint approvals**.
 [![Escudo architecture](docs/diagrams/architecture.png)](docs/diagrams/architecture.svg)
 [![What the demo verifies](docs/diagrams/demo-coverage.png)](docs/diagrams/demo-coverage.svg)
 
-## 60-Minute Interactive Codelab (Live)
+## Hands-on codelab
 
-- **Interactive Codelab (Firebase Hosting):** [https://built-for-agents-2027.web.app](https://built-for-agents-2027.web.app)
-- **Live Codelab App (`Escudo Agent Sandbox` on Cloud Run):** [https://escudo-agent-sandbox-611681112050.us-central1.run.app](https://escudo-agent-sandbox-611681112050.us-central1.run.app)
-- **Runnable Codelab code and test suite:** [`codelab/demo-app/`](codelab/demo-app/) (`node --test codelab/demo-app/gate.test.mjs`)
+The codelab for this talk is “Make an agent use your app” ([codelabs-2027/agente-mcp](https://github.com/ykro/codelabs-2027/tree/main/agente-mcp)), in Spanish: you build an MCP server with human approval and a Gemini agent that uses it. It runs in the browser with a Google account and ends with something that works.
 
 ## Quickstart
 
