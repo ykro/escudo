@@ -17,6 +17,10 @@ firmado, con **exactamente tres aprobaciones con huella**.
 [![Arquitectura de Escudo](docs/diagrams/architecture.png)](docs/diagrams/architecture.svg)
 [![Qué se prueba en la demo](docs/diagrams/demo-coverage.png)](docs/diagrams/demo-coverage.svg)
 
+## Diapositivas
+
+Esta demo es parte de la charla «Built for Agents». Las diapositivas están en Google Slides: [Built for Agents](https://docs.google.com/presentation/d/1_vuFk-6_jAX7tAxi8l94hQsJQWp27s_5-w47_sBioLU/edit?usp=sharing).
+
 ## Taller práctico
 
 El taller de esta charla es «Haz que un agente use tu app» ([codelabs-2027/agente-mcp](https://github.com/ykro/codelabs-2027/tree/main/agente-mcp)): creas un servidor MCP con aprobación humana y un agente con Gemini que lo usa. Se sigue desde el navegador, con una cuenta de Google, y termina con algo que funciona.

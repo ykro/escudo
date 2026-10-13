@@ -17,6 +17,10 @@ claim, with **exactly three fingerprint approvals**.
 [![Escudo architecture](docs/diagrams/architecture.png)](docs/diagrams/architecture.svg)
 [![What the demo verifies](docs/diagrams/demo-coverage.png)](docs/diagrams/demo-coverage.svg)
 
+## Slides
+
+This demo is part of the talk “Built for Agents”. The slides (in Spanish) are on Google Slides: [Built for Agents](https://docs.google.com/presentation/d/1_vuFk-6_jAX7tAxi8l94hQsJQWp27s_5-w47_sBioLU/edit?usp=sharing).
+
 ## Hands-on codelab
 
 The codelab for this talk is “Make an agent use your app” ([codelabs-2027/agente-mcp](https://github.com/ykro/codelabs-2027/tree/main/agente-mcp)), in Spanish: you build an MCP server with human approval and a Gemini agent that uses it. It runs in the browser with a Google account and ends with something that works.
